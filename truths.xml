@@ -5,7 +5,7 @@
             <createdBy>AI</createdBy>
             <approved>18bbfa9e4f1e9</approved>
             <content>Truths is published as an npm package that can be installed globally. It exposes two bin scripts: &quot;truths&quot; (an umbrella CLI built with commander) and &quot;truths-server&quot; (a shortcut that launches the HTTP server).</content>
-            <contentHash>18bbfa9e4f1e9</contentHash>
+            <contentHash>1ce6649fd42f39</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
             </relatesTo>
@@ -93,7 +93,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>A truth&apos;s &lt;contentHash&gt; is a cyrb53 hash of its &lt;content&gt;, computed by a pure-JS function shared by the browser, the node scripts, and the migration. A JS implementation is used deliberately: crypto.subtle.digest is async, and like crypto.randomUUID it is unavailable over plain HTTP on a LAN address (the phone case), while Node&apos;s crypto.createHash is not in the browser. cyrb53 is deterministic and identical across all of them, rendered as zero-padded hex (~13 chars).</content>
-            <contentHash></contentHash>
+            <contentHash>139fcd7a618733</contentHash>
             <relatesTo>
                 <ref>truths-stored-as-xml</ref>
                 <ref>approval-tracks-content-staleness</ref>
@@ -112,7 +112,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>Human approval is stored as the content hash captured at sign-off time, kept in the &lt;approved&gt; field. A truth&apos;s approval state is derived by comparing that stored hash against the current content hash: &apos;none&apos; when never approved, &apos;current&apos; when they match, and &apos;stale&apos; when the content changed since sign-off. Only &apos;current&apos; truths count as approved; a stale approval drops out of the approved count until reapproved.</content>
-            <contentHash></contentHash>
+            <contentHash>88456c776a904</contentHash>
             <relatesTo>
                 <ref>content-hash-uses-cyrb53</ref>
                 <ref>truths-stored-as-xml</ref>
@@ -131,7 +131,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>Truth XML files get a custom git diff driver (diff=truths-canon in .gitattributes) that runs node scripts/canonicalize-truths.js. Canonicalization sorts fields within a truth, sorts whole truth entries by title, and sorts relatesTo/labels items, so any pure reordering collapses to identical output and produces no diff. git refuses to let a repo commit a diff driver command, so the command lives in a committed .gitconfig fragment that the prepare script wires into .git/config via include.path.</content>
-            <contentHash></contentHash>
+            <contentHash>18061dff58ca58</contentHash>
             <relatesTo>
                 <ref>truths-stored-as-xml</ref>
             </relatesTo>
@@ -149,7 +149,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>The backend can generate new truths on demand by spawning a headless &quot;claude -p&quot; agent with --dangerously-skip-permissions in the workspace folder. The agent is prompted to read the codebase and existing truths and append entries directly to the target file. A request is capped at 50 truths to guard against a runaway run, and the child process is killed after a 10-minute timeout.</content>
-            <contentHash></contentHash>
+            <contentHash>16c27e78f635d0</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
                 <ref>truths-stored-as-xml</ref>
@@ -168,7 +168,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>The server discovers truth files by globbing **/truths*.xml under the workspace (excluding node_modules and .git), then filtering names through a validator and a .truthsignore file. The validator only accepts the basename truths.xml or truths-&lt;something&gt;.xml and rejects any &quot;..&quot;/&quot;.&quot; path segment; combined with a defense-in-depth check that the resolved path stays inside cwd, a request can never traverse out of the workspace.</content>
-            <contentHash></contentHash>
+            <contentHash>53c0d2713c838</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
             </relatesTo>
@@ -180,6 +180,19 @@
             <created>2026-06-24T12:00:00.000Z</created>
             <lastUpdated>2026-06-24T12:00:00.000Z</lastUpdated>
             <updatedBy>AI</updatedBy>
+        </truth>
+        <truth>
+            <title>potentially-truncated-text-should-have-title-attribute</title>
+            <createdBy></createdBy>
+            <approved>0ea73934b8fc2</approved>
+            <content>In UI, potentially truncated text should have title attribute, so that the user can see the full value.</content>
+            <contentHash>0ea73934b8fc2</contentHash>
+            <relatesTo></relatesTo>
+            <notes></notes>
+            <labels></labels>
+            <created>2026-06-23T22:24:18.678Z</created>
+            <lastUpdated>2026-06-23T22:25:46.297Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
         </truth>
     </truths>
 </root>

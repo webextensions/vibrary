@@ -56,7 +56,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, countForFile, on
                             onOpen(node.path);
                         }}
                     >
-                        <span className={styles.fileName}>{node.name}</span>
+                        <span className={styles.fileName} title={node.name}>{node.name}</span>
                         <FileCountBadge count={countForFile(node.path)} />
                     </button>
                 </li>
@@ -74,7 +74,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, countForFile, on
                     }}
                 >
                     <ChevronIcon />
-                    <span className={styles.fileName}>{node.name}</span>
+                    <span className={styles.fileName} title={node.name}>{node.name}</span>
                 </button>
                 {isOpen && (
                     <ul>

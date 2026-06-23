@@ -4,6 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
+import { applyTruth } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { AGENTS, hashContent, type Truth } from '../truthsXml.ts';
 
@@ -84,9 +85,27 @@ const Chips = function ({ items }: { items: string[] }) {
 const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleMode, onRemove }: TruthCardProperties) {
     const isEditing = mode === 'edit';
     const [expanded, setExpanded] = useState(false);
+    const [applying, setApplying] = useState(false);
 
     const update = function (patch: Partial<Truth>) {
         onChange({ ...value, ...patch });
+    };
+
+    // Run the headless agent that makes the codebase conform to this truth. Uses the in-memory value (current edits), so
+    // no save is needed first. The agent's raw stdout is logged to the browser console for debugging.
+    const handleApply = async function () {
+        if (applying) {
+            return;
+        }
+        setApplying(true);
+        try {
+            const output = await applyTruth({ title: value.title, content: value.content, notes: value.notes });
+            console.log(output);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setApplying(false);
+        }
     };
 
     const fieldId = function (name: string) {
@@ -323,6 +342,16 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                     <Row label="Updated by" inline>
                         <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
+
+                    <button
+                        type="button"
+                        className={styles.apply}
+                        disabled={applying}
+                        onClick={handleApply}
+                    >
+                        {applying && <span className={styles.spinner} aria-hidden="true" />}
+                        {applying ? 'Applying...' : 'Apply this truth'}
+                    </button>
                 </div>}
             </div>
         </fieldset>

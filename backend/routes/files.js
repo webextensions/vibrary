@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { Router } from 'express';
 
+import { applyTruthAsync } from '../utils/runClaudeApply.js';
 import { generateTruthsAsync } from '../utils/runClaudeGenerate.js';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
 import { isTruthsNameIgnored, isValidTruthsName, listTruthsFiles } from '../utils/truthsFiles.js';
@@ -107,6 +108,22 @@ const createFilesRouter = function ({ cwd }) {
         try {
             const claudeOutput = await generateTruthsAsync({ cwd, name, count });
             return sendSuccessResponse(response, { name, claudeOutput });
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    // Run a headless "claude -p" agent that makes the codebase conform to a single truth. Not file-name scoped: applying
+    // acts on the whole project (cwd), so the truth's text is sent in the body rather than read back from a file.
+    router.post('/apply', async function (request, response) {
+        const { title, content, notes } = request.body || {};
+        if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
+            return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
+        }
+
+        try {
+            const claudeOutput = await applyTruthAsync({ cwd, title, content, notes: typeof notes === 'string' ? notes : '' });
+            return sendSuccessResponse(response, { claudeOutput });
         } catch (error) {
             return sendErrorResponse(response, 500, error.message);
         }
