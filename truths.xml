@@ -194,5 +194,33 @@
             <lastUpdated>2026-06-23T22:25:46.297Z</lastUpdated>
             <updatedBy>Human</updatedBy>
         </truth>
+        <truth>
+            <title>add-files-from-explorer-view-in-left-panel</title>
+            <createdBy></createdBy>
+            <approved>f91bd0b78869c</approved>
+            <content>It should be possible to add files from the left panel (explorer view)</content>
+            <contentHash>f91bd0b78869c</contentHash>
+            <relatesTo></relatesTo>
+            <notes></notes>
+            <labels></labels>
+            <created>2026-06-23T22:31:42.472Z</created>
+            <lastUpdated>2026-06-23T22:33:05.475Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
+        </truth>
+        <truth>
+            <title>more-options-for-files-and-folders-in-explorer-view</title>
+            <createdBy></createdBy>
+            <approved>732b392b15520</approved>
+            <content>In Explorer View on the left panel, for each folder/file, there should be a &quot;More&quot; menu icon and clicking upon that should show more options (like &quot;Delete&quot; and &quot;New File...&quot; (in case of directory)).
+
+The &quot;Delete&quot; should show a warning first before deleting.</content>
+            <contentHash>732b392b15520</contentHash>
+            <relatesTo></relatesTo>
+            <notes></notes>
+            <labels></labels>
+            <created>2026-06-23T22:39:37.833Z</created>
+            <lastUpdated>2026-06-23T22:44:50.112Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
+        </truth>
     </truths>
 </root>

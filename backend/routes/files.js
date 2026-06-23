@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -35,6 +35,34 @@ const createFilesRouter = function ({ cwd }) {
         const target = path.resolve(root, name);
         return target === root || target.startsWith(root + path.sep) ? target : null;
     };
+
+    // Create a new, empty truths file from the explorer view. The name lives in the body (not the path) so it can be a
+    // nested name like "docs/truths-foo.xml"; the parent directory is created if missing. The 'wx' write flag makes this
+    // create-only, so adding a file never silently overwrites an existing one.
+    router.post('/files', async function (request, response) {
+        const { name } = request.body || {};
+        if (!isValidTruthsName(name)) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        const target = resolveWithinCwd(name);
+        if (target === null) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (await isTruthsNameIgnored(cwd, name)) {
+            return sendErrorResponse(response, 400, 'File name is ignored by .truthsignore');
+        }
+
+        try {
+            await mkdir(path.dirname(target), { recursive: true });
+            await writeFile(target, '', { encoding: 'utf8', flag: 'wx' });
+            return sendSuccessResponse(response, { name });
+        } catch (error) {
+            if (error.code === 'EEXIST') {
+                return sendErrorResponse(response, 409, 'File already exists');
+            }
+            return sendErrorResponse(response, 500, 'Unable to create file');
+        }
+    });
 
     router.get('/files/:name', async function (request, response) {
         const { name } = request.params;
@@ -83,6 +111,32 @@ const createFilesRouter = function ({ cwd }) {
             return sendSuccessResponse(response, { name });
         } catch {
             return sendErrorResponse(response, 500, 'Unable to save file');
+        }
+    });
+
+    // Delete a truths file from the explorer view's "More" menu. The frontend confirms with the user first; folders have
+    // no on-disk entity (they are derived from file paths), so the frontend deletes a folder by deleting each file in it.
+    router.delete('/files/:name', async function (request, response) {
+        const { name } = request.params;
+        if (!isValidTruthsName(name)) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        const target = resolveWithinCwd(name);
+        if (target === null) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (await isTruthsNameIgnored(cwd, name)) {
+            return sendErrorResponse(response, 404, 'File not found');
+        }
+
+        try {
+            await unlink(target);
+            return sendSuccessResponse(response, { name });
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                return sendErrorResponse(response, 404, 'File not found');
+            }
+            return sendErrorResponse(response, 500, 'Unable to delete file');
         }
     });
 

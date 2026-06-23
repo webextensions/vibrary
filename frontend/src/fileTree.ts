@@ -51,4 +51,16 @@ const buildFileTree = function (paths: string[]): TreeNode[] {
     return sortTree(root.children);
 };
 
-export { buildFileTree, type FileNode, type FolderNode, type TreeNode };
+// Flattens a tree node to the file paths it contains: a file yields itself; a folder yields every file beneath it. Used
+// to delete a folder, which has no on-disk entity of its own (folders are derived from file paths) and so is removed by
+// deleting the files under it.
+const collectFilePaths = function (node: TreeNode): string[] {
+    if (node.kind === 'file') {
+        return [node.path];
+    }
+    return node.children.flatMap(function (child) {
+        return collectFilePaths(child);
+    });
+};
+
+export { buildFileTree, collectFilePaths, type FileNode, type FolderNode, type TreeNode };

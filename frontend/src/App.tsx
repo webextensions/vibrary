@@ -1,13 +1,15 @@
 import cx from 'classnames';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { generateTruths, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile } from './api.ts';
+import { createFile, deleteFile, generateTruths, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { RawXmlView } from './components/RawXmlView.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
+import { collectFilePaths, type TreeNode } from './fileTree.ts';
 import { TabBar } from './components/TabBar.tsx';
 import { TruthsEditor, type Option } from './components/TruthsEditor.tsx';
 import { confirmDialog } from './confirmDialog.ts';
+import { promptDialog } from './promptDialog.ts';
 import { readSessionTabs, writeSessionTabs } from './sessionTabs.ts';
 import { parseTruthsXml, serializeTruthsXml, type Truth } from './truthsXml.ts';
 import { useFileCounts } from './useFileCounts.ts';
@@ -141,6 +143,78 @@ const App = function () {
         setDrawerOpen(false);
     }, [openOrFocus]);
 
+    // The sidebar's add button: prompt for a name, create the empty file on the server, then refresh the list and open
+    // it. The name must match the truths naming convention (truths.xml or truths-*.xml); the server validates and
+    // surfaces any problem (bad name, already exists) as the load-error banner.
+    const handleAddFile = useCallback(async function () {
+        const name = await promptDialog({
+            message: 'New file name (truths.xml or truths-<name>.xml):',
+            placeholder: 'truths-<name>.xml',
+            confirmLabel: 'Create'
+        });
+        if (name === null) {
+            return;
+        }
+        try {
+            await createFile(name);
+            setFiles(await listFiles());
+            setLoadError(null);
+            openOrFocus(name);
+            setDrawerOpen(false);
+        } catch (error) {
+            setLoadError((error as Error).message);
+        }
+    }, [openOrFocus]);
+
+    // The explorer "More" menu's Delete action. Folders have no on-disk entity (they are derived from file paths), so
+    // deleting one removes every file beneath it; a file deletes just itself. Warn before the irreversible delete, then
+    // remove the files, close any open tabs for them, and refresh the list and title pool.
+    const handleDelete = useCallback(async function (node: TreeNode) {
+        const paths = collectFilePaths(node);
+        const target = node.kind === 'folder' ?
+            `folder "${node.path}" and its ${paths.length} file${paths.length === 1 ? '' : 's'}` :
+            `"${node.path}"`;
+        const confirmed = await confirmDialog(`Delete ${target}? This cannot be undone.`, 'Delete');
+        if (!confirmed) {
+            return;
+        }
+        try {
+            for (const path of paths) {
+                await deleteFile(path);
+                closeTab(path);
+            }
+            setFiles(await listFiles());
+            setAllTitles(await loadAllTruthTitles());
+            setLoadError(null);
+        } catch (error) {
+            setLoadError((error as Error).message);
+        }
+    }, [closeTab]);
+
+    // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
+    // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
+    // server validates the truths naming convention, mirroring handleAddFile.
+    const handleNewFile = useCallback(async function (folderPath: string) {
+        const name = await promptDialog({
+            message: `New file in "${folderPath}" (truths.xml or truths-<name>.xml):`,
+            placeholder: 'truths-<name>.xml',
+            confirmLabel: 'Create'
+        });
+        if (name === null) {
+            return;
+        }
+        const fullName = `${folderPath}/${name}`;
+        try {
+            await createFile(fullName);
+            setFiles(await listFiles());
+            setLoadError(null);
+            openOrFocus(fullName);
+            setDrawerOpen(false);
+        } catch (error) {
+            setLoadError((error as Error).message);
+        }
+    }, [openOrFocus]);
+
     // The toolbar's reload button: re-read the active tab's file from disk, picking up edits made outside the app.
     // Unsaved local edits would be overwritten, so confirm before discarding them.
     const reloadFile = useCallback(async function () {
@@ -265,6 +339,9 @@ const App = function () {
                     setDrawerOpen(false);
                 }}
                 onRefresh={handleRefresh}
+                onAddFile={handleAddFile}
+                onDelete={handleDelete}
+                onNewFile={handleNewFile}
             />
 
             <main className={styles.editor}>

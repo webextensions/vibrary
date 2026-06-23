@@ -5,7 +5,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>The project is pure ESM: package.json declares &quot;type&quot;: &quot;module&quot;, so the backend, scripts, and config files all use import/export rather than require. It requires Node ^20.19.0 || &gt;=22.12.0 through the engines field, and .nvmrc pins the development runtime to 24.15.0.</content>
-            <contentHash></contentHash>
+            <contentHash>131daaccbdd27f</contentHash>
             <relatesTo>
                 <ref>typescript-is-typecheck-only</ref>
             </relatesTo>
@@ -24,7 +24,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>Frontend styling uses CSS Modules: each component pairs with a *.module.css file that Vite scopes locally. The Vite config sets css.modules.localsConvention to camelCaseOnly, so a kebab-case class such as .truth-card is referenced from TypeScript as styles.truthCard while the CSS keeps its kebab-case names.</content>
-            <contentHash></contentHash>
+            <contentHash>b2a0add7d74fe</contentHash>
             <relatesTo>
                 <ref>vite-dev-proxy-and-concurrently</ref>
                 <ref>typescript-is-typecheck-only</ref>
@@ -44,7 +44,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>Local development runs two processes through the concurrently package (npm start): a Vite dev server for the frontend and the Express server on port 3000. The Vite config proxies /api to http://localhost:3000, so the single-page app talks to the backend in dev without CORS issues, while in production the same Express server serves the built dist/ assets directly.</content>
-            <contentHash></contentHash>
+            <contentHash>98602e0407f90</contentHash>
             <relatesTo>
                 <ref>css-modules-camelcase-convention</ref>
                 <ref>typescript-is-typecheck-only</ref>
@@ -64,7 +64,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>TypeScript is configured with noEmit and strict (target ES2023, moduleResolution bundler), so it only type-checks; Vite (esbuild for transpilation, Rollup for bundling) produces the actual dist/ output. allowJs is enabled so plain .js modules such as frontend/src/truthsXmlCore.js can coexist with and be imported by the .ts sources.</content>
-            <contentHash></contentHash>
+            <contentHash>f901497e162d1</contentHash>
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
                 <ref>vite-dev-proxy-and-concurrently</ref>
@@ -84,7 +84,7 @@
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>The diff driver for truth XML files is bootstrapped per-clone by the prepare npm script (scripts/setup-git-textconv.js), which adds include.path=../.gitconfig to the local .git/config. git refuses to let a repository commit the command a diff driver runs, so that command lives in the committed .gitconfig fragment and each clone only wires in the include. The script is a no-op when there is no .git directory, for example when truths is installed as a dependency from the registry.</content>
-            <contentHash></contentHash>
+            <contentHash>1d63853584fc6b</contentHash>
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
             </relatesTo>

@@ -28,12 +28,28 @@ const getFile = async function (name: string): Promise<string> {
     return output.content;
 };
 
+// Create a new, empty truths file (create-only on the server: it refuses to overwrite an existing file). The caller
+// refreshes the file list and opens the new file once this resolves.
+const createFile = async function (name: string): Promise<void> {
+    await request<{ name: string }>('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+};
+
 const saveFile = async function (name: string, content: string): Promise<void> {
     await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content })
     });
+};
+
+// Delete a truths file. The caller (the explorer's "More" menu) confirms with the user first, then refreshes the file
+// list and closes any open tab for the file once this resolves.
+const deleteFile = async function (name: string): Promise<void> {
+    await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}`, { method: 'DELETE' });
 };
 
 // Runs the backend's headless AI agent to append `count` new truths to the file. Resolves with the CLI's raw stdout
@@ -89,4 +105,4 @@ const loadAllTruthTitles = async function (): Promise<string[]> {
     });
 };
 
-export { applyTruth, type ApprovalCount, generateTruths, getApprovalCount, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile };
+export { applyTruth, type ApprovalCount, createFile, deleteFile, generateTruths, getApprovalCount, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile };

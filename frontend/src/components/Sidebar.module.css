@@ -31,6 +31,13 @@
     font-size: 18px;
 }
 
+.sidebar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-action,
 .sidebar-refresh {
     display: inline-flex;
     align-items: center;
@@ -43,8 +50,15 @@
     cursor: pointer;
 }
 
+.sidebar-action:hover,
 .sidebar-refresh:hover {
     background: #f3f4f6;
+}
+
+/* PlusIcon ships at 24px; shrink it to match the 16px refresh glyph beside it. */
+.sidebar-action svg {
+    width: 16px;
+    height: 16px;
 }
 
 .sidebar-refresh:disabled {
@@ -106,6 +120,75 @@
 .sidebar li button.active {
     background: #ddf4ff;
     border-color: #54aeff;
+}
+
+/* A file/folder row: the name button flexes to fill the width, leaving room for the "More" kebab button beside it. The
+   menu anchors to this row, so it is the positioning context for the absolutely positioned dropdown. */
+.tree-row {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.tree-row > .row-button {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+}
+
+/* Wraps the kebab button and its dropdown; the positioning context the menu anchors to. */
+.row-more {
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Compact icon button; stays hidden until the row is hovered or its menu is open, so it does not clutter the list. */
+.tree-row .more-button {
+    flex-shrink: 0;
+    width: auto;
+    padding: 6px;
+    color: #656d76;
+    opacity: 0;
+}
+
+.tree-row:hover .more-button,
+.more-button[aria-expanded="true"] {
+    opacity: 1;
+}
+
+/* No hover on touch layouts, so keep the affordance visible there. */
+@media (max-width: 700px) {
+    .tree-row .more-button {
+        opacity: 1;
+    }
+}
+
+.more-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 5;
+    min-width: 150px;
+    margin-top: 2px;
+    padding: 4px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.more-menu svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+}
+
+.more-menu .menu-danger {
+    color: #cf222e;
+}
+
+.more-menu .menu-danger:hover {
+    background: #ffebe9;
 }
 
 /* Folder disclosure row: the chevron rotates from pointing right (collapsed) to down (expanded), like the truth card */

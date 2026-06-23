@@ -1,0 +1,40 @@
+/* Text-input prompt rendered by helpmate's alertDialog (a native <dialog>), reused for naming a new file. */
+.prompt-dialog {
+    min-width: 280px;
+    max-width: 360px;
+}
+
+.prompt-dialog p {
+    margin: 0 0 12px;
+}
+
+.prompt-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 16px;
+    padding: 6px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font: inherit;
+}
+
+.prompt-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.prompt-dialog-actions button {
+    padding: 6px 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.prompt-dialog-actions .prompt-ok {
+    border-color: #1f883d;
+    background: #1f883d;
+    color: #fff;
+}
