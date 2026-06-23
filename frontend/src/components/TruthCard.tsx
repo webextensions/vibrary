@@ -4,7 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
-import { applyTruth } from '../api.ts';
+import { applyTruth, populateTitle } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { promptDialog } from '../promptDialog.ts';
 import { AGENTS, hashContent, type Truth } from '../truthsXml.ts';
@@ -87,10 +87,30 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
     const isEditing = mode === 'edit';
     const [expanded, setExpanded] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [populating, setPopulating] = useState(false);
     const [useCustomInstructions, setUseCustomInstructions] = useState(false);
 
     const update = function (patch: Partial<Truth>) {
         onChange({ ...value, ...patch });
+    };
+
+    // Derive the hyphenated-title from the content below by asking the backend's headless "claude -p" agent, then drop
+    // the result into the title field. Uses the in-memory content (current edits), so no save is needed first.
+    const handlePopulate = async function () {
+        if (populating || value.content.trim() === '') {
+            return;
+        }
+        setPopulating(true);
+        try {
+            const title = await populateTitle(value.content);
+            if (title !== '') {
+                update({ title });
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setPopulating(false);
+        }
     };
 
     // Run the headless agent that makes the codebase conform to this truth. Uses the in-memory value (current edits), so
@@ -195,22 +215,34 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                     </button>
                     {isEditing ?
                         (
-                            <input
-                                className={styles.titleInput}
-                                type="text"
-                                value={value.title}
-                                placeholder="hyphenated-title"
-                                aria-label="Truth title"
-                                onChange={function (changeEvent) {
-                                    update({ title: changeEvent.target.value });
-                                }}
-                                onBlur={function (blurEvent) {
-                                    const normalized = blurEvent.target.value.trim().toLowerCase().replaceAll(/\s+/g, '-');
-                                    if (normalized !== value.title) {
-                                        update({ title: normalized });
-                                    }
-                                }}
-                            />
+                            <>
+                                <input
+                                    className={styles.titleInput}
+                                    type="text"
+                                    value={value.title}
+                                    placeholder="hyphenated-title"
+                                    aria-label="Truth title"
+                                    onChange={function (changeEvent) {
+                                        update({ title: changeEvent.target.value });
+                                    }}
+                                    onBlur={function (blurEvent) {
+                                        const normalized = blurEvent.target.value.trim().toLowerCase().replaceAll(/\s+/g, '-');
+                                        if (normalized !== value.title) {
+                                            update({ title: normalized });
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    className={styles.populate}
+                                    disabled={populating || value.content.trim() === ''}
+                                    title="Populate the title from the content below"
+                                    onClick={handlePopulate}
+                                >
+                                    {populating && <span className={styles.spinner} aria-hidden="true" />}
+                                    {populating ? 'Populating...' : 'Populate'}
+                                </button>
+                            </>
                         ) :
                         (
                             <span className={styles.truthCardTitle}>{value.title || `(untitled truth #${index + 1})`}</span>

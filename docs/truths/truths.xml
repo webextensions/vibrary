@@ -13,5 +13,18 @@
             <lastUpdated>2026-06-23T23:00:44.842Z</lastUpdated>
             <updatedBy>Human</updatedBy>
         </truth>
+        <truth>
+            <title>populate-button-for-hyphenated-title-in-edit-mode</title>
+            <createdBy></createdBy>
+            <approved>19b4675f89cf76</approved>
+            <content>When we are in edit mode for a &quot;truth&quot;, the &quot;hyphenated-title&quot; field should have a button right next to it called &quot;Populate&quot; which would populate the value of the field based on the &quot;truth&quot; content from the textarea below.</content>
+            <contentHash>19b4675f89cf76</contentHash>
+            <relatesTo></relatesTo>
+            <notes></notes>
+            <labels></labels>
+            <created>2026-06-23T23:09:45.205Z</created>
+            <lastUpdated>2026-06-23T23:21:49.564Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
+        </truth>
     </truths>
 </root>

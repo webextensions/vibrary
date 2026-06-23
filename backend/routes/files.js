@@ -5,6 +5,7 @@ import { Router } from 'express';
 
 import { applyTruthAsync } from '../utils/runClaudeApply.js';
 import { generateTruthsAsync } from '../utils/runClaudeGenerate.js';
+import { generateTitleAsync } from '../utils/runClaudeTitle.js';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
 import { isTruthsNameIgnored, isValidTruthsName, listTruthsFiles } from '../utils/truthsFiles.js';
 
@@ -184,6 +185,22 @@ const createFilesRouter = function ({ cwd }) {
                 instructions: typeof instructions === 'string' ? instructions : ''
             });
             return sendSuccessResponse(response, { claudeOutput });
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    // Run a headless "claude -p" agent that derives a hyphenated title from a truth's content, backing the editor's
+    // "Populate" button. Not file-name scoped: the content is sent in the body, and only the derived title is returned.
+    router.post('/title', async function (request, response) {
+        const { content } = request.body || {};
+        if (typeof content !== 'string' || content.trim() === '') {
+            return sendErrorResponse(response, 400, 'Expected a non-empty "content" field');
+        }
+
+        try {
+            const title = await generateTitleAsync({ cwd, content });
+            return sendSuccessResponse(response, { title });
         } catch (error) {
             return sendErrorResponse(response, 500, error.message);
         }

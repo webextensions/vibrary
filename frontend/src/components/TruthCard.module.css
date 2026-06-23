@@ -195,6 +195,27 @@
     font-weight: 600;
 }
 
+/* Sits beside the title input in edit mode: derives a hyphenated title from the content below via the headless agent. */
+.truth-card .populate {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 12px;
+    padding: 4px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #0969da;
+    cursor: pointer;
+    font: inherit;
+}
+
+.truth-card .populate:disabled {
+    cursor: default;
+    color: #656d76;
+}
+
 .chips {
     display: inline-flex;
     flex-wrap: wrap;
