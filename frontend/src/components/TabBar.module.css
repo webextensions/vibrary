@@ -1,0 +1,111 @@
+/* Open-files tab strip on desktop; fills the title row beside the sidebar toggle and scrolls when the tabs overflow.
+   The mobile dropdown switcher below replaces it (only one is rendered at a time, chosen by the breakpoint). */
+.tab-strip {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    gap: 2px;
+    overflow-x: auto;
+    /* Overlap the tab bar's bottom separator so the active tab's white body covers the line and reads as connected. */
+    margin-bottom: -1px;
+}
+
+.tab-strip .tab {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    max-width: 220px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    background: transparent;
+    color: #656d76;
+}
+
+.tab-strip .tab:hover {
+    background: #eaeef2;
+    color: #1f2328;
+}
+
+/* Active tab: lifts out of the strip onto the content with a white body, a border, and a top accent bar. */
+.tab-strip .tab.active {
+    background: #fff;
+    border-color: #d0d7de;
+    color: #1f2328;
+    box-shadow: inset 0 2px 0 #54aeff;
+}
+
+.tab-strip .tab-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 7px 4px 7px 12px;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+}
+
+.tab-strip .tab.active .tab-label {
+    font-weight: 600;
+}
+
+.tab-strip .tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Dirty marker on a tab: a small filled dot, reusing the Save action's green. */
+.tab-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #1f883d;
+}
+
+.tab-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    margin-right: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: #656d76;
+    cursor: pointer;
+}
+
+.tab-close:hover {
+    background: #f3f4f6;
+    color: #1f2328;
+}
+
+.tab-switcher {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-switcher select {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    font: inherit;
+}
+
+.tab-switcher .tab-close {
+    margin-right: 0;
+    padding: 6px;
+    border: 1px solid #d0d7de;
+}

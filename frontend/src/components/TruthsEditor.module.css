@@ -1,0 +1,66 @@
+.truths-editor {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* The status-filter controls, shown in their own row below the toolbar. Right-aligned to sit under the Filter toggle. */
+.truth-filter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 0 0 8px;
+    background: #fff;
+}
+
+/* react-select renders its control with the global `rs__` prefix set via classNamePrefix, so reach it through :global. */
+.truth-filter :global(.rs__control) {
+    min-width: 280px;
+}
+
+.filter-count {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.muted {
+    color: #656d76;
+}
+
+.placeholder {
+    color: #656d76;
+}
+
+/* Floating "+" action button, anchored to the viewport's bottom-right. Slides away when the list is scrolled down and
+   returns on scroll up (see .fab-hidden). */
+.fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border: none;
+    border-radius: 50%;
+    background: #1f883d;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.fab:hover {
+    background: #1a7f37;
+}
+
+.fab-hidden {
+    transform: translateY(120px);
+    opacity: 0;
+    pointer-events: none;
+}

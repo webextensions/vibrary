@@ -1,0 +1,2 @@
+[diff "truths-canon"]
+	command = node scripts/truths-diff.js

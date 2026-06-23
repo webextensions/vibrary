@@ -3,6 +3,7 @@ import { access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { parseArgs } from 'node:util';
 
 import { startServer } from '../backend/server.js';
 
@@ -38,12 +39,17 @@ const waitForBuild = async function () {
     }
 };
 
-await waitForBuild();
+const { values } = parseArgs({ options: { hmr: { type: 'boolean', default: false } } });
+
+// With HMR, Vite serves the frontend in middleware mode, so there is no prebuilt dist/ to wait for
+if (!values.hmr) {
+    await waitForBuild();
+}
 
 const firstRun = isFirstRunOfSession();
 
 // startServer resolves once the server is listening (and the browser has been opened, when requested)
-const { url } = await startServer({ open: firstRun });
+const { url } = await startServer({ open: firstRun, hmr: values.hmr });
 
 if (firstRun) {
     notify('truths-server', `Running at ${url}`);

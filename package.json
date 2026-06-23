@@ -20,8 +20,10 @@
         "dev": "vite --config frontend/vite.config.ts",
         "dev:server": "node --watch bin/truths-server.js",
         "lint": "eslint .",
+        "prepare": "node scripts/setup-git-textconv.js",
         "prepack": "npm run build",
         "start": "concurrently \"node --run start:build\" \"node --run start:server\" --prefix \"[{time}] [{index}]\" --timestamp-format \"HH:mm:ss.SSS\"",
+        "start:use-hmr": "node --watch-path=./backend --watch-path=./scripts scripts/start-server.js --hmr",
         "start:build": "node --run start:build:do-not-watch",
         "start:build:do-not-watch": "node scripts/start-build.js",
         "start:build:watch": "node scripts/start-build.js --watch",
@@ -45,7 +47,10 @@
         "express": "^5.2.1",
         "get-port": "^7.2.0",
         "glob": "^13.0.6",
-        "open": "^11.0.0"
+        "helpmate": "^1.9.0",
+        "ignore": "^7.0.5",
+        "open": "^11.0.0",
+        "react-syntax-highlighter": "^16.1.1"
     },
     "devDependencies": {
         "@eslint-react/eslint-plugin": "^5.9.1",
@@ -54,7 +59,9 @@
         "@types/node": "^26.0.0",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
+        "@types/react-syntax-highlighter": "^15.5.13",
         "@vitejs/plugin-react": "^6.0.2",
+        "classnames": "^2.5.1",
         "concurrently": "^10.0.3",
         "eslint": "^10.5.0",
         "eslint-config-ironplate": "^3.0.0",

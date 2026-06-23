@@ -10,6 +10,13 @@ export default defineConfig({
         outDir: '../dist',
         emptyOutDir: true
     },
+    css: {
+        modules: {
+            // Export the camelCase alias for each kebab-case class name (`.truth-card` -> `styles.truthCard`) so
+            // components can reference scoped classes with dot access while the CSS keeps its kebab-case names.
+            localsConvention: 'camelCaseOnly'
+        }
+    },
     server: {
         proxy: {
             '/api': 'http://localhost:3000'

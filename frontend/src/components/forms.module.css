@@ -1,0 +1,17 @@
+/* Checkbox and radio field groups shared by the TruthCard edit form and the ApprovedBy control. */
+.checkbox-group,
+.radio-group {
+    display: flex;
+    gap: 16px;
+    padding: 4px 0;
+}
+
+.checkbox-group .checkbox,
+.radio-group .radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+}

@@ -1,4 +1,6 @@
-import { parseTruthsXml } from './truthsXml.ts';
+import { countApprovedTruths, parseTruthsXml } from './truthsXml.ts';
+
+type ApprovalCount = { approved: number; total: number };
 
 type ApiResponse<T> = { status: 'success'; output: T } | { status: 'error'; errorMessage: string };
 
@@ -16,6 +18,11 @@ const listFiles = async function (): Promise<string[]> {
     return output.files;
 };
 
+const getWorkspace = async function (): Promise<string> {
+    const output = await request<{ cwd: string }>('/api/workspace');
+    return output.cwd;
+};
+
 const getFile = async function (name: string): Promise<string> {
     const output = await request<{ name: string; content: string }>(`/api/files/${encodeURIComponent(name)}`);
     return output.content;
@@ -27,6 +34,12 @@ const saveFile = async function (name: string, content: string): Promise<void> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content })
     });
+};
+
+// Loads a single file and tallies its approved/total truth counts, for the at-a-glance overview in the file list.
+const getApprovalCount = async function (name: string): Promise<ApprovalCount> {
+    const truths = parseTruthsXml(await getFile(name));
+    return { approved: countApprovedTruths(truths), total: truths.length };
 };
 
 // Collects every truth title across all truths*.xml files in the folder, for the "Relates to" option list. Files that
@@ -53,4 +66,4 @@ const loadAllTruthTitles = async function (): Promise<string[]> {
     });
 };
 
-export { getFile, listFiles, loadAllTruthTitles, saveFile };
+export { type ApprovalCount, getApprovalCount, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile };

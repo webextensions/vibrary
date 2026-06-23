@@ -1,29 +1,71 @@
+import cx from 'classnames';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getFile, listFiles, loadAllTruthTitles, saveFile } from './api.ts';
-import { TruthsEditor } from './components/TruthsEditor.tsx';
+import { getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile } from './api.ts';
+import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
+import { RawXmlView } from './components/RawXmlView.tsx';
+import { Sidebar } from './components/Sidebar.tsx';
+import { TabBar } from './components/TabBar.tsx';
+import { TruthsEditor, type Option } from './components/TruthsEditor.tsx';
+import { confirmDialog } from './confirmDialog.ts';
+import { readSessionTabs, writeSessionTabs } from './sessionTabs.ts';
 import { parseTruthsXml, serializeTruthsXml, type Truth } from './truthsXml.ts';
+import { useFileCounts } from './useFileCounts.ts';
+import { useOpenTabs } from './useOpenTabs.ts';
 
-type Status = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
+import styles from './App.module.css';
 
-type Tab = 'structured' | 'raw';
+// Persist the desktop collapse choice so it survives reloads. Defaults to expanded when nothing is stored.
+const SIDEBAR_STORAGE_KEY = 'truths:sidebar-collapsed';
+
+// Below this width the sidebar is an off-canvas drawer; above it, an inline panel that collapses in place.
+const MOBILE_QUERY = '(max-width: 700px)';
 
 const App = function () {
     const [files, setFiles] = useState<string[]>([]);
-    const [selected, setSelected] = useState<string | null>(null);
-    const [truths, setTruths] = useState<Truth[]>([]);
     const [allTitles, setAllTitles] = useState<string[]>([]);
-    const [rawFallback, setRawFallback] = useState<string>('');
-    const [parseError, setParseError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<Tab>('structured');
-    const [status, setStatus] = useState<Status>({ kind: 'idle' });
-    const [dirty, setDirty] = useState<boolean>(false);
-    const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+    // Errors from loading the file list or titles (not tied to any one open tab), shown as a banner above the editor.
+    const [loadError, setLoadError] = useState<string | null>(null);
+    // Desktop: whether the inline sidebar is collapsed (persisted). Seed from storage so the first paint already
+    // matches, avoiding an expand-then-collapse flash. localStorage can throw when blocked, so fall back to expanded.
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(function (): boolean {
+        try {
+            return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
+        } catch {
+            return false;
+        }
+    });
+    // Mobile: whether the off-canvas drawer is open. Ephemeral and always starts closed, independent of the desktop
+    // preference above.
+    const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+    const [refreshing, setRefreshing] = useState<boolean>(false);
+    // Filter-dropdown visibility and the selected status filters for the structured editor. UI-only and shared across
+    // tabs, so they live here rather than per-tab; the toolbar Filter button toggles the dropdown and shows a dot badge
+    // while any filter is applied.
+    const [showFilters, setShowFilters] = useState<boolean>(false);
+    const [statusFilter, setStatusFilter] = useState<Option[]>([]);
+    // The served folder, used to scope which tabs are remembered across reloads. sessionReady gates persistence until
+    // the one-time restore has run, so the initial empty tab list never overwrites a stored session.
+    const [workspaceCwd, setWorkspaceCwd] = useState<string | null>(null);
+    const [sessionReady, setSessionReady] = useState<boolean>(false);
 
-    // Warn before the tab is closed or the page is navigated away while there are unsaved edits. Setting returnValue is
-    // what makes the browser show its native "leave site?" confirmation, which lets the user cancel the navigation.
+    const { tabs, activePath, activeTab, anyDirty, openOrFocus, closeTab, setActive, setInnerTab, patchTab } =
+        useOpenTabs();
+
+    // Live tallies use each open, parsed tab's in-memory model; loading tabs fall through to the cached count.
+    const openTabsForCounts = tabs
+        .filter(function (tab) {
+            return !tab.loading;
+        })
+        .map(function (tab) {
+            return { path: tab.path, truths: tab.truths, parseError: tab.parseError };
+        });
+    const { countForFile, markCounted } = useFileCounts(files, openTabsForCounts);
+
+    // Warn before the tab is closed or the page is navigated away while any open tab has unsaved edits. Setting
+    // returnValue is what makes the browser show its native "leave site?" confirmation, which lets the user cancel.
     useEffect(function () {
-        if (!dirty) {
+        if (!anyDirty) {
             return undefined;
         }
         const handleBeforeUnload = function (unloadEvent: BeforeUnloadEvent) {
@@ -34,179 +76,295 @@ const App = function () {
         return function () {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [dirty]);
+    }, [anyDirty]);
 
     useEffect(function () {
         const loadAsync = async function () {
             try {
-                setFiles(await listFiles());
+                const [loadedFiles, cwd] = await Promise.all([listFiles(), getWorkspace()]);
+                setFiles(loadedFiles);
+                setWorkspaceCwd(cwd);
+                // Reopen the folder's previously open tabs, skipping any that no longer exist (deleted, or stored under
+                // a folder that happens to share this one's key). openOrFocus fetches each tab's content on its own.
+                const record = readSessionTabs(cwd);
+                if (record !== null) {
+                    const present = new Set(loadedFiles);
+                    const toRestore = record.paths.filter(function (path) { return present.has(path); });
+                    for (const path of toRestore) {
+                        openOrFocus(path);
+                    }
+                    if (record.activePath !== null && present.has(record.activePath)) {
+                        setActive(record.activePath);
+                    }
+                }
+                setSessionReady(true);
                 setAllTitles(await loadAllTruthTitles());
             } catch (error) {
-                setStatus({ kind: 'error', message: (error as Error).message });
+                setLoadError((error as Error).message);
             }
         };
         void loadAsync();
-    }, []);
+    }, [openOrFocus, setActive]);
 
-    const openFile = useCallback(async function (name: string) {
-        setSelected(name);
-        setStatus({ kind: 'idle' });
-        setDirty(false);
-        setActiveTab('structured');
-        setSidebarOpen(false); // close the mobile drawer after picking a file
+    // Persist the open set and active tab whenever they change, so a reload can restore them. The effect keys on a
+    // signature of just the open paths, so per-tab edits (dirty/status/reloadNonce) that rebuild the tabs array do not
+    // trigger redundant writes. Closing the last tab stores an empty set, which correctly restores to an empty editor.
+    const openSignature = tabs.map(function (tab) { return tab.path; }).join('\n');
+    useEffect(function () {
+        if (!sessionReady || workspaceCwd === null) {
+            return;
+        }
+        const paths = openSignature === '' ? [] : openSignature.split('\n');
+        writeSessionTabs(workspaceCwd, { paths, activePath });
+    }, [openSignature, activePath, sessionReady, workspaceCwd]);
+
+    // The sidebar's refresh button: reload the file list and every truth title from disk, picking up files added or
+    // changed outside the app. Counts refresh on their own, since useFileCounts reloads whenever the files array
+    // changes identity, which setFiles does.
+    const handleRefresh = useCallback(async function () {
+        setRefreshing(true);
         try {
-            const content = await getFile(name);
-            setRawFallback(content);
-            setTruths(parseTruthsXml(content));
-            setParseError(null);
+            setFiles(await listFiles());
+            setAllTitles(await loadAllTruthTitles());
+            setLoadError(null);
         } catch (error) {
-            setTruths([]);
-            setParseError((error as Error).message);
+            setLoadError((error as Error).message);
+        } finally {
+            setRefreshing(false);
         }
     }, []);
+
+    // Open a file from the sidebar: focus its tab if already open, otherwise create one and fetch its content, then
+    // close the mobile drawer (the desktop collapse is left untouched).
+    const handleOpen = useCallback(function (name: string) {
+        openOrFocus(name);
+        setDrawerOpen(false);
+    }, [openOrFocus]);
+
+    // The toolbar's reload button: re-read the active tab's file from disk, picking up edits made outside the app.
+    // Unsaved local edits would be overwritten, so confirm before discarding them.
+    const reloadFile = useCallback(async function () {
+        if (activeTab === null) {
+            return;
+        }
+        const path = activeTab.path;
+        if (activeTab.dirty) {
+            const discard = await confirmDialog(
+                'Reload from disk? Your unsaved changes will be lost.',
+                'Reload'
+            );
+            if (!discard) {
+                return;
+            }
+        }
+        patchTab(path, { reloading: true });
+        try {
+            const content = await getFile(path);
+            patchTab(path, {
+                truths: parseTruthsXml(content),
+                rawFallback: content,
+                parseError: null,
+                dirty: false,
+                status: { kind: 'idle' },
+                reloading: false,
+                reloadNonce: activeTab.reloadNonce + 1
+            });
+        } catch (error) {
+            patchTab(path, { truths: [], parseError: (error as Error).message, reloading: false });
+        }
+    }, [activeTab, patchTab]);
 
     // Raw tab shows the XML regenerated from the structured model (source of truth); on parse failure it shows the
     // original file content so the malformed XML is still visible.
     const rawXml = useMemo(function () {
-        return parseError === null ? serializeTruthsXml(truths) : rawFallback;
-    }, [parseError, truths, rawFallback]);
+        if (activeTab === null) {
+            return '';
+        }
+        return activeTab.parseError === null ? serializeTruthsXml(activeTab.truths) : activeTab.rawFallback;
+    }, [activeTab]);
 
     const onSave = useCallback(async function () {
-        if (!selected || parseError !== null) {
+        if (activeTab === null || activeTab.parseError !== null) {
             return;
         }
-        setStatus({ kind: 'saving' });
+        const path = activeTab.path;
+        const truths = activeTab.truths;
+        patchTab(path, { status: { kind: 'saving' } });
         try {
-            await saveFile(selected, serializeTruthsXml(truths));
-            setStatus({ kind: 'idle' });
-            setDirty(false);
+            await saveFile(path, serializeTruthsXml(truths));
+            patchTab(path, { status: { kind: 'idle' }, dirty: false });
+            markCounted(path, truths);
             setAllTitles(await loadAllTruthTitles());
         } catch (error) {
-            setStatus({ kind: 'error', message: (error as Error).message });
+            patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
         }
-    }, [selected, truths, parseError]);
+    }, [activeTab, patchTab, markCounted]);
 
     const onTruthsChange = useCallback(function (next: Truth[]) {
-        setTruths(next);
-        setStatus({ kind: 'idle' });
-        setDirty(true);
-    }, []);
+        if (activePath === null) {
+            return;
+        }
+        patchTab(activePath, { truths: next, status: { kind: 'idle' }, dirty: true });
+    }, [activePath, patchTab]);
+
+    // One toggle for both layouts: on mobile it opens/closes the off-canvas drawer; on desktop it collapses/expands
+    // the inline sidebar and persists that choice. The breakpoint is read at click time so render stays flash-free.
+    const toggleSidebar = function () {
+        if (window.matchMedia(MOBILE_QUERY).matches) {
+            setDrawerOpen(function (open) {
+                return !open;
+            });
+            return;
+        }
+        const willCollapse = !sidebarCollapsed;
+        setSidebarCollapsed(willCollapse);
+        try {
+            window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(willCollapse));
+        } catch {
+            // ignore persistence failures; the toggle still works for this session
+        }
+    };
 
     return (
-        <div className="layout">
-            {sidebarOpen &&
-            <div
-                className="sidebar-overlay"
-                onClick={function () {
-                    setSidebarOpen(false);
+        <div className={styles.layout}>
+            <Sidebar
+                files={files}
+                selected={activePath}
+                open={drawerOpen}
+                isCollapsed={sidebarCollapsed}
+                refreshing={refreshing}
+                countForFile={countForFile}
+                onOpen={handleOpen}
+                onClose={function () {
+                    setDrawerOpen(false);
                 }}
-            />}
+                onRefresh={handleRefresh}
+            />
 
-            <aside className={sidebarOpen ? 'sidebar open' : 'sidebar'}>
-                <h1>truths</h1>
-                {files.length === 0 ?
+            <main className={styles.editor}>
+                <header className={styles.editorHead}>
+                    <button
+                        type="button"
+                        className={styles.menuToggle}
+                        aria-label="Toggle file list"
+                        onClick={toggleSidebar}
+                    >
+                        <MenuIcon />
+                    </button>
+                    {tabs.length > 0 && activePath !== null &&
+                    <TabBar
+                        tabs={tabs.map(function (tab) {
+                            return { path: tab.path, dirty: tab.dirty };
+                        })}
+                        activePath={activePath}
+                        onSelect={setActive}
+                        onClose={closeTab}
+                    />}
+                </header>
+
+                {loadError !== null && <p className={cx(styles.err, styles.parseError)}>{loadError}</p>}
+
+                {activeTab === null ?
                     (
-                        <p className="empty">No truths.xml or truths-*.xml files in this folder.</p>
+                        <p className={styles.placeholder}>Select a file to edit.</p>
                     ) :
-                    (
-                        <ul>
-                            {files.map(function (name) {
-                                return (
-                                    <li key={name}>
+                    (activeTab.loading ?
+                        (
+                            <p className={styles.placeholder}>Loading...</p>
+                        ) :
+                        (
+                            <>
+                                <div className={styles.toolbar}>
+                                    <div className={styles.toolbarActions}>
                                         <button
                                             type="button"
-                                            className={name === selected ? 'active' : ''}
+                                            className={cx(styles.reload, activeTab.reloading && styles.reloading)}
+                                            aria-label="Reload from disk"
+                                            title="Reload from disk"
+                                            onClick={reloadFile}
+                                            disabled={activeTab.reloading}
+                                        >
+                                            <RefreshIcon />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={styles.save}
+                                            onClick={onSave}
+                                            disabled={activeTab.status.kind === 'saving' || !activeTab.dirty || activeTab.parseError !== null}
+                                        >
+                                            {activeTab.status.kind === 'saving' ?
+                                                <span className={styles.spinner} role="status" aria-label="Saving" /> :
+                                                (
+                                                    <>
+                                                        <SaveIcon />
+                                                        {activeTab.dirty ? 'Save' : 'Saved'}
+                                                    </>
+                                                )}
+                                        </button>
+                                    </div>
+                                    <div className={styles.tabs}>
+                                        {activeTab.innerTab === 'structured' && activeTab.truths.length > 0 &&
+                                        <button
+                                            type="button"
+                                            className={cx(showFilters && styles.active)}
+                                            aria-label="Filter truths by approval status"
+                                            aria-expanded={showFilters}
                                             onClick={function () {
-                                                void openFile(name);
+                                                setShowFilters(function (previous) {
+                                                    return !previous;
+                                                });
                                             }}
                                         >
-                                            {name}
+                                            <span className={styles.filterIconWrap}>
+                                                <FilterIcon />
+                                                {statusFilter.length > 0 && <span className={styles.filterDot} />}
+                                            </span>
+                                            <span className={styles.tabText}>Filter</span>
+                                        </button>}
+                                        <button
+                                            type="button"
+                                            className={cx(activeTab.innerTab === 'structured' && styles.active)}
+                                            onClick={function () {
+                                                setInnerTab(activeTab.path, 'structured');
+                                            }}
+                                        >
+                                            <ListIcon />
+                                            <span className={styles.tabText}>Structured</span>
                                         </button>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
-            </aside>
-
-            <main className="editor">
-                <button
-                    type="button"
-                    className="menu-toggle"
-                    aria-label="Toggle file list"
-                    onClick={function () {
-                        setSidebarOpen(function (open) {
-                            return !open;
-                        });
-                    }}
-                >
-                    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-                        <path
-                            d="M3 5h14M3 10h14M3 15h14"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                        />
-                    </svg>
-                </button>
-                {selected ?
-                    (
-                        <>
-                            <div className="toolbar">
-                                <div className="tabs">
-                                    <button
-                                        type="button"
-                                        className={activeTab === 'structured' ? 'active' : ''}
-                                        onClick={function () {
-                                            setActiveTab('structured');
-                                        }}
-                                    >
-                                        Structured
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={activeTab === 'raw' ? 'active' : ''}
-                                        onClick={function () {
-                                            setActiveTab('raw');
-                                        }}
-                                    >
-                                        Raw
-                                    </button>
+                                        <button
+                                            type="button"
+                                            className={cx(activeTab.innerTab === 'raw' && styles.active)}
+                                            onClick={function () {
+                                                setInnerTab(activeTab.path, 'raw');
+                                            }}
+                                        >
+                                            <CodeIcon />
+                                            <span className={styles.tabText}>Raw</span>
+                                        </button>
+                                    </div>
+                                    {activeTab.status.kind === 'error' && <span className={styles.err}>{activeTab.status.message}</span>}
                                 </div>
-                                <span className="filename">{selected}</span>
-                                <button
-                                    type="button"
-                                    className="save"
-                                    onClick={onSave}
-                                    disabled={status.kind === 'saving' || !dirty || parseError !== null}
-                                >
-                                    {status.kind === 'saving' ?
-                                        <span className="spinner" role="status" aria-label="Saving" /> :
-                                        (dirty ? 'Save' : 'Saved')}
-                                </button>
-                                {status.kind === 'error' && <span className="err">{status.message}</span>}
-                            </div>
 
-                            {parseError !== null &&
-                            <p className="err parse-error">Could not parse XML: {parseError}. Fix the file, then reopen it.</p>}
+                                {activeTab.parseError !== null &&
+                                <p className={cx(styles.err, styles.parseError)}>Could not parse XML: {activeTab.parseError}. Fix the file, then reopen it.</p>}
 
-                            {activeTab === 'structured' && parseError === null ?
-                                (
-                                    <TruthsEditor
-                                        key={selected}
-                                        truths={truths}
-                                        allTitles={allTitles}
-                                        onChange={onTruthsChange}
-                                    />
-                                ) :
-                                (
-                                    <textarea className="raw-view" value={rawXml} readOnly spellCheck={false} />
-                                )}
-                        </>
-                    ) :
-                    (
-                        <p className="placeholder">Select a file to edit.</p>
-                    )}
+                                {activeTab.innerTab === 'structured' && activeTab.parseError === null ?
+                                    (
+                                        <TruthsEditor
+                                            key={`${activeTab.path}:${activeTab.reloadNonce}`}
+                                            truths={activeTab.truths}
+                                            allTitles={allTitles}
+                                            onChange={onTruthsChange}
+                                            showFilters={showFilters}
+                                            statusFilter={statusFilter}
+                                            onStatusFilterChange={setStatusFilter}
+                                        />
+                                    ) :
+                                    (
+                                        <RawXmlView xml={rawXml} />
+                                    )}
+                            </>
+                        ))}
             </main>
         </div>
     );

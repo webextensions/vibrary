@@ -1,0 +1,19 @@
+/* Raw tab: a column holding the wrap toggle above the highlighted code, which fills the remaining height. */
+.raw-pane {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.raw-pane .wrap-toggle {
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #1f2328;
+    cursor: pointer;
+    user-select: none;
+}

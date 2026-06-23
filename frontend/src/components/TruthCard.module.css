@@ -1,0 +1,242 @@
+.truth-card {
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.truth-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.truth-card-title-group {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.truth-card-title {
+    font-weight: 600;
+}
+
+.expand-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: none;
+    background: none;
+    color: #656d76;
+    cursor: pointer;
+}
+
+.expand-toggle svg {
+    transition: transform 0.15s ease;
+}
+
+.expand-toggle[aria-expanded="true"] svg {
+    transform: rotate(90deg);
+}
+
+.truth-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.truth-card .remove,
+.truth-card .edit,
+.truth-card .approve {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.truth-card .remove {
+    color: #cf222e;
+}
+
+.truth-card .edit {
+    color: #0969da;
+}
+
+.truth-card .approve {
+    min-width: 92px;
+    justify-content: center;
+    color: #1f883d;
+}
+
+.truth-card .approve.approved {
+    border-color: #1f883d;
+    background: #dafbe1;
+}
+
+/* Stale approval: content changed since sign-off, prompting a reapprove */
+.truth-card .approve.reapprove {
+    color: #9a6700;
+    border-color: #d4a72c;
+    background: #fff8c5;
+}
+
+/* Shared field layout: review and edit modes use the same label-left rows so toggling does not reflow the card */
+.truth-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.truth-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+    align-items: start;
+}
+
+/* Less-used fields are collapsed by default; expanding the title's disclosure reveals them, boxed like a fieldset.
+   The left indent matches .truth-content so the box and the content text above it share a left edge, past the chevron. */
+.truth-more {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-left: 24px;
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+}
+
+.row-label {
+    padding-top: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #656d76;
+}
+
+.row-content {
+    min-width: 0;
+    font-size: 14px;
+}
+
+.row-content .multiline,
+.truth-content .multiline {
+    display: block;
+    white-space: pre-wrap;
+}
+
+.truth-content {
+    /* Indent to line up with the title text, which the expand-toggle (16px) plus the title-group gap (8px) push over */
+    padding-left: 24px;
+    font-size: 14px;
+}
+
+.title-input {
+    flex: 1;
+    margin-right: 12px;
+    padding: 4px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font: inherit;
+    font-weight: 600;
+}
+
+.chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    background: #f6f8fa;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.muted {
+    color: #656d76;
+}
+
+.truth-card textarea {
+    flex: none;
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+    padding: 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+    /* The title and its action buttons no longer fit on one row; give the title a full-width row and lift the
+       Remove/Edit/Approve actions onto their own row above it, right-aligned, so the card never overflows the screen */
+    .truth-card-head {
+        flex-wrap: wrap;
+    }
+
+    .truth-card-actions {
+        order: -1;
+        margin-left: auto;
+    }
+
+    /* Tight on width: drop the Remove/Edit labels and keep just their icons. */
+    .remove .action-text,
+    .edit .action-text {
+        display: none;
+    }
+
+    .truth-card-title-group {
+        flex-basis: 100%;
+    }
+
+    .title-input {
+        margin-right: 0;
+    }
+
+    /* Reclaim the chevron indent on narrow screens: content and the extra-fields box span the card's full width, so the
+       text block sits symmetrically inside the card padding instead of pushed 24px to the right. */
+    .truth-content {
+        padding-left: 0;
+    }
+
+    .truth-more {
+        margin-left: 0;
+    }
+
+    /* Stack each field's label above its value so the narrow screen's width goes to the content */
+    .truth-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    /* Short-valued rows keep their label beside the value on its own single row */
+    .truth-row-inline {
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .truth-row-inline .row-label {
+        padding-top: 6px;
+    }
+
+    .row-label {
+        padding-top: 0;
+    }
+}

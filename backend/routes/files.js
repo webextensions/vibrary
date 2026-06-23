@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Router } from 'express';
 
 import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
-import { isValidTruthsName, listTruthsFiles } from '../utils/truthsFiles.js';
+import { isTruthsNameIgnored, isValidTruthsName, listTruthsFiles } from '../utils/truthsFiles.js';
 
 const createFilesRouter = function ({ cwd }) {
     const router = Router();
@@ -18,14 +18,34 @@ const createFilesRouter = function ({ cwd }) {
         }
     });
 
+    // The folder this server is serving, so the frontend can scope per-folder client state (e.g. which tabs were open).
+    router.get('/workspace', function (request, response) {
+        return sendSuccessResponse(response, { cwd: path.resolve(cwd) });
+    });
+
+    // Resolve a validated name against cwd and confirm it stays inside cwd. The name validation already blocks
+    // traversal; this is a defense-in-depth guard before any filesystem access. Returns null when the name escapes.
+    const resolveWithinCwd = function (name) {
+        const root = path.resolve(cwd);
+        const target = path.resolve(root, name);
+        return target === root || target.startsWith(root + path.sep) ? target : null;
+    };
+
     router.get('/files/:name', async function (request, response) {
         const { name } = request.params;
         if (!isValidTruthsName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
+        const target = resolveWithinCwd(name);
+        if (target === null) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (await isTruthsNameIgnored(cwd, name)) {
+            return sendErrorResponse(response, 404, 'File not found');
+        }
 
         try {
-            const content = await readFile(path.join(cwd, name), 'utf8');
+            const content = await readFile(target, 'utf8');
             return sendSuccessResponse(response, { name, content });
         } catch (error) {
             if (error.code === 'ENOENT') {
@@ -40,6 +60,13 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidTruthsName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
+        const target = resolveWithinCwd(name);
+        if (target === null) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (await isTruthsNameIgnored(cwd, name)) {
+            return sendErrorResponse(response, 404, 'File not found');
+        }
 
         const { content } = request.body || {};
         if (typeof content !== 'string') {
@@ -47,7 +74,7 @@ const createFilesRouter = function ({ cwd }) {
         }
 
         try {
-            await writeFile(path.join(cwd, name), content, 'utf8');
+            await writeFile(target, content, 'utf8');
             return sendSuccessResponse(response, { name });
         } catch {
             return sendErrorResponse(response, 500, 'Unable to save file');

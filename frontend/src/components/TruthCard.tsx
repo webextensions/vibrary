@@ -1,11 +1,17 @@
+import cx from 'classnames';
 import { type ReactNode, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
-import { AGENTS, type Truth } from '../truthsXml.ts';
+import { confirmDialog } from '../confirmDialog.ts';
+import { AGENTS, hashContent, type Truth } from '../truthsXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
+import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, RemoveIcon } from './Icons.tsx';
+
+import formStyles from './forms.module.css';
+import styles from './TruthCard.module.css';
 
 type Option = { value: string; label: string };
 
@@ -53,23 +59,23 @@ const Row = function (
     { label: string; htmlFor?: string; inline?: boolean; children: ReactNode }
 ) {
     return (
-        <div className={inline ? 'truth-row truth-row-inline' : 'truth-row'}>
+        <div className={cx(styles.truthRow, inline && styles.truthRowInline)}>
             {htmlFor === undefined ?
-                <span className="row-label">{label}</span> :
-                <label className="row-label" htmlFor={htmlFor}>{label}</label>}
-            <div className="row-content">{children}</div>
+                <span className={styles.rowLabel}>{label}</span> :
+                <label className={styles.rowLabel} htmlFor={htmlFor}>{label}</label>}
+            <div className={styles.rowContent}>{children}</div>
         </div>
     );
 };
 
 const Chips = function ({ items }: { items: string[] }) {
     if (items.length === 0) {
-        return <span className="muted">-</span>;
+        return <span className={styles.muted}>-</span>;
     }
     return (
-        <span className="chips">
+        <span className={styles.chips}>
             {items.map(function (item) {
-                return <span key={item} className="chip">{item}</span>;
+                return <span key={item} className={styles.chip}>{item}</span>;
             })}
         </span>
     );
@@ -91,23 +97,57 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
         return title !== value.title;
     }));
 
-    const humanApproved = value.approvedBy.includes('Human');
+    // Hash of the current content; the human approval stores the hash it was signed off against. A stored hash that no
+    // longer matches means the content changed since approval (stale), surfaced as a yellow "Reapprove" button.
+    const currentHash = hashContent(value);
+    const humanHash = value.approved;
+    const isHumanApproved = humanHash !== '';
+    const isHumanStale = isHumanApproved && humanHash !== currentHash;
 
-    // Toggle the current human's approval. Mirrors the "Approved by" Human checkbox, exposed as a one-click action.
-    const toggleApprove = function () {
-        const without = value.approvedBy.filter(function (agent) {
-            return agent !== 'Human';
-        });
-        update({ approvedBy: humanApproved ? without : [...without, 'Human'] });
+    // Three-way action on the human approval. Mirrors the "Approved by" checkbox as a one-click action.
+    // - stale: reapprove against the current content (no confirm - it only re-affirms a sign-off).
+    // - approved and current: remove the approval, confirmed first since it undoes a deliberate sign-off.
+    // - not approved: approve, storing the current content hash.
+    const toggleApprove = async function () {
+        if (isHumanApproved && !isHumanStale) {
+            const confirmed = await confirmDialog(
+                'Remove your approval from this truth?',
+                'Remove approval'
+            );
+            if (!confirmed) {
+                return;
+            }
+            update({ approved: '' });
+            return;
+        }
+        update({ approved: currentHash });
     };
 
+    // Confirm before deleting the whole truth - removal is destructive and not undoable.
+    const confirmRemove = async function () {
+        const confirmed = await confirmDialog(
+            'Remove this truth?',
+            'Remove'
+        );
+        if (confirmed) {
+            onRemove();
+        }
+    };
+
+    const approveClassName = cx(styles.approve, isHumanStale && styles.reapprove, isHumanApproved && !isHumanStale && styles.approved);
+    const approveLabel = isHumanStale ? 'Reapprove' : (isHumanApproved ? 'Approved' : 'Approve');
+    const isApprovedFresh = isHumanApproved && !isHumanStale;
+    const approveTitle = isHumanStale ?
+        `Approved against content ${humanHash}; content is now ${currentHash}. Reapprove to confirm the current text.` :
+        undefined;
+
     return (
-        <fieldset className="truth-card">
-            <div className="truth-card-head">
-                <div className="truth-card-title-group">
+        <fieldset className={styles.truthCard}>
+            <div className={styles.truthCardHead}>
+                <div className={styles.truthCardTitleGroup}>
                     <button
                         type="button"
-                        className="expand-toggle"
+                        className={styles.expandToggle}
                         aria-expanded={expanded}
                         aria-label={expanded ? 'Collapse extra fields' : 'Expand extra fields'}
                         onClick={function () {
@@ -116,21 +156,12 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                             });
                         }}
                     >
-                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                            <path
-                                d="M4 2l4 4-4 4"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                fill="none"
-                            />
-                        </svg>
+                        <ChevronIcon />
                     </button>
                     {isEditing ?
                         (
                             <input
-                                className="title-input"
+                                className={styles.titleInput}
                                 type="text"
                                 value={value.title}
                                 placeholder="hyphenated-title"
@@ -147,40 +178,47 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                             />
                         ) :
                         (
-                            <span className="truth-card-title">{value.title || `(untitled truth #${index + 1})`}</span>
+                            <span className={styles.truthCardTitle}>{value.title || `(untitled truth #${index + 1})`}</span>
                         )}
                 </div>
-                <div className="truth-card-actions">
-                    <button type="button" className="remove" onClick={onRemove}>Remove</button>
-                    <button type="button" className="edit" onClick={onToggleMode}>{isEditing ? 'Done' : 'Edit'}</button>
+                <div className={styles.truthCardActions}>
+                    <button type="button" className={styles.remove} onClick={confirmRemove}>
+                        <RemoveIcon /><span className={styles.actionText}>Remove</span>
+                    </button>
+                    <button type="button" className={styles.edit} onClick={onToggleMode}>
+                        <EditIcon /><span className={styles.actionText}>{isEditing ? 'Done' : 'Edit'}</span>
+                    </button>
                     <button
                         type="button"
-                        className={humanApproved ? 'approve approved' : 'approve'}
+                        className={approveClassName}
+                        title={approveTitle}
                         onClick={toggleApprove}
                     >
-                        {humanApproved ? 'Approved' : 'Approve'}
+                        {isApprovedFresh ? <ApproveIcon /> : <ClickIcon />}{approveLabel}
                     </button>
                 </div>
             </div>
 
-            <div className="truth-fields">
-                <div className="truth-contents">
+            <div className={styles.truthFields}>
+                <div className={styles.truthContent}>
                     {isEditing ?
                         (
                             <textarea
-                                aria-label="Truth contents"
-                                value={value.contents}
+                                id={fieldId('content')}
+                                aria-label="Truth content"
+                                value={value.content}
                                 spellCheck={false}
                                 onChange={function (changeEvent) {
-                                    update({ contents: changeEvent.target.value });
+                                    const next = changeEvent.target.value;
+                                    update({ content: next, contentHash: hashContent({ ...value, content: next }) });
                                 }}
                             />
                         ) :
-                        <span className="multiline">{orDash(value.contents)}</span>}
+                        <span className={styles.multiline}>{orDash(value.content)}</span>}
                 </div>
 
                 {expanded &&
-                <div className="truth-more">
+                <div className={styles.truthMore}>
                     <Row label="Notes" htmlFor={isEditing ? fieldId('notes') : undefined}>
                         {isEditing ?
                             (
@@ -193,7 +231,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                                     }}
                                 />
                             ) :
-                            <span className="multiline">{orDash(value.notes)}</span>}
+                            <span className={styles.multiline}>{orDash(value.notes)}</span>}
                     </Row>
 
                     <Row label="Labels" htmlFor={isEditing ? fieldId('labels') : undefined}>
@@ -234,11 +272,11 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                     <Row label="Created by" inline>
                         {isEditing ?
                             (
-                                <div className="radio-group">
+                                <div className={formStyles.radioGroup}>
                                     {AGENTS.map(function (agent) {
                                         const radioId = fieldId(`created-by-${agent}`);
                                         return (
-                                            <label key={agent} className="radio" htmlFor={radioId}>
+                                            <label key={agent} className={formStyles.radio} htmlFor={radioId}>
                                                 <input
                                                     id={radioId}
                                                     type="radio"
@@ -266,23 +304,24 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                     <Row label="Approved by" inline>
                         <ApprovedBy
                             idPrefix={value.id}
-                            value={value.approvedBy}
+                            value={value.approved}
+                            contentHash={currentHash}
                             onChange={function (next) {
-                                update({ approvedBy: next });
+                                update({ approved: next });
                             }}
                         />
                     </Row>
 
                     <Row label="Created" inline>
-                        <span className="muted" title={value.created}>{formatTimestamp(value.created)}</span>
+                        <span className={styles.muted} title={value.created}>{formatTimestamp(value.created)}</span>
                     </Row>
 
                     <Row label="Updated" inline>
-                        <span className="muted" title={value.lastUpdated}>{formatTimestamp(value.lastUpdated)}</span>
+                        <span className={styles.muted} title={value.lastUpdated}>{formatTimestamp(value.lastUpdated)}</span>
                     </Row>
 
                     <Row label="Updated by" inline>
-                        <span className="muted">{orDash(value.updatedBy)}</span>
+                        <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
                 </div>}
             </div>

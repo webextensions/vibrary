@@ -3,10 +3,9 @@
         <truth>
             <title>globally-installable-npm-package</title>
             <createdBy>AI</createdBy>
-            <approvedBy>
-                <by>Human</by>
-            </approvedBy>
-            <contents>truths is published as an npm package that can be installed globally. It exposes two bin scripts: &quot;truths&quot; (an umbrella CLI built with commander) and &quot;truths-server&quot; (a shortcut that launches the HTTP server).</contents>
+            <approved>18bbfa9e4f1e9</approved>
+            <content>Truths is published as an npm package that can be installed globally. It exposes two bin scripts: &quot;truths&quot; (an umbrella CLI built with commander) and &quot;truths-server&quot; (a shortcut that launches the HTTP server).</content>
+            <contentHash>18bbfa9e4f1e9</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
             </relatesTo>
@@ -22,8 +21,9 @@
         <truth>
             <title>frontend-react-vite</title>
             <createdBy>AI</createdBy>
-            <approvedBy></approvedBy>
-            <contents>The frontend is a React single-page app written in TypeScript and built with Vite. The build output goes to dist/, which the server serves as static assets.</contents>
+            <approved>6541bd413c907</approved>
+            <content>The frontend is a React single-page app written in TypeScript and built with Vite. The build output goes to dist/, which the server serves as static assets.</content>
+            <contentHash>6541bd413c907</contentHash>
             <relatesTo>
                 <ref>truths-stored-as-xml</ref>
             </relatesTo>
@@ -33,16 +33,15 @@
                 <label>frontend</label>
             </labels>
             <created>2026-06-23T09:05:00.000Z</created>
-            <lastUpdated>2026-06-23T03:56:26.444Z</lastUpdated>
+            <lastUpdated>2026-06-23T06:09:24.082Z</lastUpdated>
             <updatedBy>Human</updatedBy>
         </truth>
         <truth>
             <title>backend-express-server</title>
             <createdBy>AI</createdBy>
-            <approvedBy>
-                <by>Human</by>
-            </approvedBy>
-            <contents>The backend is a JavaScript (ESM) Express server. It lists truths.xml / truths-*.xml files in the current folder and exposes a small JSON API to read and save them. It starts on port 3000 and advances to the next free port if busy.</contents>
+            <approved>2b10586f123c1</approved>
+            <content>The backend is a JavaScript (ESM) Express server. It lists truths.xml / truths-*.xml files in the current folder and exposes a small JSON API to read and save them. It starts on port 3000 and advances to the next free port if busy.</content>
+            <contentHash>2b10586f123c1</contentHash>
             <relatesTo>
                 <ref>truths-stored-as-xml</ref>
             </relatesTo>
@@ -58,8 +57,9 @@
         <truth>
             <title>truths-stored-as-xml</title>
             <createdBy>AI</createdBy>
-            <approvedBy></approvedBy>
-            <contents>Each truths file is XML: a root element wrapping a list of truth entries, each with a title, createdBy, approvedBy, contents, relatesTo, notes, and labels. The editor uses fast-xml-parser to round-trip between the XML and the structured form.</contents>
+            <approved></approved>
+            <content>Each truths file is XML: a root element wrapping a list of truth entries, each with a title, createdBy, approved, content, relatesTo, notes, and labels. The editor uses fast-xml-parser to round-trip between the XML and the structured form.</content>
+            <contentHash>3f64c964563bd</contentHash>
             <relatesTo>
                 <ref>frontend-react-vite</ref>
             </relatesTo>
@@ -75,8 +75,9 @@
         <truth>
             <title>linting-with-eslint-config-ironplate</title>
             <createdBy>AI</createdBy>
-            <approvedBy></approvedBy>
-            <contents>Code quality is enforced with ESLint using eslint-config-ironplate: the node.js preset for the backend JavaScript and the react-typescript preset for the frontend TypeScript, scoped by directory.</contents>
+            <approved></approved>
+            <content>Code quality is enforced with ESLint using eslint-config-ironplate: the node.js preset for the backend JavaScript and the react-typescript preset for the frontend TypeScript, scoped by directory.</content>
+            <contentHash>13a23ff7b12a2f</contentHash>
             <relatesTo></relatesTo>
             <notes></notes>
             <labels>

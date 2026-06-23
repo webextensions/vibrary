@@ -1,0 +1,30 @@
+/* Confirm modal rendered by helpmate's alertDialog (a native <dialog>), reused for destructive confirmations. */
+.confirm-dialog {
+    min-width: 280px;
+    max-width: 360px;
+}
+
+.confirm-dialog p {
+    margin: 0 0 16px;
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.confirm-dialog-actions button {
+    padding: 6px 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.confirm-dialog-actions .confirm-ok {
+    border-color: #cf222e;
+    background: #cf222e;
+    color: #fff;
+}

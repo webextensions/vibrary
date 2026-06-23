@@ -11,9 +11,14 @@ Each truth is shown as a card with these controls:
 
 - **Truth title** - text input. On blur it is normalized to a hyphenated form (lowercase, whitespace -> `-`).
 - **Created by** - single-select (`Human` or `AI`), clearable.
-- **Approved by** - two checkboxes (`Human`, `AI`); editable in both review and edit modes. The `AI` box is disabled in
-  the UI - only AI sets its own approval by editing the file.
-- **Contents** - multi-line textarea.
+- **Approved by** - a single `Human` checkbox; editable in both review and edit modes. Approving stores a hash of the
+  current content, so the approval can later be detected as stale (see the Approve button below and
+  [truths-file-format.md](truths-file-format.md)).
+- **Approve button** - the card's top-right one-click action mirrors the checkbox. It reads **Approve** when
+  unapproved, green **Approved** when approved against the current content, and yellow **Reapprove** when the content
+  changed since approval (hover for the hash-mismatch details). Clicking **Reapprove** re-signs against the current
+  text; removing an existing approval is confirmed first.
+- **Content** - multi-line textarea.
 - **Notes** - multi-line textarea.
 - **Labels** - freeform creatable multi-select. Type a label and press Enter to add it; any value is allowed.
 - **Relates to** - searchable multi-select shown at the bottom. Type to filter; options are the titles of all truths

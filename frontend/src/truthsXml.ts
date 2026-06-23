@@ -1,16 +1,34 @@
-import { XMLBuilder, XMLParser, XMLValidator } from 'fast-xml-parser';
+// Runtime lives in the framework-free ./truthsXmlCore.js so it can be reused outside the browser build (for example by
+// scripts/canonicalize-truths.js under plain node). This file is the type layer: it declares Agent/Truth and re-exports
+// the core with precise signatures so all consumers keep full type-checking.
+import {
+    AGENTS as AGENTSImpl,
+    approvalState as approvalStateImpl,
+    countApprovedTruths as countApprovedTruthsImpl,
+    emptyTruth as emptyTruthImpl,
+    hashContent as hashContentImpl,
+    parseTruthsXml as parseTruthsXmlImpl,
+    serializeTruthsXml as serializeTruthsXmlImpl
+} from './truthsXmlCore.js';
 
 type Agent = 'Human' | 'AI';
 
-const AGENTS: Agent[] = ['AI', 'Human'];
+// A truth's sign-off state: never approved, approved on the current content, or approved on content that has since
+// changed (stale).
+type ApprovalState = 'none' | 'current' | 'stale';
 
 type Truth = {
     // Client-only stable identity for React keys; never serialized to XML
     id: string;
     title: string;
     createdBy: Agent | '';
-    approvedBy: Agent[];
-    contents: string;
+    // The short hash of <content> captured when a human approved the truth (see hashContent). Empty when not approved;
+    // a stored hash that no longer matches the current content is a stale approval (the text changed since sign-off).
+    approved: string;
+    content: string;
+    // Short hash of `content`, kept in sync whenever the content changes (see hashContent). Persisted as <contentHash>
+    // and the value stored in `approved` when a human signs off.
+    contentHash: string;
     relatesTo: string[];
     notes: string;
     labels: string[];
@@ -23,143 +41,28 @@ type Truth = {
     updatedBy: Agent | ''
 };
 
-const ARRAY_TAGS = new Set(['truth', 'by', 'ref', 'label']);
+// The JS core is untyped, so its inferred signatures are too wide (for example createdBy: string rather than '' | Agent).
+// Pin each re-export to its precise type here - this file is the single place those types are declared.
+const AGENTS = AGENTSImpl as Agent[];
+const approvalState = approvalStateImpl as (truth: Truth) => ApprovalState;
+const countApprovedTruths = countApprovedTruthsImpl as (truths: Truth[]) => number;
+const emptyTruth = emptyTruthImpl as () => Truth;
+const hashContent = hashContentImpl as (truth: Truth) => string;
+const parseTruthsXml = parseTruthsXmlImpl as (xml: string) => Truth[];
+const serializeTruthsXml = serializeTruthsXmlImpl as (truths: Truth[]) => string;
 
-const parser = new XMLParser({
-    ignoreAttributes: true,
-    parseTagValue: false,
-    trimValues: true,
-    isArray: function (tagName) {
-        return ARRAY_TAGS.has(tagName);
-    }
-});
-
-const builder = new XMLBuilder({
-    format: true,
-    indentBy: ' '.repeat(4),
-    ignoreAttributes: true,
-    suppressEmptyNode: false,
-    processEntities: true
-});
-
-const toText = function (value: unknown): string {
-    if (value === undefined || value === null) {
-        return '';
-    }
-    return String(value);
+export {
+    type Agent,
+    AGENTS,
+    approvalState,
+    type ApprovalState,
+    countApprovedTruths,
+    emptyTruth,
+    hashContent,
+    parseTruthsXml,
+    serializeTruthsXml,
+    type Truth
 };
 
-// fast-xml-parser yields an array for ARRAY_TAGS children when present, undefined when absent
-const toList = function (node: unknown, key: string): string[] {
-    if (!node || typeof node !== 'object') {
-        return [];
-    }
-    const value = (node as Record<string, unknown>)[key];
-    if (!Array.isArray(value)) {
-        return [];
-    }
-    return value
-        .map(function (entry) {
-            return toText(entry);
-        })
-        .filter(function (entry) {
-            return entry !== '';
-        });
-};
-
-const toAgent = function (value: unknown): Agent | '' {
-    const text = toText(value);
-    return (AGENTS as string[]).includes(text) ? (text as Agent) : '';
-};
-
-// crypto.randomUUID is only exposed in secure contexts (https or localhost); when the UI is opened over plain HTTP on a
-// LAN address (for example from a phone), it is undefined. These ids are client-only React keys that are never
-// serialized, so fall back to a non-cryptographic unique-enough id rather than letting the parse throw.
-const randomId = function (): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return crypto.randomUUID();
-    }
-    return `truth-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-};
-
-const nowTimestamp = function (): string {
-    return new Date().toISOString();
-};
-
-const emptyTruth = function (): Truth {
-    const now = nowTimestamp();
-    return {
-        id: randomId(),
-        title: '',
-        createdBy: '',
-        approvedBy: [],
-        contents: '',
-        relatesTo: [],
-        notes: '',
-        labels: [],
-        created: now,
-        lastUpdated: now,
-        updatedBy: 'Human' // a new truth is always added through the human-operated UI
-    };
-};
-
-const parseTruthsXml = function (xml: string): Truth[] {
-    if (xml.trim() === '') {
-        return [];
-    }
-
-    const validation = XMLValidator.validate(xml);
-    if (validation !== true) {
-        throw new Error(validation.err.msg);
-    }
-
-    const document = parser.parse(xml) as Record<string, unknown>;
-    const root = (document.root ?? {}) as Record<string, unknown>;
-    const truthsNode = (root.truths ?? {}) as Record<string, unknown>;
-    const rawTruths = Array.isArray(truthsNode.truth) ? truthsNode.truth : [];
-
-    return rawTruths.map(function (raw: Record<string, unknown>) {
-        return {
-            id: randomId(),
-            title: toText(raw.title),
-            createdBy: toAgent(raw.createdBy),
-            approvedBy: toList(raw.approvedBy, 'by').filter(function (entry): entry is Agent {
-                return (AGENTS as string[]).includes(entry);
-            }),
-            contents: toText(raw.contents),
-            relatesTo: toList(raw.relatesTo, 'ref'),
-            notes: toText(raw.notes),
-            labels: toList(raw.labels, 'label'),
-            created: toText(raw.created),
-            lastUpdated: toText(raw.lastUpdated),
-            updatedBy: toAgent(raw.updatedBy)
-        };
-    });
-};
-
-const serializeTruthsXml = function (truths: Truth[]): string {
-    const document = {
-        root: {
-            truths: {
-                truth: truths.map(function (truth) {
-                    return {
-                        title: truth.title,
-                        createdBy: truth.createdBy,
-                        approvedBy: { by: truth.approvedBy },
-                        contents: truth.contents,
-                        relatesTo: { ref: truth.relatesTo },
-                        notes: truth.notes,
-                        labels: { label: truth.labels },
-                        created: truth.created,
-                        lastUpdated: truth.lastUpdated,
-                        updatedBy: truth.updatedBy
-                    };
-                })
-            }
-        }
-    };
-
-    return `${(builder.build(document) as string).trimEnd()}\n`;
-};
-
-export { type Agent, AGENTS, emptyTruth, nowTimestamp, parseTruthsXml, serializeTruthsXml, type Truth };
+// Pure pass-through (no retyping needed), so re-export it straight from the core.
+export { nowTimestamp } from './truthsXmlCore.js';
