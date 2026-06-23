@@ -26,5 +26,18 @@
             <lastUpdated>2026-06-23T23:21:49.564Z</lastUpdated>
             <updatedBy>Human</updatedBy>
         </truth>
+        <truth>
+            <title>husky-for-git-hooks</title>
+            <createdBy></createdBy>
+            <approved></approved>
+            <content>We use husky for adding some useful git hooks.</content>
+            <contentHash>ba980c0d44584</contentHash>
+            <relatesTo></relatesTo>
+            <notes></notes>
+            <labels></labels>
+            <created>2026-06-23T23:23:31.389Z</created>
+            <lastUpdated>2026-06-23T23:24:14.482Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
+        </truth>
     </truths>
 </root>
