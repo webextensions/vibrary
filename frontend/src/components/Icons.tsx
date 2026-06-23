@@ -1,6 +1,19 @@
 // Shared inline-SVG glyphs. Each inherits its container's `color` via `currentColor`, so a button styling its text color
 // styles the icon to match. Sizes are baked in per icon to match where each is used, keeping call sites attribute-free.
 
+// Sparkles glyph for the "Create with AI" action; a large four-point star with a small companion.
+const AiIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+                d="M6 1.5l1.1 3.4L10.5 6 7.1 7.1 6 10.5 4.9 7.1 1.5 6l3.4-1.1z"
+                fill="currentColor"
+            />
+            <path d="M12 9l.6 1.9L14.5 11.5l-1.9.6L12 14l-.6-1.9L9.5 11.5l1.9-.6z" fill="currentColor" />
+        </svg>
+    );
+};
+
 const MenuIcon = function () {
     return (
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
@@ -182,6 +195,7 @@ const CloseIcon = function () {
 };
 
 export {
+    AiIcon,
     ApproveIcon,
     ChevronIcon,
     ClickIcon,

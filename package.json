@@ -76,6 +76,8 @@
         "node-notifier": "^10.0.1",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
+        "react-draggable": "^4.7.0",
+        "react-responsive": "^10.0.1",
         "react-select": "^5.10.2",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.61.1",

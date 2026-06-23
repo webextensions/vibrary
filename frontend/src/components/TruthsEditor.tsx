@@ -1,12 +1,13 @@
 import cx from 'classnames';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { approvalState, type ApprovalState, emptyTruth, nowTimestamp, type Truth } from '../truthsXml.ts';
 import { useScrollVisibility } from '../useScrollVisibility.ts';
 
-import { PlusIcon } from './Icons.tsx';
+import { AiIcon, PlusIcon } from './Icons.tsx';
+import { ResponsiveDialog } from './ResponsiveDialog.tsx';
 import { TruthCard } from './TruthCard.tsx';
 
 import styles from './TruthsEditor.module.css';
@@ -50,6 +51,34 @@ const TruthsEditor = function ({ truths, allTitles, onChange, showFilters, statu
     // The scrolling list element; the floating add button hides when scrolling down it and reappears when scrolling up.
     const scrollReference = useRef<HTMLDivElement>(null);
     const fabVisible = useScrollVisibility(scrollReference);
+
+    // The "+" button expands into a speed-dial menu offering manual vs AI truth creation; the AI choice opens a dialog.
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [aiDialogOpen, setAiDialogOpen] = useState(false);
+    const speedDialReference = useRef<HTMLDivElement>(null);
+
+    // While the speed-dial menu is open, collapse it on an outside click or Escape so it behaves like a popup.
+    useEffect(function () {
+        if (!menuOpen) {
+            return undefined;
+        }
+        const handlePointerDown = function (event: MouseEvent) {
+            if (!speedDialReference.current?.contains(event.target as Node)) {
+                setMenuOpen(false);
+            }
+        };
+        const handleKeyDown = function (event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+        return function () {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [menuOpen]);
 
     const toggleMode = function (id: string) {
         setEditingIds(function (previous) {
@@ -163,14 +192,63 @@ const TruthsEditor = function ({ truths, allTitles, onChange, showFilters, statu
                 );
             })}
 
-            <button
-                type="button"
-                className={cx(styles.fab, { [styles.fabHidden]: !fabVisible })}
-                aria-label="Add truth"
-                onClick={addTruth}
+            <div
+                ref={speedDialReference}
+                className={cx(styles.speedDial, { [styles.speedDialHidden]: !fabVisible && !menuOpen })}
             >
-                <PlusIcon />
-            </button>
+                {menuOpen &&
+                <div className={styles.speedDialActions}>
+                    <button
+                        type="button"
+                        className={styles.speedDialAction}
+                        onClick={function () {
+                            setMenuOpen(false);
+                            setAiDialogOpen(true);
+                        }}
+                    >
+                        <AiIcon /><span>Create with AI</span>
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.speedDialAction}
+                        onClick={function () {
+                            setMenuOpen(false);
+                            addTruth();
+                        }}
+                    >
+                        <PlusIcon /><span>Create manually</span>
+                    </button>
+                </div>}
+
+                <button
+                    type="button"
+                    className={styles.fab}
+                    aria-label={menuOpen ? 'Close menu' : 'Add truth'}
+                    aria-expanded={menuOpen}
+                    onClick={function () {
+                        setMenuOpen(function (previous) {
+                            return !previous;
+                        });
+                    }}
+                >
+                    <span className={cx(styles.fabIcon, { [styles.fabIconOpen]: menuOpen })}>
+                        <PlusIcon />
+                    </span>
+                </button>
+            </div>
+
+            <ResponsiveDialog
+                open={aiDialogOpen}
+                onClose={function () {
+                    setAiDialogOpen(false);
+                }}
+                title="Create truths with AI"
+                closable
+                draggable
+                noPrimaryButton
+            >
+                <p className={styles.muted}>AI-assisted truth creation is coming soon.</p>
+            </ResponsiveDialog>
         </div>
     );
 };

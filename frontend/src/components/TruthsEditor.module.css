@@ -34,13 +34,61 @@
     color: #656d76;
 }
 
-/* Floating "+" action button, anchored to the viewport's bottom-right. Slides away when the list is scrolled down and
-   returns on scroll up (see .fab-hidden). */
-.fab {
+/* Floating action area, anchored to the viewport's bottom-right. Holds the "+" button and, when expanded, the
+   speed-dial action buttons above it. Slides away when the list is scrolled down and returns on scroll up (see
+   .speed-dial-hidden); stays put while the menu is open. */
+.speed-dial {
     position: fixed;
     bottom: 24px;
     right: 24px;
     z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.speed-dial-hidden {
+    transform: translateY(120px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* The two creation choices, stacked above the "+" button (AI on top, manual below). */
+.speed-dial-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: speed-dial-in 0.18s ease;
+}
+
+.speed-dial-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid #d0d7de;
+    border-radius: 20px;
+    background: #fff;
+    color: #24292f;
+    cursor: pointer;
+    font: inherit;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.speed-dial-action:hover {
+    background: #f3f4f6;
+}
+
+/* PlusIcon (24) and AiIcon (16) ship at different baked sizes; normalize them here so both actions match. */
+.speed-dial-action svg {
+    width: 20px;
+    height: 20px;
+}
+
+.fab {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -52,15 +100,32 @@
     color: #fff;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
 .fab:hover {
     background: #1a7f37;
 }
 
-.fab-hidden {
-    transform: translateY(120px);
-    opacity: 0;
-    pointer-events: none;
+/* Rotate the "+" into an "x" when the menu is open. */
+.fab-icon {
+    display: flex;
+    transition: transform 0.2s ease;
+}
+
+.fab-icon-open {
+    transform: rotate(45deg);
+}
+
+@keyframes speed-dial-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .speed-dial,
+    .speed-dial-actions,
+    .fab-icon {
+        transition: none;
+        animation: none;
+    }
 }
