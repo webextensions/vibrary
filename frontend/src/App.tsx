@@ -1,7 +1,7 @@
 import cx from 'classnames';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile } from './api.ts';
+import { generateTruths, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { RawXmlView } from './components/RawXmlView.tsx';
 import { Sidebar } from './components/Sidebar.tsx';
@@ -200,6 +200,32 @@ const App = function () {
         }
     }, [activeTab, patchTab, markCounted]);
 
+    // Generate truths with the backend AI agent, then refresh the editor from disk. The agent reads the file from disk,
+    // so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile's tab patch).
+    const handleGenerate = useCallback(async function (count: number) {
+        if (activeTab === null || activeTab.parseError !== null) {
+            return;
+        }
+        const path = activeTab.path;
+        if (activeTab.dirty) {
+            await saveFile(path, serializeTruthsXml(activeTab.truths));
+            patchTab(path, { dirty: false, status: { kind: 'idle' } });
+        }
+        const claudeOutput = await generateTruths(path, count);
+        // Surface the agent's raw output for debugging the generation run.
+        console.log(`[truths] claude -p output for ${path}:\n${claudeOutput}`);
+        const content = await getFile(path);
+        patchTab(path, {
+            truths: parseTruthsXml(content),
+            rawFallback: content,
+            parseError: null,
+            dirty: false,
+            status: { kind: 'idle' },
+            reloadNonce: activeTab.reloadNonce + 1
+        });
+        setAllTitles(await loadAllTruthTitles());
+    }, [activeTab, patchTab]);
+
     const onTruthsChange = useCallback(function (next: Truth[]) {
         if (activePath === null) {
             return;
@@ -355,6 +381,7 @@ const App = function () {
                                             truths={activeTab.truths}
                                             allTitles={allTitles}
                                             onChange={onTruthsChange}
+                                            onGenerate={handleGenerate}
                                             showFilters={showFilters}
                                             statusFilter={statusFilter}
                                             onStatusFilterChange={setStatusFilter}

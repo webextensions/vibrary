@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
@@ -18,6 +18,9 @@ type TruthsEditorProperties = {
     truths: Truth[];
     allTitles: string[];
     onChange: (next: Truth[]) => void;
+    // Generates the requested number of truths via the backend AI agent and refreshes the file. Rejects on failure so
+    // the dialog can surface the error.
+    onGenerate: (count: number) => Promise<void>;
     // Whether the status-filter dropdown is open. Toggled by the Filter button in the toolbar (see App.tsx).
     showFilters: boolean;
     // Selected status filters, owned by App so the toolbar's Filter button can show an "active" badge.
@@ -41,7 +44,11 @@ const FILTER_OPTIONS: Option[] = STATE_ORDER.map(function (state) {
     return { value: state, label: STATE_LABELS[state] };
 });
 
-const TruthsEditor = function ({ truths, allTitles, onChange, showFilters, statusFilter, onStatusFilterChange }: TruthsEditorProperties) {
+// Default and bounds for the "how many truths" input; the backend enforces the same upper bound.
+const DEFAULT_GENERATE_COUNT = 3;
+const MAX_GENERATE_COUNT = 50;
+
+const TruthsEditor = function ({ truths, allTitles, onChange, onGenerate, showFilters, statusFilter, onStatusFilterChange }: TruthsEditorProperties) {
     // Ids of truths currently open in edit mode. Existing truths default to review mode; only newly added truths (or
     // ones the user explicitly clicks "Edit" on) appear here.
     const [editingIds, setEditingIds] = useState<Set<string>>(function () {
@@ -55,6 +62,10 @@ const TruthsEditor = function ({ truths, allTitles, onChange, showFilters, statu
     // The "+" button expands into a speed-dial menu offering manual vs AI truth creation; the AI choice opens a dialog.
     const [menuOpen, setMenuOpen] = useState(false);
     const [aiDialogOpen, setAiDialogOpen] = useState(false);
+    // The "Create with AI" form: how many truths to request, whether a run is in flight, and the last run's error.
+    const [generateCount, setGenerateCount] = useState(DEFAULT_GENERATE_COUNT);
+    const [generating, setGenerating] = useState(false);
+    const [generateError, setGenerateError] = useState<string | null>(null);
     const speedDialReference = useRef<HTMLDivElement>(null);
 
     // While the speed-dial menu is open, collapse it on an outside click or Escape so it behaves like a popup.
@@ -122,6 +133,26 @@ const TruthsEditor = function ({ truths, allTitles, onChange, showFilters, statu
                 textarea.focus({ preventScroll: true });
             }
         });
+    };
+
+    const openAiDialog = function () {
+        setGenerateCount(DEFAULT_GENERATE_COUNT);
+        setGenerateError(null);
+        setAiDialogOpen(true);
+    };
+
+    const handleGenerateSubmit = async function (event: FormEvent) {
+        event.preventDefault();
+        setGenerating(true);
+        setGenerateError(null);
+        try {
+            await onGenerate(generateCount);
+            setAiDialogOpen(false);
+        } catch (error) {
+            setGenerateError((error as Error).message);
+        } finally {
+            setGenerating(false);
+        }
     };
 
     // A truth matches if its approval state is among the selected statuses. No selection means everything matches.
@@ -203,7 +234,7 @@ const TruthsEditor = function ({ truths, allTitles, onChange, showFilters, statu
                         className={styles.speedDialAction}
                         onClick={function () {
                             setMenuOpen(false);
-                            setAiDialogOpen(true);
+                            openAiDialog();
                         }}
                     >
                         <AiIcon /><span>Create with AI</span>
@@ -240,14 +271,42 @@ const TruthsEditor = function ({ truths, allTitles, onChange, showFilters, statu
             <ResponsiveDialog
                 open={aiDialogOpen}
                 onClose={function () {
-                    setAiDialogOpen(false);
+                    // A run edits files on disk, so block dismissal until it finishes rather than leaving it orphaned.
+                    if (!generating) {
+                        setAiDialogOpen(false);
+                    }
                 }}
                 title="Create truths with AI"
-                closable
+                closable={generating ? 'disabled' : true}
                 draggable
                 noPrimaryButton
             >
-                <p className={styles.muted}>AI-assisted truth creation is coming soon.</p>
+                <form className={styles.aiForm} onSubmit={handleGenerateSubmit}>
+                    <label className={styles.aiField} htmlFor="ai-truth-count">
+                        Create how many truths:
+                        <input
+                            id="ai-truth-count"
+                            type="number"
+                            min={1}
+                            max={MAX_GENERATE_COUNT}
+                            value={generateCount}
+                            disabled={generating}
+                            onChange={function (changeEvent) {
+                                setGenerateCount(changeEvent.target.valueAsNumber);
+                            }}
+                        />
+                    </label>
+                    {generateError !== null && <p className={styles.aiError}>{generateError}</p>}
+                    <button
+                        type="submit"
+                        className={styles.aiSubmit}
+                        disabled={generating || !Number.isSafeInteger(generateCount) || generateCount < 1 || generateCount > MAX_GENERATE_COUNT}
+                    >
+                        {generating ?
+                            <span className={styles.aiSpinner} role="status" aria-label="Generating" /> :
+                            'Create'}
+                    </button>
+                </form>
             </ResponsiveDialog>
         </div>
     );

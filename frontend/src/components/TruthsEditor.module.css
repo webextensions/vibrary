@@ -116,6 +116,66 @@
     transform: rotate(45deg);
 }
 
+/* The "Create with AI" dialog form: a count field, an optional error line, and the submit button. */
+.ai-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ai-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-field input {
+    width: 80px;
+    padding: 6px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font: inherit;
+}
+
+.ai-error {
+    margin: 0;
+    color: #cf222e;
+}
+
+.ai-submit {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 6px 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #1f883d;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.ai-submit:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.ai-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 @keyframes speed-dial-in {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -124,7 +184,8 @@
 @media (prefers-reduced-motion: reduce) {
     .speed-dial,
     .speed-dial-actions,
-    .fab-icon {
+    .fab-icon,
+    .ai-spinner {
         transition: none;
         animation: none;
     }

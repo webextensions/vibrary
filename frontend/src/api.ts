@@ -36,6 +36,18 @@ const saveFile = async function (name: string, content: string): Promise<void> {
     });
 };
 
+// Runs the backend's headless AI agent to append `count` new truths to the file. Resolves with the CLI's raw stdout
+// (logged to the console for debugging) once the file has been updated on disk; the caller reloads it to pick up the
+// additions.
+const generateTruths = async function (name: string, count: number): Promise<string> {
+    const output = await request<{ name: string; claudeOutput: string }>(`/api/files/${encodeURIComponent(name)}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count })
+    });
+    return output.claudeOutput;
+};
+
 // Loads a single file and tallies its approved/total truth counts, for the at-a-glance overview in the file list.
 const getApprovalCount = async function (name: string): Promise<ApprovalCount> {
     const truths = parseTruthsXml(await getFile(name));
@@ -66,4 +78,4 @@ const loadAllTruthTitles = async function (): Promise<string[]> {
     });
 };
 
-export { type ApprovalCount, getApprovalCount, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile };
+export { type ApprovalCount, generateTruths, getApprovalCount, getFile, getWorkspace, listFiles, loadAllTruthTitles, saveFile };
