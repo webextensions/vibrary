@@ -1,0 +1,91 @@
+<root>
+    <truths>
+        <truth>
+            <title>globally-installable-npm-package</title>
+            <createdBy>AI</createdBy>
+            <approvedBy>
+                <by>Human</by>
+            </approvedBy>
+            <contents>truths is published as an npm package that can be installed globally. It exposes two bin scripts: &quot;truths&quot; (an umbrella CLI built with commander) and &quot;truths-server&quot; (a shortcut that launches the HTTP server).</contents>
+            <relatesTo>
+                <ref>backend-express-server</ref>
+            </relatesTo>
+            <notes>The prebuilt frontend ships inside the package so no build step runs on the user&apos;s machine.</notes>
+            <labels>
+                <label>tech-stack</label>
+                <label>packaging</label>
+            </labels>
+            <created>2026-06-23T09:00:00.000Z</created>
+            <lastUpdated>2026-06-23T09:00:00.000Z</lastUpdated>
+            <updatedBy></updatedBy>
+        </truth>
+        <truth>
+            <title>frontend-react-vite</title>
+            <createdBy>AI</createdBy>
+            <approvedBy></approvedBy>
+            <contents>The frontend is a React single-page app written in TypeScript and built with Vite. The build output goes to dist/, which the server serves as static assets.</contents>
+            <relatesTo>
+                <ref>truths-stored-as-xml</ref>
+            </relatesTo>
+            <notes></notes>
+            <labels>
+                <label>tech-stack</label>
+                <label>frontend</label>
+            </labels>
+            <created>2026-06-23T09:05:00.000Z</created>
+            <lastUpdated>2026-06-23T03:56:26.444Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
+        </truth>
+        <truth>
+            <title>backend-express-server</title>
+            <createdBy>AI</createdBy>
+            <approvedBy>
+                <by>Human</by>
+            </approvedBy>
+            <contents>The backend is a JavaScript (ESM) Express server. It lists truths.xml / truths-*.xml files in the current folder and exposes a small JSON API to read and save them. It starts on port 3000 and advances to the next free port if busy.</contents>
+            <relatesTo>
+                <ref>truths-stored-as-xml</ref>
+            </relatesTo>
+            <notes>Port selection uses the get-port package; the browser is opened automatically on start.</notes>
+            <labels>
+                <label>tech-stack</label>
+                <label>backend</label>
+            </labels>
+            <created>2026-06-23T09:10:00.000Z</created>
+            <lastUpdated>2026-06-23T09:10:00.000Z</lastUpdated>
+            <updatedBy></updatedBy>
+        </truth>
+        <truth>
+            <title>truths-stored-as-xml</title>
+            <createdBy>AI</createdBy>
+            <approvedBy></approvedBy>
+            <contents>Each truths file is XML: a root element wrapping a list of truth entries, each with a title, createdBy, approvedBy, contents, relatesTo, notes, and labels. The editor uses fast-xml-parser to round-trip between the XML and the structured form.</contents>
+            <relatesTo>
+                <ref>frontend-react-vite</ref>
+            </relatesTo>
+            <notes></notes>
+            <labels>
+                <label>tech-stack</label>
+                <label>data-format</label>
+            </labels>
+            <created>2026-06-23T09:15:00.000Z</created>
+            <lastUpdated>2026-06-23T03:56:24.763Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
+        </truth>
+        <truth>
+            <title>linting-with-eslint-config-ironplate</title>
+            <createdBy>AI</createdBy>
+            <approvedBy></approvedBy>
+            <contents>Code quality is enforced with ESLint using eslint-config-ironplate: the node.js preset for the backend JavaScript and the react-typescript preset for the frontend TypeScript, scoped by directory.</contents>
+            <relatesTo></relatesTo>
+            <notes></notes>
+            <labels>
+                <label>tech-stack</label>
+                <label>tooling</label>
+            </labels>
+            <created>2026-06-23T09:20:00.000Z</created>
+            <lastUpdated>2026-06-23T09:20:00.000Z</lastUpdated>
+            <updatedBy></updatedBy>
+        </truth>
+    </truths>
+</root>

@@ -1,0 +1,451 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #1f2328;
+}
+
+.layout {
+    display: flex;
+    height: 100%;
+}
+
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid #d0d7de;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.sidebar h1 {
+    margin: 0 0 16px;
+    font-size: 18px;
+}
+
+.sidebar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar li {
+    margin-bottom: 4px;
+}
+
+.sidebar li button {
+    width: 100%;
+    text-align: left;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+}
+
+.sidebar li button:hover {
+    background: #f3f4f6;
+}
+
+.sidebar li button.active {
+    background: #ddf4ff;
+    border-color: #54aeff;
+}
+
+.empty {
+    color: #656d76;
+    font-size: 14px;
+}
+
+.editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    min-width: 0;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.toolbar .filename {
+    font-weight: 600;
+}
+
+.toolbar button {
+    padding: 6px 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #1f883d;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.toolbar button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* Fixed width so the label switching between Save / Saved / spinner does not resize the button */
+.toolbar .save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.toolbar .err {
+    color: #cf222e;
+}
+
+.editor textarea {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.placeholder {
+    color: #656d76;
+}
+
+.toolbar .tabs {
+    display: flex;
+    gap: 4px;
+    margin-right: auto;
+}
+
+.toolbar .tabs button {
+    background: #f6f8fa;
+    color: #1f2328;
+    border: 1px solid #d0d7de;
+}
+
+.toolbar .tabs button.active {
+    background: #fff;
+    border-color: #54aeff;
+    font-weight: 600;
+}
+
+.parse-error {
+    margin: 0 0 12px;
+}
+
+.truths-editor {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.truth-card {
+    margin: 0;
+    padding: 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.truth-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.truth-card-title-group {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.truth-card-title {
+    font-weight: 600;
+}
+
+.expand-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: none;
+    background: none;
+    color: #656d76;
+    cursor: pointer;
+}
+
+.expand-toggle svg {
+    transition: transform 0.15s ease;
+}
+
+.expand-toggle[aria-expanded="true"] svg {
+    transform: rotate(90deg);
+}
+
+.truth-card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.truth-card .remove,
+.truth-card .edit,
+.truth-card .approve {
+    padding: 4px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.truth-card .remove {
+    color: #cf222e;
+}
+
+.truth-card .edit {
+    color: #0969da;
+}
+
+.truth-card .approve {
+    min-width: 92px;
+    color: #1f883d;
+}
+
+.truth-card .approve.approved {
+    border-color: #1f883d;
+    background: #dafbe1;
+}
+
+/* Shared field layout: review and edit modes use the same label-left rows so toggling does not reflow the card */
+.truth-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.truth-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+    align-items: start;
+}
+
+/* Less-used fields are collapsed by default; expanding the title's disclosure reveals them, boxed like a fieldset */
+.truth-more {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+}
+
+.row-label {
+    padding-top: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #656d76;
+}
+
+.row-content {
+    min-width: 0;
+    font-size: 14px;
+}
+
+.row-content .multiline,
+.truth-contents .multiline {
+    display: block;
+    white-space: pre-wrap;
+}
+
+.truth-contents {
+    font-size: 14px;
+}
+
+.title-input {
+    flex: 1;
+    margin-right: 12px;
+    padding: 4px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font: inherit;
+    font-weight: 600;
+}
+
+.checkbox-group,
+.radio-group {
+    display: flex;
+    gap: 16px;
+    padding: 4px 0;
+}
+
+.checkbox-group .checkbox,
+.radio-group .radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    background: #f6f8fa;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.muted {
+    color: #656d76;
+}
+
+.truth-card textarea {
+    flex: none;
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+    padding: 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.add-truth {
+    align-self: flex-start;
+    margin-bottom: 50px;
+    padding: 6px 14px;
+    border: 1px solid #1f883d;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f883d;
+    cursor: pointer;
+    font: inherit;
+}
+
+/* Hamburger toggle and drawer overlay: hidden on desktop, shown on small screens */
+.menu-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 8px;
+    padding: 0;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    cursor: pointer;
+}
+
+.sidebar-overlay {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .menu-toggle {
+        display: inline-flex;
+    }
+
+    /* The sidebar becomes an off-canvas drawer that slides in when open */
+    .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 20;
+        width: 80%;
+        max-width: 300px;
+        background: #fff;
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+        box-shadow: 0 0 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    .toolbar {
+        flex-wrap: wrap;
+    }
+
+    /* Stack each field's label above its value so the narrow screen's width goes to the contents */
+    .truth-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+
+    /* Short-valued rows keep their label beside the value on its own single row */
+    .truth-row-inline {
+        grid-template-columns: auto 1fr;
+        gap: 12px;
+        align-items: start;
+    }
+
+    .truth-row-inline .row-label {
+        padding-top: 6px;
+    }
+
+    .row-label {
+        padding-top: 0;
+    }
+}
