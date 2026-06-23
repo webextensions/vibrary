@@ -6,6 +6,7 @@ import CreatableSelect from 'react-select/creatable';
 
 import { applyTruth } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
+import { promptDialog } from '../promptDialog.ts';
 import { AGENTS, hashContent, type Truth } from '../truthsXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
@@ -86,20 +87,35 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
     const isEditing = mode === 'edit';
     const [expanded, setExpanded] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [useCustomInstructions, setUseCustomInstructions] = useState(false);
 
     const update = function (patch: Partial<Truth>) {
         onChange({ ...value, ...patch });
     };
 
     // Run the headless agent that makes the codebase conform to this truth. Uses the in-memory value (current edits), so
-    // no save is needed first. The agent's raw stdout is logged to the browser console for debugging.
+    // no save is needed first. The agent's raw stdout is logged to the browser console for debugging. When "Provide
+    // custom one time instructions" is ticked, prompt first and forward the entered text to this single run; cancelling
+    // (or leaving it blank) aborts the apply rather than running without the instructions the user opted to give.
     const handleApply = async function () {
         if (applying) {
             return;
         }
+        let instructions = '';
+        if (useCustomInstructions) {
+            const entered = await promptDialog({
+                message: 'Custom one-time instructions for this run:',
+                placeholder: 'e.g. focus on the backend only, skip tests',
+                confirmLabel: 'Apply this truth'
+            });
+            if (entered === null) {
+                return;
+            }
+            instructions = entered;
+        }
         setApplying(true);
         try {
-            const output = await applyTruth({ title: value.title, content: value.content, notes: value.notes });
+            const output = await applyTruth({ title: value.title, content: value.content, notes: value.notes, instructions });
             console.log(output);
         } catch (error) {
             console.error(error);
@@ -343,15 +359,28 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                         <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
 
-                    <button
-                        type="button"
-                        className={styles.apply}
-                        disabled={applying}
-                        onClick={handleApply}
-                    >
-                        {applying && <span className={styles.spinner} aria-hidden="true" />}
-                        {applying ? 'Applying...' : 'Apply this truth'}
-                    </button>
+                    <div className={styles.applyRow}>
+                        <button
+                            type="button"
+                            className={styles.apply}
+                            disabled={applying}
+                            onClick={handleApply}
+                        >
+                            {applying && <span className={styles.spinner} aria-hidden="true" />}
+                            {applying ? 'Applying...' : 'Apply this truth'}
+                        </button>
+                        <label className={formStyles.checkbox} htmlFor={fieldId('custom-instructions')}>
+                            <input
+                                id={fieldId('custom-instructions')}
+                                type="checkbox"
+                                checked={useCustomInstructions}
+                                onChange={function (changeEvent) {
+                                    setUseCustomInstructions(changeEvent.target.checked);
+                                }}
+                            />
+                            Provide custom one time instructions
+                        </label>
+                    </div>
                 </div>}
             </div>
         </fieldset>

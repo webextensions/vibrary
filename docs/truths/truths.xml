@@ -1,0 +1,17 @@
+<root>
+    <truths>
+        <truth>
+            <title>apply-this-truth-feature-with-custom-one-time-instructions</title>
+            <createdBy></createdBy>
+            <approved>19795c64caa3c1</approved>
+            <content>We have &quot;Apply this truth&quot; button, along with that, we should have a checkbox with message &quot;Provide custom one time instructions&quot;. Its default value should be unchecked. If it is checked, then when the user clicks &quot;Apply this truth&quot; button, then we shall prompt the user to provide custom one time instructions which would also be passed as part of the prompt for &quot;claude -p ...&quot; command which is going to be run.</content>
+            <contentHash>19795c64caa3c1</contentHash>
+            <relatesTo></relatesTo>
+            <notes></notes>
+            <labels></labels>
+            <created>2026-06-23T22:55:03.934Z</created>
+            <lastUpdated>2026-06-23T23:00:44.842Z</lastUpdated>
+            <updatedBy>Human</updatedBy>
+        </truth>
+    </truths>
+</root>

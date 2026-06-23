@@ -65,12 +65,13 @@ const generateTruths = async function (name: string, count: number): Promise<str
 };
 
 // Runs the backend's headless AI agent to make the codebase conform to a single truth, editing files directly. Resolves
-// with the CLI's raw stdout (logged to the console for debugging) once the agent finishes.
-const applyTruth = async function (truth: { title: string; content: string; notes: string }): Promise<string> {
+// with the CLI's raw stdout (logged to the console for debugging) once the agent finishes. `instructions` carries
+// optional custom one-time guidance for this run; it is folded into the agent's prompt when non-empty.
+const applyTruth = async function (truth: { title: string; content: string; notes: string; instructions: string }): Promise<string> {
     const output = await request<{ claudeOutput: string }>('/api/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: truth.title, content: truth.content, notes: truth.notes })
+        body: JSON.stringify({ title: truth.title, content: truth.content, notes: truth.notes, instructions: truth.instructions })
     });
     return output.claudeOutput;
 };

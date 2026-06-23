@@ -90,6 +90,15 @@
     background: #fff8c5;
 }
 
+/* The apply button and its "custom one time instructions" opt-in checkbox sit on one row beneath the expanded fields. */
+.apply-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 2px;
+}
+
 /* Action button beneath the expanded fields: run the headless agent that conforms the codebase to this truth. */
 .truth-card .apply {
     align-self: flex-start;

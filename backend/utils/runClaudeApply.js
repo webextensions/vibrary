@@ -4,8 +4,9 @@ import { spawn } from 'node:child_process';
 const APPLY_TIMEOUT_MS = 10 * 60 * 1000;
 
 // The instruction handed to "claude -p". It makes the codebase conform to a single truth, editing files on disk as
-// needed. The <notes> line is omitted when the truth has none.
-const buildPrompt = function ({ title, content, notes }) {
+// needed. The <notes> line is omitted when the truth has none. `instructions` carries optional custom one-time guidance
+// the user supplied for this run; it is appended as an extra block only when non-empty.
+const buildPrompt = function ({ title, content, notes, instructions }) {
     const lines = [
         'Apply the following truth to this project\'s codebase. Read it, then make any code changes needed so the',
         'project conforms to it. Edit files directly.',
@@ -16,17 +17,20 @@ const buildPrompt = function ({ title, content, notes }) {
     if (notes !== '') {
         lines.push(`Notes: ${notes}`);
     }
+    if (instructions !== '') {
+        lines.push('', 'Additional one-time instructions for this run:', instructions);
+    }
     return lines.join('\n');
 };
 
 // Run the headless agent to make `cwd` conform to the given truth. Resolves with the CLI's raw stdout on a clean exit
 // (the caller forwards it to the browser console for debugging); rejects with a descriptive Error otherwise (missing
 // CLI, non-zero exit, or timeout).
-const applyTruthAsync = function ({ cwd, title, content, notes }) {
+const applyTruthAsync = function ({ cwd, title, content, notes, instructions }) {
     return new Promise(function (resolve, reject) {
         const child = spawn(
             'claude',
-            ['-p', buildPrompt({ title, content, notes }), '--dangerously-skip-permissions'],
+            ['-p', buildPrompt({ title, content, notes, instructions }), '--dangerously-skip-permissions'],
             { cwd, timeout: APPLY_TIMEOUT_MS }
         );
 

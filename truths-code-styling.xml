@@ -1,17 +1,3 @@
 <root>
-    <truths>
-        <truth>
-            <title></title>
-            <createdBy></createdBy>
-            <approved></approved>
-            <content></content>
-            <contentHash>bdcb81aee8d83</contentHash>
-            <relatesTo></relatesTo>
-            <notes></notes>
-            <labels></labels>
-            <created>2026-06-23T05:50:07.922Z</created>
-            <lastUpdated>2026-06-23T05:50:07.922Z</lastUpdated>
-            <updatedBy>Human</updatedBy>
-        </truth>
-    </truths>
+    <truths></truths>
 </root>
