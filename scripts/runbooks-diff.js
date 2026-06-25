@@ -1,5 +1,6 @@
-// git `diff.truths-canon.command` driver, bound to truth files by .gitattributes. git hands us both sides of a diff:
-//   node scripts/truths-diff.js <path> <old-file> <old-hex> <old-mode> <new-file> <new-hex> <new-mode>
+// git `diff.runbooks-canon.command` driver, bound to runbooks files by .gitattributes. git hands us both sides of a
+// diff:
+//   node scripts/runbooks-diff.js <path> <old-file> <old-hex> <old-mode> <new-file> <new-hex> <new-mode>
 // (a side is /dev/null for an add or delete). We decide what to show:
 //   - if the two sides canonicalize (sort everything) to identical text -> a pure reordering -> emit nothing -> git
 //     shows no diff for the file;
@@ -8,7 +9,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-import { canonicalize } from './canonicalize-truths.js';
+import { canonicalize } from './canonicalize-runbooks.js';
 
 const readMaybe = function (file) {
     try {

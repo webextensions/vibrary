@@ -11,14 +11,14 @@ import { TruthsEditor, type Option } from './components/TruthsEditor.tsx';
 import { confirmDialog } from './confirmDialog.ts';
 import { promptDialog } from './promptDialog.ts';
 import { readSessionTabs, writeSessionTabs } from './sessionTabs.ts';
-import { parseTruthsXml, serializeTruthsXml, type Truth } from './truthsXml.ts';
+import { type EntryType, entryTypeFromName, parseRunbooksXml, serializeRunbooksXml, type Truth } from './runbooksXml.ts';
 import { useFileCounts } from './useFileCounts.ts';
 import { useOpenTabs } from './useOpenTabs.ts';
 
 import styles from './App.module.css';
 
 // Persist the desktop collapse choice so it survives reloads. Defaults to expanded when nothing is stored.
-const SIDEBAR_STORAGE_KEY = 'truths:sidebar-collapsed';
+const SIDEBAR_STORAGE_KEY = 'runbooks:sidebar-collapsed';
 
 // Below this width the sidebar is an off-canvas drawer; above it, an inline panel that collapses in place.
 const MOBILE_QUERY = '(max-width: 700px)';
@@ -144,11 +144,12 @@ const App = function () {
     }, [openOrFocus]);
 
     // The sidebar's add button: prompt for a name, create the empty file on the server, then refresh the list and open
-    // it. The name must match the truths naming convention (truths.xml or truths-*.xml); the server validates and
-    // surfaces any problem (bad name, already exists) as the load-error banner.
+    // it. The name must match the runbooks naming convention (<family>.xml or <family>-<name>.xml, where family is
+    // truths/reviews/specs/tasks); the server validates and surfaces any problem (bad name, already exists) as the
+    // load-error banner.
     const handleAddFile = useCallback(async function () {
         const name = await promptDialog({
-            message: 'New file name (truths.xml or truths-<name>.xml):',
+            message: 'New file name (e.g. truths.xml, reviews-<name>.xml, specs.xml, tasks-<name>.xml):',
             placeholder: 'truths-<name>.xml',
             confirmLabel: 'Create'
         });
@@ -193,10 +194,10 @@ const App = function () {
 
     // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
     // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
-    // server validates the truths naming convention, mirroring handleAddFile.
+    // server validates the runbooks naming convention, mirroring handleAddFile.
     const handleNewFile = useCallback(async function (folderPath: string) {
         const name = await promptDialog({
-            message: `New file in "${folderPath}" (truths.xml or truths-<name>.xml):`,
+            message: `New file in "${folderPath}" (e.g. truths.xml, reviews-<name>.xml, specs.xml, tasks-<name>.xml):`,
             placeholder: 'truths-<name>.xml',
             confirmLabel: 'Create'
         });
@@ -235,7 +236,7 @@ const App = function () {
         try {
             const content = await getFile(path);
             patchTab(path, {
-                truths: parseTruthsXml(content),
+                truths: parseRunbooksXml(content),
                 rawFallback: content,
                 parseError: null,
                 dirty: false,
@@ -254,7 +255,7 @@ const App = function () {
         if (activeTab === null) {
             return '';
         }
-        return activeTab.parseError === null ? serializeTruthsXml(activeTab.truths) : activeTab.rawFallback;
+        return activeTab.parseError === null ? serializeRunbooksXml(activeTab.truths) : activeTab.rawFallback;
     }, [activeTab]);
 
     const onSave = useCallback(async function () {
@@ -265,7 +266,7 @@ const App = function () {
         const truths = activeTab.truths;
         patchTab(path, { status: { kind: 'saving' } });
         try {
-            await saveFile(path, serializeTruthsXml(truths));
+            await saveFile(path, serializeRunbooksXml(truths));
             patchTab(path, { status: { kind: 'idle' }, dirty: false });
             markCounted(path, truths);
             setAllTitles(await loadAllTruthTitles());
@@ -274,23 +275,23 @@ const App = function () {
         }
     }, [activeTab, patchTab, markCounted]);
 
-    // Generate truths with the backend AI agent, then refresh the editor from disk. The agent reads the file from disk,
-    // so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile's tab patch).
-    const handleGenerate = useCallback(async function (count: number) {
+    // Generate entries of the chosen type with the backend AI agent, then refresh the editor from disk. The agent reads
+    // the file from disk, so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile).
+    const handleGenerate = useCallback(async function (type: EntryType, count: number) {
         if (activeTab === null || activeTab.parseError !== null) {
             return;
         }
         const path = activeTab.path;
         if (activeTab.dirty) {
-            await saveFile(path, serializeTruthsXml(activeTab.truths));
+            await saveFile(path, serializeRunbooksXml(activeTab.truths));
             patchTab(path, { dirty: false, status: { kind: 'idle' } });
         }
-        const claudeOutput = await generateTruths(path, count);
+        const claudeOutput = await generateTruths(path, type, count);
         // Surface the agent's raw output for debugging the generation run.
-        console.log(`[truths] claude -p output for ${path}:\n${claudeOutput}`);
+        console.log(`[runbooks] claude -p output for ${path}:\n${claudeOutput}`);
         const content = await getFile(path);
         patchTab(path, {
-            truths: parseTruthsXml(content),
+            truths: parseRunbooksXml(content),
             rawFallback: content,
             parseError: null,
             dirty: false,
@@ -455,6 +456,7 @@ const App = function () {
                                     (
                                         <TruthsEditor
                                             key={`${activeTab.path}:${activeTab.reloadNonce}`}
+                                            defaultEntryType={entryTypeFromName(activeTab.path)}
                                             truths={activeTab.truths}
                                             allTitles={allTitles}
                                             onChange={onTruthsChange}

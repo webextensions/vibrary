@@ -1,2 +1,2 @@
-[diff "truths-canon"]
-	command = node scripts/truths-diff.js
+[diff "runbooks-canon"]
+	command = node scripts/runbooks-diff.js

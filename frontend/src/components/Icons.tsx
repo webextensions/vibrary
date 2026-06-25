@@ -1,6 +1,10 @@
 // Shared inline-SVG glyphs. Each inherits its container's `color` via `currentColor`, so a button styling its text color
 // styles the icon to match. Sizes are baked in per icon to match where each is used, keeping call sites attribute-free.
 
+import type { ReactNode } from 'react';
+
+import type { EntryType } from '../runbooksXml.ts';
+
 // Sparkles glyph for the "Create with AI" action; a large four-point star with a small companion.
 const AiIcon = function () {
     return (
@@ -205,6 +209,97 @@ const CloseIcon = function () {
     );
 };
 
+// Lightbulb glyph for the "truth" entry type.
+const TruthIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+                d="M5.5 11a4 4 0 1 1 5 0c-.6.5-.9 1-1 1.7h-3c-.1-.7-.4-1.2-1-1.7z"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinejoin="round"
+                fill="none"
+            />
+            <path d="M6.5 14h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+    );
+};
+
+// Magnifying-glass glyph for the "review" entry type.
+const ReviewIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="7" cy="7" r="4" stroke="currentColor" strokeWidth="1.3" fill="none" />
+            <path d="M10 10l3.5 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+    );
+};
+
+// Clipboard glyph for the "spec" entry type.
+const SpecIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M4 3h8v11H4z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+            <path d="M6 3V2h4v1" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+            <path d="M6.5 7h3M6.5 10h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+    );
+};
+
+// Checked-box glyph for the "task" entry type.
+const TaskIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="2.5" y="2.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3" fill="none" />
+            <path
+                d="M5 8l2 2 4-4.5"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+            />
+        </svg>
+    );
+};
+
+// Sparkle glyph for the "idea" entry type; kept distinct from the truth lightbulb.
+const IdeaIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+                d="M6 2l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinejoin="round"
+                fill="none"
+            />
+            <path
+                d="M12.5 9.5l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinejoin="round"
+                fill="none"
+            />
+        </svg>
+    );
+};
+
+// Maps each entry kind to its glyph; falls back to the truth glyph for an unknown type.
+const TYPE_ICONS: Record<EntryType, () => ReactNode> = {
+    truth: TruthIcon,
+    review: ReviewIcon,
+    spec: SpecIcon,
+    task: TaskIcon,
+    idea: IdeaIcon
+};
+
+// Renders the glyph for an entry's `type`, used to mark each card with its kind.
+const TypeIcon = function ({ type }: { type: EntryType }) {
+    const Glyph = TYPE_ICONS[type] ?? TruthIcon;
+    return <Glyph />;
+};
+
 export {
     AiIcon,
     ApproveIcon,
@@ -220,5 +315,6 @@ export {
     PlusIcon,
     RefreshIcon,
     RemoveIcon,
-    SaveIcon
+    SaveIcon,
+    TypeIcon
 };

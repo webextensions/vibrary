@@ -7,10 +7,10 @@ import CreatableSelect from 'react-select/creatable';
 import { applyTruth, populateTitle } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { promptDialog } from '../promptDialog.ts';
-import { AGENTS, hashContent, type Truth } from '../truthsXml.ts';
+import { AGENTS, hashContent, type Truth } from '../runbooksXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
-import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, RemoveIcon } from './Icons.tsx';
+import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, RemoveIcon, TypeIcon } from './Icons.tsx';
 
 import formStyles from './forms.module.css';
 import styles from './TruthCard.module.css';
@@ -26,7 +26,9 @@ type TruthCardProperties = {
     allTitles: string[];
     onChange: (next: Truth) => void;
     onToggleMode: () => void;
-    onRemove: () => void
+    onRemove: () => void;
+    selected: boolean;
+    onToggleSelect: () => void
 };
 
 const toOptions = function (values: string[]): Option[] {
@@ -83,7 +85,7 @@ const Chips = function ({ items }: { items: string[] }) {
     );
 };
 
-const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleMode, onRemove }: TruthCardProperties) {
+const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleMode, onRemove, selected, onToggleSelect }: TruthCardProperties) {
     const isEditing = mode === 'edit';
     const [expanded, setExpanded] = useState(false);
     const [applying, setApplying] = useState(false);
@@ -159,7 +161,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
     const isHumanApproved = humanHash !== '';
     const isHumanStale = isHumanApproved && humanHash !== currentHash;
 
-    // Three-way action on the human approval. Mirrors the "Approved by" checkbox as a one-click action.
+    // Three-way action on the human approval. Mirrors the "Approved" Yes/No control as a one-click action.
     // - stale: reapprove against the current content (no confirm - it only re-affirms a sign-off).
     // - approved and current: remove the approval, confirmed first since it undoes a deliberate sign-off.
     // - not approved: approve, storing the current content hash.
@@ -199,6 +201,13 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
     return (
         <fieldset className={styles.truthCard}>
             <div className={styles.truthCardHead}>
+                <input
+                    type="checkbox"
+                    className={styles.selectCheckbox}
+                    checked={selected}
+                    aria-label="Select entry"
+                    onChange={onToggleSelect}
+                />
                 <div className={styles.truthCardTitleGroup}>
                     <button
                         type="button"
@@ -213,6 +222,9 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                     >
                         <ChevronIcon />
                     </button>
+                    <span className={styles.typeIcon} title={value.type}>
+                        <TypeIcon type={value.type} />
+                    </span>
                     {isEditing ?
                         (
                             <>
@@ -368,11 +380,12 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                             <span>{orDash(value.createdBy)}</span>}
                     </Row>
 
-                    <Row label="Approved by" inline>
+                    <Row label="Approved" inline>
                         <ApprovedBy
                             idPrefix={value.id}
                             value={value.approved}
                             contentHash={currentHash}
+                            isEditing={isEditing}
                             onChange={function (next) {
                                 update({ approved: next });
                             }}
@@ -384,13 +397,14 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                     </Row>
 
                     <Row label="Updated" inline>
-                        <span className={styles.muted} title={value.lastUpdated}>{formatTimestamp(value.lastUpdated)}</span>
+                        <span className={styles.muted} title={value.updated}>{formatTimestamp(value.updated)}</span>
                     </Row>
 
                     <Row label="Updated by" inline>
                         <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
 
+                    {value.type === 'truth' &&
                     <div className={styles.applyRow}>
                         <button
                             type="button"
@@ -412,7 +426,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                             />
                             Provide custom one time instructions
                         </label>
-                    </div>
+                    </div>}
                 </div>}
             </div>
         </fieldset>

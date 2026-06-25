@@ -1,7 +1,7 @@
-// One-time, per-clone bootstrap for the truth-XML diff driver. git will not let a repo commit the command a diff driver
-// runs (cloning would execute it), so the command lives in the committed .gitconfig fragment and each clone only needs
-// to include that fragment. This wires `include.path = ../.gitconfig` into the local .git/config so `.gitattributes`'
-// `diff=truths-canon` resolves to `node scripts/canonicalize-truths.js`.
+// One-time, per-clone bootstrap for the runbooks-XML diff driver. git will not let a repo commit the command a diff
+// driver runs (cloning would execute it), so the command lives in the committed .gitconfig fragment and each clone only
+// needs to include that fragment. This wires `include.path = ../.gitconfig` into the local .git/config so
+// `.gitattributes`' `diff=runbooks-canon` resolves to `node scripts/runbooks-diff.js`.
 //
 // Run automatically via the `prepare` npm script. Guarded to a real checkout of this repo: when the package is
 // installed as a dependency from the registry there is no .git here, so this is a no-op.
@@ -34,7 +34,7 @@ const main = function () {
     }
 
     git(['config', '--local', '--add', 'include.path', includeValue]);
-    console.log(`Wired git diff for truth XML files via include.path ${includeValue}.`);
+    console.log(`Wired git diff for runbooks XML files via include.path ${includeValue}.`);
 };
 
 main();

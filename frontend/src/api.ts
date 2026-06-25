@@ -1,4 +1,4 @@
-import { countApprovedTruths, parseTruthsXml } from './truthsXml.ts';
+import { countApprovedTruths, type EntryType, parseRunbooksXml } from './runbooksXml.ts';
 
 type ApprovalCount = { approved: number; total: number };
 
@@ -55,11 +55,11 @@ const deleteFile = async function (name: string): Promise<void> {
 // Runs the backend's headless AI agent to append `count` new truths to the file. Resolves with the CLI's raw stdout
 // (logged to the console for debugging) once the file has been updated on disk; the caller reloads it to pick up the
 // additions.
-const generateTruths = async function (name: string, count: number): Promise<string> {
+const generateTruths = async function (name: string, type: EntryType, count: number): Promise<string> {
     const output = await request<{ name: string; claudeOutput: string }>(`/api/files/${encodeURIComponent(name)}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ count })
+        body: JSON.stringify({ type, count })
     });
     return output.claudeOutput;
 };
@@ -72,6 +72,17 @@ const applyTruth = async function (truth: { title: string; content: string; note
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: truth.title, content: truth.content, notes: truth.notes, instructions: truth.instructions })
+    });
+    return output.claudeOutput;
+};
+
+// Runs the backend's headless AI agent to make the codebase conform to several selected truths in a single run, editing
+// files directly. Resolves with the CLI's raw stdout (logged to the console for debugging) once the agent finishes.
+const applyTruths = async function (entries: { title: string; content: string; notes: string }[]): Promise<string> {
+    const output = await request<{ claudeOutput: string }>('/api/apply-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries })
     });
     return output.claudeOutput;
 };
@@ -89,11 +100,11 @@ const populateTitle = async function (content: string): Promise<string> {
 
 // Loads a single file and tallies its approved/total truth counts, for the at-a-glance overview in the file list.
 const getApprovalCount = async function (name: string): Promise<ApprovalCount> {
-    const truths = parseTruthsXml(await getFile(name));
-    return { approved: countApprovedTruths(truths), total: truths.length };
+    const entries = parseRunbooksXml(await getFile(name));
+    return { approved: countApprovedTruths(entries), total: entries.length };
 };
 
-// Collects every truth title across all truths*.xml files in the folder, for the "Relates to" option list. Files that
+// Collects every entry title across all runbooks files in the folder, for the "Relates to" option list. Files that
 // fail to parse are skipped so one bad file does not break the option list.
 const loadAllTruthTitles = async function (): Promise<string[]> {
     const files = await listFiles();
@@ -102,7 +113,7 @@ const loadAllTruthTitles = async function (): Promise<string[]> {
     await Promise.all(files.map(async function (name) {
         try {
             const content = await getFile(name);
-            for (const truth of parseTruthsXml(content)) {
+            for (const truth of parseRunbooksXml(content)) {
                 if (truth.title !== '') {
                     titles.add(truth.title);
                 }
@@ -117,4 +128,4 @@ const loadAllTruthTitles = async function (): Promise<string[]> {
     });
 };
 
-export { applyTruth, type ApprovalCount, createFile, deleteFile, generateTruths, getApprovalCount, getFile, getWorkspace, listFiles, loadAllTruthTitles, populateTitle, saveFile };
+export { applyTruth, applyTruths, type ApprovalCount, createFile, deleteFile, generateTruths, getApprovalCount, getFile, getWorkspace, listFiles, loadAllTruthTitles, populateTitle, saveFile };

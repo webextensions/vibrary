@@ -1,0 +1,64 @@
+<root>
+    <metadata>
+        <type>reviews</type>
+    </metadata>
+    <entries>
+        <entry type="review">
+            <title>content-hash-is-a-change-detector-not-security</title>
+            <createdBy>AI</createdBy>
+            <approved></approved>
+            <content>The per-entry contentHash is a cyrb53 pure-JS hash of the content, chosen on purpose over a real digest. crypto.subtle.digest is async and unavailable over plain HTTP on a LAN address (the phone case), and Node's crypto.createHash does not exist in the browser, so neither standard option works across both runtimes. cyrb53 is deterministic and identical under node and the browser, so the app, scripts, and migration all agree. It is only a content-change detector backing the stale-approval check (approved holds the hash captured at sign-off), never a security primitive. parseRunbooksXml also recomputes it from content on load, so a hand-edited or empty contentHash is silently corrected on the next save.</content>
+            <contentHash></contentHash>
+            <relatesTo>
+                <ref>backend-imports-the-frontend-xml-core</ref>
+            </relatesTo>
+            <notes>See frontend/src/runbooksXmlCore.js hashContent (~line 81) and the recompute inside parseRunbooksXml (~line 164).</notes>
+            <labels>
+                <label>hashing</label>
+                <label>isomorphic</label>
+                <label>approval</label>
+            </labels>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
+            <updatedBy>AI</updatedBy>
+        </entry>
+        <entry type="review">
+            <title>file-name-validation-blocks-path-traversal</title>
+            <createdBy>AI</createdBy>
+            <approved></approved>
+            <content>A runbooks file name may be a nested path like "docs/reviews.xml", but every route guards it twice: isValidRunbooksName requires the basename to match the family regex and each leading segment to match SEGMENT_REGEX (which excludes path separators and rejects "." and ".."), and resolveWithinCwd then resolves the name against cwd and confirms the result stays inside cwd as defense-in-depth. Beyond traversal, the create route writes with the 'wx' flag so adding a file is create-only and never overwrites, and an .runbooksignore match is rejected before any filesystem access.</content>
+            <contentHash></contentHash>
+            <relatesTo>
+                <ref>backend-imports-the-frontend-xml-core</ref>
+            </relatesTo>
+            <notes>See backend/utils/runbooksFiles.js (regexes ~line 13) and backend/routes/files.js resolveWithinCwd (~line 35) plus the 'wx' write at ~line 59.</notes>
+            <labels>
+                <label>security</label>
+                <label>backend</label>
+                <label>validation</label>
+            </labels>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
+            <updatedBy>AI</updatedBy>
+        </entry>
+        <entry type="review">
+            <title>backend-imports-the-frontend-xml-core</title>
+            <createdBy>AI</createdBy>
+            <approved></approved>
+            <content>The Express backend imports ENTRY_TYPES directly from frontend/src/runbooksXmlCore.js to validate the generate route's "type" field, so the list of entry kinds (truth/review/spec/task) has a single source of truth shared across both tiers rather than being duplicated. This works because runbooksXmlCore.js is plain ESM with no DOM or React dependency - the same module is consumed by the browser editor and by Node on the server.</content>
+            <contentHash></contentHash>
+            <relatesTo>
+                <ref>file-name-validation-blocks-path-traversal</ref>
+            </relatesTo>
+            <notes>See the import in backend/routes/files.js (~line 6) and the ENTRY_TYPES export in frontend/src/runbooksXmlCore.js.</notes>
+            <labels>
+                <label>architecture</label>
+                <label>isomorphic</label>
+                <label>backend</label>
+            </labels>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
+            <updatedBy>AI</updatedBy>
+        </entry>
+    </entries>
+</root>

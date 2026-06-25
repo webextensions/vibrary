@@ -1,9 +1,128 @@
 .truths-editor {
     flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* The scrolling list region. Holds the filter row and the entry cards; the footer below it stays put. */
+.scroll-area {
+    flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+/* Fixed bar below the scrolling list: entry count on the left and the "Actions" button. Left-aligned so the
+   bottom-right floating "+" button does not cover it. position: relative anchors the popup above the button. */
+.footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0 0;
+    border-top: 1px solid #d0d7de;
+    background: #fff;
+}
+
+.footer-count {
+    font-size: 13px;
+    color: #656d76;
+}
+
+/* Plain text-link buttons in the footer for bulk selection, sitting just after the entry count. */
+.select-link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #0969da;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+}
+
+.select-link:hover {
+    text-decoration: underline;
+}
+
+.select-link:disabled {
+    color: #8c959f;
+    cursor: default;
+    text-decoration: none;
+}
+
+.actions-anchor {
+    position: relative;
+}
+
+.actions-button {
+    padding: 6px 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #24292f;
+    cursor: pointer;
+    font: inherit;
+}
+
+.actions-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* The Actions popup, anchored just above the button. Lists the selected entries and the "Apply changes" action. */
+.actions-popup {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 240px;
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.actions-header {
+    margin: 0;
+    font-weight: 600;
+}
+
+.actions-title-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 0;
+    padding-left: 20px;
+}
+
+/* Bulk-operation buttons stacked in the Operations popup. Delete carries the danger variant. */
+.operation-button {
+    padding: 6px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #24292f;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.operation-button:hover {
+    background: #f3f4f6;
+}
+
+.operation-danger {
+    color: #cf222e;
+    border-color: #f1aeb5;
+}
+
+.operation-danger:hover {
+    background: #ffebe9;
 }
 
 /* The status-filter controls, shown in their own row below the toolbar. Right-aligned to sit under the Filter toggle. */

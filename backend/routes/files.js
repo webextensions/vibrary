@@ -3,11 +3,13 @@ import path from 'node:path';
 
 import { Router } from 'express';
 
+import { ENTRY_TYPES } from '../../frontend/src/runbooksXmlCore.js';
+import { isRunbooksNameIgnored, isValidRunbooksName, listRunbooksFiles } from '../utils/runbooksFiles.js';
 import { applyTruthAsync } from '../utils/runClaudeApply.js';
+import { applyTruthsAsync } from '../utils/runClaudeApplyBatch.js';
 import { generateTruthsAsync } from '../utils/runClaudeGenerate.js';
 import { generateTitleAsync } from '../utils/runClaudeTitle.js';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
-import { isTruthsNameIgnored, isValidTruthsName, listTruthsFiles } from '../utils/truthsFiles.js';
 
 // Upper bound on truths generated in one request, guarding against a runaway agent run.
 const MAX_GENERATE_COUNT = 50;
@@ -17,7 +19,7 @@ const createFilesRouter = function ({ cwd }) {
 
     router.get('/files', async function (request, response) {
         try {
-            const files = await listTruthsFiles(cwd);
+            const files = await listRunbooksFiles(cwd);
             return sendSuccessResponse(response, { files });
         } catch {
             return sendErrorResponse(response, 500, 'Unable to list files');
@@ -42,15 +44,15 @@ const createFilesRouter = function ({ cwd }) {
     // create-only, so adding a file never silently overwrites an existing one.
     router.post('/files', async function (request, response) {
         const { name } = request.body || {};
-        if (!isValidTruthsName(name)) {
+        if (!isValidRunbooksName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (await isTruthsNameIgnored(cwd, name)) {
-            return sendErrorResponse(response, 400, 'File name is ignored by .truthsignore');
+        if (await isRunbooksNameIgnored(cwd, name)) {
+            return sendErrorResponse(response, 400, 'File name is ignored by .runbooksignore');
         }
 
         try {
@@ -67,14 +69,14 @@ const createFilesRouter = function ({ cwd }) {
 
     router.get('/files/:name', async function (request, response) {
         const { name } = request.params;
-        if (!isValidTruthsName(name)) {
+        if (!isValidRunbooksName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (await isTruthsNameIgnored(cwd, name)) {
+        if (await isRunbooksNameIgnored(cwd, name)) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
@@ -91,14 +93,14 @@ const createFilesRouter = function ({ cwd }) {
 
     router.put('/files/:name', async function (request, response) {
         const { name } = request.params;
-        if (!isValidTruthsName(name)) {
+        if (!isValidRunbooksName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (await isTruthsNameIgnored(cwd, name)) {
+        if (await isRunbooksNameIgnored(cwd, name)) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
@@ -119,14 +121,14 @@ const createFilesRouter = function ({ cwd }) {
     // no on-disk entity (they are derived from file paths), so the frontend deletes a folder by deleting each file in it.
     router.delete('/files/:name', async function (request, response) {
         const { name } = request.params;
-        if (!isValidTruthsName(name)) {
+        if (!isValidRunbooksName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (await isTruthsNameIgnored(cwd, name)) {
+        if (await isRunbooksNameIgnored(cwd, name)) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
@@ -141,27 +143,30 @@ const createFilesRouter = function ({ cwd }) {
         }
     });
 
-    // Run a headless "claude -p" agent that reads the codebase and existing truths, then appends new ones to the file.
+    // Run a headless "claude -p" agent that reads the codebase and existing entries, then appends new ones to the file.
     router.post('/files/:name/generate', async function (request, response) {
         const { name } = request.params;
-        if (!isValidTruthsName(name)) {
+        if (!isValidRunbooksName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (await isTruthsNameIgnored(cwd, name)) {
+        if (await isRunbooksNameIgnored(cwd, name)) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
-        const { count } = request.body || {};
+        const { type, count } = request.body || {};
+        if (!ENTRY_TYPES.includes(type)) {
+            return sendErrorResponse(response, 400, `Expected "type" to be one of: ${ENTRY_TYPES.join(', ')}`);
+        }
         if (!Number.isSafeInteger(count) || count < 1 || count > MAX_GENERATE_COUNT) {
             return sendErrorResponse(response, 400, `Expected an integer "count" between 1 and ${MAX_GENERATE_COUNT}`);
         }
 
         try {
-            const claudeOutput = await generateTruthsAsync({ cwd, name, count });
+            const claudeOutput = await generateTruthsAsync({ cwd, name, type, count });
             return sendSuccessResponse(response, { name, claudeOutput });
         } catch (error) {
             return sendErrorResponse(response, 500, error.message);
@@ -183,6 +188,38 @@ const createFilesRouter = function ({ cwd }) {
                 content,
                 notes: typeof notes === 'string' ? notes : '',
                 instructions: typeof instructions === 'string' ? instructions : ''
+            });
+            return sendSuccessResponse(response, { claudeOutput });
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    // Run a headless "claude -p" agent that makes the codebase conform to several selected truths in a single run.
+    // Like /apply, project-scoped: the entries' text is sent in the body and acted on against the whole project (cwd).
+    router.post('/apply-batch', async function (request, response) {
+        const { entries } = request.body || {};
+        if (!Array.isArray(entries) || entries.length === 0) {
+            return sendErrorResponse(response, 400, 'Expected a non-empty "entries" array');
+        }
+        const valid = entries.every(function (entry) {
+            return entry !== null && typeof entry === 'object' &&
+            typeof entry.title === 'string' && typeof entry.content === 'string' && entry.content.trim() !== '';
+        });
+        if (!valid) {
+            return sendErrorResponse(response, 400, 'Each entry needs a string "title" and a non-empty "content"');
+        }
+
+        try {
+            const claudeOutput = await applyTruthsAsync({
+                cwd,
+                entries: entries.map(function (entry) {
+                    return {
+                        title: entry.title,
+                        content: entry.content,
+                        notes: typeof entry.notes === 'string' ? entry.notes : ''
+                    };
+                })
             });
             return sendSuccessResponse(response, { claudeOutput });
         } catch (error) {

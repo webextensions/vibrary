@@ -13,7 +13,7 @@ const startServer = async function ({ port = 3000, open: shouldOpen = true, cwd 
         const server = app.listen(resolvedPort, function () {
             const url = `http://localhost:${resolvedPort}/`;
 
-            console.log(`truths-server running at ${url} (serving ${cwd})`);
+            console.log(`runbooks-server running at ${url} (serving ${cwd})`);
 
             if (shouldOpen) {
                 open(url);

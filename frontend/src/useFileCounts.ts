@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getApprovalCount } from './api.ts';
-import { countApprovedTruths, type Truth } from './truthsXml.ts';
+import { countApprovedTruths, type Truth } from './runbooksXml.ts';
 
 // Per-file approved/total tally shown in the sidebar; loaded lazily, so each file is 'loading' until its count arrives.
 type FileCount = { kind: 'loading' } | { kind: 'ready'; approved: number; total: number } | { kind: 'error' };

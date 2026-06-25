@@ -49,7 +49,7 @@ export default [
         // or the plain helper modules, which intentionally export non-component values
         files: [
             'frontend/src/api.ts',
-            'frontend/src/truthsXml.ts',
+            'frontend/src/runbooksXml.ts',
             'frontend/vite.config.ts'
         ],
         rules: {

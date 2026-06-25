@@ -1,6 +1,6 @@
 <root>
-    <truths>
-        <truth>
+    <entries>
+        <entry type="truth">
             <title>apply-this-truth-feature-with-custom-one-time-instructions</title>
             <createdBy></createdBy>
             <approved>19795c64caa3c1</approved>
@@ -9,11 +9,11 @@
             <relatesTo></relatesTo>
             <notes></notes>
             <labels></labels>
-            <created>2026-06-23T22:55:03.934Z</created>
-            <lastUpdated>2026-06-23T23:00:44.842Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
-        </truth>
-        <truth>
+        </entry>
+        <entry type="truth">
             <title>populate-button-for-hyphenated-title-in-edit-mode</title>
             <createdBy></createdBy>
             <approved>19b4675f89cf76</approved>
@@ -22,11 +22,11 @@
             <relatesTo></relatesTo>
             <notes></notes>
             <labels></labels>
-            <created>2026-06-23T23:09:45.205Z</created>
-            <lastUpdated>2026-06-23T23:21:49.564Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
-        </truth>
-        <truth>
+        </entry>
+        <entry type="truth">
             <title>husky-for-git-hooks</title>
             <createdBy></createdBy>
             <approved></approved>
@@ -35,9 +35,9 @@
             <relatesTo></relatesTo>
             <notes></notes>
             <labels></labels>
-            <created>2026-06-23T23:23:31.389Z</created>
-            <lastUpdated>2026-06-23T23:24:14.482Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
-        </truth>
-    </truths>
+        </entry>
+    </entries>
 </root>

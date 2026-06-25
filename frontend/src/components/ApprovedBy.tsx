@@ -4,25 +4,43 @@ type ApprovedByProperties = {
     idPrefix: string;
     value: string;
     contentHash: string;
+    isEditing: boolean;
     onChange: (next: string) => void
 };
 
-// The editable "Approved by" checkbox. Shared by the edit form and the review card, since approval is always togglable
-// - even while a truth is otherwise in review mode. Checking it stores the current content hash; unchecking clears it.
-const ApprovedBy = function ({ idPrefix, value, contentHash, onChange }: ApprovedByProperties) {
-    const checkboxId = `${idPrefix}-approved-by-human`;
+// The "Approved" Yes/No control. In edit mode it is a togglable radio pair (picking "Yes" stores the current content
+// hash; "No" clears it); in review mode it just reads "Yes" or "No".
+const ApprovedBy = function ({ idPrefix, value, contentHash, isEditing, onChange }: ApprovedByProperties) {
+    const groupName = `${idPrefix}-approved`;
+    const isApproved = value !== '';
+    if (!isEditing) {
+        return <span>{isApproved ? 'Yes' : 'No'}</span>;
+    }
     return (
-        <div className={formStyles.checkboxGroup}>
-            <label className={formStyles.checkbox} htmlFor={checkboxId}>
+        <div className={formStyles.radioGroup}>
+            <label className={formStyles.radio} htmlFor={`${groupName}-yes`}>
                 <input
-                    id={checkboxId}
-                    type="checkbox"
-                    checked={value !== ''}
-                    onChange={function (changeEvent) {
-                        onChange(changeEvent.target.checked ? contentHash : '');
+                    id={`${groupName}-yes`}
+                    type="radio"
+                    name={groupName}
+                    checked={isApproved}
+                    onChange={function () {
+                        onChange(contentHash);
                     }}
                 />
-                Human
+                Yes
+            </label>
+            <label className={formStyles.radio} htmlFor={`${groupName}-no`}>
+                <input
+                    id={`${groupName}-no`}
+                    type="radio"
+                    name={groupName}
+                    checked={!isApproved}
+                    onChange={function () {
+                        onChange('');
+                    }}
+                />
+                No
             </label>
         </div>
     );

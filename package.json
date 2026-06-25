@@ -1,11 +1,11 @@
 {
-    "name": "truths",
+    "name": "runbooks",
     "version": "1.0.0",
-    "description": "Browse and edit truths.xml / truths-*.xml files in the current folder through a small web UI",
+    "description": "Browse and edit runbooks (truths / reviews / specs / tasks) XML files in the current folder through a small web UI",
     "type": "module",
     "bin": {
-        "truths": "./bin/truths.js",
-        "truths-server": "./bin/truths-server.js"
+        "runbooks": "./bin/runbooks.js",
+        "runbooks-server": "./bin/runbooks-server.js"
     },
     "files": [
         "bin",
@@ -18,7 +18,7 @@
     "scripts": {
         "build": "vite build --config frontend/vite.config.ts",
         "dev": "vite --config frontend/vite.config.ts",
-        "dev:server": "node --watch bin/truths-server.js",
+        "dev:server": "node --watch bin/runbooks-server.js",
         "lint": "eslint .",
         "prepare": "husky || true && node scripts/setup-git-textconv.js",
         "prepack": "npm run build",
@@ -32,15 +32,15 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/webextensions/truths.git"
+        "url": "git+https://github.com/webextensions/runbooks.git"
     },
     "keywords": [],
     "author": "",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/webextensions/truths/issues"
+        "url": "https://github.com/webextensions/runbooks/issues"
     },
-    "homepage": "https://github.com/webextensions/truths#readme",
+    "homepage": "https://github.com/webextensions/runbooks#readme",
     "dependencies": {
         "commander": "^15.0.0",
         "compression": "^1.8.1",

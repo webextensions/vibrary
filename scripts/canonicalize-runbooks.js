@@ -1,14 +1,14 @@
-// Canonicalizes truth XML into one deterministic, fully order-insensitive form: reordering fields within a <truth>,
-// reordering whole <truth> entries, or reordering items inside <relatesTo>/<labels> all collapse to identical output.
-// scripts/truths-diff.js uses this to decide whether two versions are semantically equal. Run
-// directly (`node scripts/canonicalize-truths.js <file>`) it prints the canonical form, as an inspection utility.
+// Canonicalizes a runbooks XML file into one deterministic, fully order-insensitive form: reordering fields within an
+// <entry>, reordering whole <entry> elements, or reordering items inside <relatesTo>/<labels> all collapse to identical
+// output. scripts/runbooks-diff.js uses this to decide whether two versions are semantically equal. Run directly
+// (`node scripts/canonicalize-runbooks.js <file>`) it prints the canonical form, as an inspection utility.
 //
 // The parse/serialize round-trip (canonical field order + indentation) is reused from the app's core. The extra sort
 // pass below lives only here - the app's save path must keep the file's own entry/list order.
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-import { parseTruthsXml, serializeTruthsXml } from '../frontend/src/truthsXmlCore.js';
+import { parseRunbooksXml, serializeRunbooksXml } from '../frontend/src/runbooksXmlCore.js';
 
 // Deterministic, locale-independent ordering by code unit.
 const compare = function (a, b) {
@@ -31,20 +31,23 @@ const sortLists = function (truth) {
 };
 
 const canonicalize = function (xml) {
-    const truths = parseTruthsXml(xml).map(function (truth) {
+    // The file's own <metadata><type> drives output; the diff driver only sees a temp blob, so the name is unavailable.
+    const { type, entries } = parseRunbooksXml(xml);
+    const fileType = type ?? 'truths';
+    const sorted = entries.map(function (truth) {
         return sortLists(truth);
     });
 
     // Sort entries by <title>, then by the entry's own canonical text as a deterministic tiebreak so blank or
     // duplicate titles cannot leave a residual diff.
-    const keyed = truths.map(function (truth) {
-        return { truth, key: serializeTruthsXml([truth]) };
+    const keyed = sorted.map(function (truth) {
+        return { truth, key: serializeRunbooksXml(fileType, [truth]) };
     });
     keyed.sort(function (a, b) {
         return compare(a.truth.title, b.truth.title) || compare(a.key, b.key);
     });
 
-    return serializeTruthsXml(keyed.map(function (entry) {
+    return serializeRunbooksXml(fileType, keyed.map(function (entry) {
         return entry.truth;
     }));
 };
@@ -66,7 +69,7 @@ const main = function () {
     }
 };
 
-// Run the CLI only when executed directly, not when imported by scripts/truths-diff.js.
+// Run the CLI only when executed directly, not when imported by scripts/runbooks-diff.js.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     main();
 }

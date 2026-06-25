@@ -26,7 +26,7 @@ type SidebarProperties = {
 const FileCountBadge = function ({ count }: { count: FileCount }) {
     if (count.kind === 'ready') {
         return (
-            <span className={styles.fileCount} title={`${count.approved} approved of ${count.total} truths`}>
+            <span className={styles.fileCount} title={`${count.approved} approved of ${count.total} entries`}>
                 {count.approved}/{count.total}
             </span>
         );
@@ -231,7 +231,7 @@ const Sidebar = function ({ files, selected, open, isCollapsed, refreshing, coun
 
             <aside className={cx(styles.sidebar, open && styles.open, isCollapsed && styles.collapsed)}>
                 <div className={styles.sidebarHead}>
-                    <h1>truths</h1>
+                    <h1>Runbooks</h1>
                     <div className={styles.sidebarActions}>
                         <button
                             type="button"
@@ -256,7 +256,7 @@ const Sidebar = function ({ files, selected, open, isCollapsed, refreshing, coun
                 </div>
                 {files.length === 0 ?
                     (
-                        <p className={styles.empty}>No truths.xml or truths-*.xml files in this folder.</p>
+                        <p className={styles.empty}>No truths / reviews / specs / tasks files in this folder.</p>
                     ) :
                     (
                         <ul>

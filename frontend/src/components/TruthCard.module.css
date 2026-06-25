@@ -14,6 +14,15 @@
     justify-content: space-between;
 }
 
+/* Selection checkbox at the head's left edge, driving the structured view's footer count and batch actions. */
+.select-checkbox {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0 8px 0 0;
+    cursor: pointer;
+}
+
 .truth-card-title-group {
     display: flex;
     flex: 1;
@@ -24,6 +33,14 @@
 
 .truth-card-title {
     font-weight: 600;
+}
+
+/* Marks each card with a glyph for its entry kind (truth/review/spec/task), sitting between the disclosure and title. */
+.type-icon {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    color: #656d76;
 }
 
 .expand-toggle {
@@ -254,6 +271,11 @@
        Remove/Edit/Approve actions onto their own row above it, right-aligned, so the card never overflows the screen */
     .truth-card-head {
         flex-wrap: wrap;
+    }
+
+    /* Keep the selection checkbox pinned to the row's left edge; the actions still sit at the right (order -1 below). */
+    .select-checkbox {
+        order: -2;
     }
 
     .truth-card-actions {

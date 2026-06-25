@@ -2,10 +2,31 @@ import { XMLBuilder, XMLParser, XMLValidator } from 'fast-xml-parser';
 
 const AGENTS = ['AI', 'Human'];
 
-const ARRAY_TAGS = new Set(['truth', 'ref', 'label']);
+// The kinds of entry the app understands, carried per <entry type> (singular). A file is just a container and may hold
+// any mix of these; 'truth' is the default for an entry with no type attribute.
+const ENTRY_TYPES = ['truth', 'review', 'spec', 'task', 'idea'];
+
+// Maps a file-name family (plural) to its entry type (singular). Used for the "Create with AI" dropdown labels and to
+// seed that dialog's default from the open file's name - the name is only a hint, never a constraint on content.
+const ENTRY_TYPE_BY_FAMILY = {
+    truths: 'truth',
+    reviews: 'review',
+    specs: 'spec',
+    tasks: 'task',
+    ideas: 'idea'
+};
+
+// Derive a default entry type from a file's basename prefix (reviews-foo.xml -> 'review'). Defaults to 'truth'.
+const entryTypeFromName = function (name) {
+    const base = String(name).split('/').at(-1) ?? '';
+    const family = base.split(/[-.]/)[0];
+    return ENTRY_TYPE_BY_FAMILY[family] ?? 'truth';
+};
+
+const ARRAY_TAGS = new Set(['entry', 'ref', 'label']);
 
 const parser = new XMLParser({
-    ignoreAttributes: true,
+    ignoreAttributes: false,
     parseTagValue: false,
     trimValues: true,
     isArray: function (tagName) {
@@ -16,7 +37,7 @@ const parser = new XMLParser({
 const builder = new XMLBuilder({
     format: true,
     indentBy: ' '.repeat(4),
-    ignoreAttributes: true,
+    ignoreAttributes: false,
     suppressEmptyNode: false,
     processEntities: true
 });
@@ -89,10 +110,16 @@ const nowTimestamp = function () {
     return new Date().toISOString();
 };
 
-const emptyTruth = function () {
+const toEntryType = function (value) {
+    const text = toText(value);
+    return ENTRY_TYPES.includes(text) ? text : 'truth';
+};
+
+const emptyTruth = function (type = 'truth') {
     const now = nowTimestamp();
     return {
         id: randomId(),
+        type: toEntryType(type),
         title: '',
         createdBy: '',
         approved: '',
@@ -102,12 +129,14 @@ const emptyTruth = function () {
         notes: '',
         labels: [],
         created: now,
-        lastUpdated: now,
+        updated: now,
         updatedBy: 'Human' // a new truth is always added through the human-operated UI
     };
 };
 
-const parseTruthsXml = function (xml) {
+// Parse a runbooks XML document into a list of entry models. A file is just a container of <entry> elements, each
+// carrying its own type attribute (truth/review/spec/task/idea, default 'truth'). Returns [] for an empty/new file.
+const parseRunbooksXml = function (xml) {
     if (xml.trim() === '') {
         return [];
     }
@@ -119,13 +148,14 @@ const parseTruthsXml = function (xml) {
 
     const document = parser.parse(xml);
     const root = document.root ?? {};
-    const truthsNode = root.truths ?? {};
-    const rawTruths = Array.isArray(truthsNode.truth) ? truthsNode.truth : [];
+    const entriesNode = root.entries ?? {};
+    const rawEntries = Array.isArray(entriesNode.entry) ? entriesNode.entry : [];
 
-    return rawTruths.map(function (raw) {
+    return rawEntries.map(function (raw) {
         const content = toText(raw.content);
         return {
             id: randomId(),
+            type: toEntryType(raw['@_type']),
             title: toText(raw.title),
             createdBy: toAgent(raw.createdBy),
             approved: toText(raw.approved),
@@ -137,7 +167,7 @@ const parseTruthsXml = function (xml) {
             notes: toText(raw.notes),
             labels: toList(raw.labels, 'label'),
             created: toText(raw.created),
-            lastUpdated: toText(raw.lastUpdated),
+            updated: toText(raw.updated),
             updatedBy: toAgent(raw.updatedBy)
         };
     });
@@ -161,12 +191,15 @@ const countApprovedTruths = function (truths) {
     }).length;
 };
 
-const serializeTruthsXml = function (truths) {
+// Serialize a list of entries back to a runbooks XML document. Each entry carries its own type attribute
+// (truth/review/spec/task/idea, default 'truth'); the file itself has no type.
+const serializeRunbooksXml = function (entries) {
     const document = {
         root: {
-            truths: {
-                truth: truths.map(function (truth) {
+            entries: {
+                entry: entries.map(function (truth) {
                     return {
+                        '@_type': toEntryType(truth.type),
                         title: truth.title,
                         createdBy: truth.createdBy,
                         approved: truth.approved,
@@ -176,7 +209,7 @@ const serializeTruthsXml = function (truths) {
                         notes: truth.notes,
                         labels: { label: truth.labels },
                         created: truth.created,
-                        lastUpdated: truth.lastUpdated,
+                        updated: truth.updated,
                         updatedBy: truth.updatedBy
                     };
                 })
@@ -192,8 +225,11 @@ export {
     approvalState,
     countApprovedTruths,
     emptyTruth,
+    ENTRY_TYPE_BY_FAMILY,
+    ENTRY_TYPES,
+    entryTypeFromName,
     hashContent,
     nowTimestamp,
-    parseTruthsXml,
-    serializeTruthsXml
+    parseRunbooksXml,
+    serializeRunbooksXml
 };

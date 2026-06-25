@@ -1,6 +1,6 @@
 <root>
-    <truths>
-        <truth>
+    <entries>
+        <entry type="truth">
             <title>pure-esm-and-node-version-requirements</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -15,11 +15,11 @@
                 <label>runtime</label>
                 <label>node</label>
             </labels>
-            <created>2026-06-24T12:00:00.000Z</created>
-            <lastUpdated>2026-06-24T12:00:00.000Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
-        </truth>
-        <truth>
+        </entry>
+        <entry type="truth">
             <title>css-modules-camelcase-convention</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -35,11 +35,11 @@
                 <label>frontend</label>
                 <label>styling</label>
             </labels>
-            <created>2026-06-24T12:00:01.000Z</created>
-            <lastUpdated>2026-06-24T12:00:01.000Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
-        </truth>
-        <truth>
+        </entry>
+        <entry type="truth">
             <title>vite-dev-proxy-and-concurrently</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -55,16 +55,16 @@
                 <label>build</label>
                 <label>dev</label>
             </labels>
-            <created>2026-06-24T12:00:02.000Z</created>
-            <lastUpdated>2026-06-24T12:00:02.000Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
-        </truth>
-        <truth>
+        </entry>
+        <entry type="truth">
             <title>typescript-is-typecheck-only</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>TypeScript is configured with noEmit and strict (target ES2023, moduleResolution bundler), so it only type-checks; Vite (esbuild for transpilation, Rollup for bundling) produces the actual dist/ output. allowJs is enabled so plain .js modules such as frontend/src/truthsXmlCore.js can coexist with and be imported by the .ts sources.</content>
-            <contentHash>f901497e162d1</contentHash>
+            <content>TypeScript is configured with noEmit and strict (target ES2023, moduleResolution bundler), so it only type-checks; Vite (esbuild for transpilation, Rollup for bundling) produces the actual dist/ output. allowJs is enabled so plain .js modules such as frontend/src/runbooksXmlCore.js can coexist with and be imported by the .ts sources.</content>
+            <contentHash>185fdc682281b</contentHash>
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
                 <ref>vite-dev-proxy-and-concurrently</ref>
@@ -75,28 +75,28 @@
                 <label>typescript</label>
                 <label>build</label>
             </labels>
-            <created>2026-06-24T12:00:03.000Z</created>
-            <lastUpdated>2026-06-24T12:00:03.000Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
-        </truth>
-        <truth>
+        </entry>
+        <entry type="truth">
             <title>git-diff-driver-bootstrapped-by-prepare</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The diff driver for truth XML files is bootstrapped per-clone by the prepare npm script (scripts/setup-git-textconv.js), which adds include.path=../.gitconfig to the local .git/config. git refuses to let a repository commit the command a diff driver runs, so that command lives in the committed .gitconfig fragment and each clone only wires in the include. The script is a no-op when there is no .git directory, for example when truths is installed as a dependency from the registry.</content>
-            <contentHash>1d63853584fc6b</contentHash>
+            <content>The diff driver for runbooks XML files is bootstrapped per-clone by the prepare npm script (scripts/setup-git-textconv.js), which adds include.path=../.gitconfig to the local .git/config. git refuses to let a repository commit the command a diff driver runs, so that command lives in the committed .gitconfig fragment and each clone only wires in the include. The script is a no-op when there is no .git directory, for example when runbooks is installed as a dependency from the registry.</content>
+            <contentHash>5c01103fea94b</contentHash>
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
             </relatesTo>
-            <notes>.gitattributes binds truths.xml / truths-*.xml to the truths-canon diff driver.</notes>
+            <notes>.gitattributes binds the runbooks families (truths/reviews/specs/tasks, as &lt;family&gt;.xml / &lt;family&gt;-*.xml) to the runbooks-canon diff driver.</notes>
             <labels>
                 <label>tech-stack</label>
                 <label>git</label>
                 <label>tooling</label>
             </labels>
-            <created>2026-06-24T12:00:04.000Z</created>
-            <lastUpdated>2026-06-24T12:00:04.000Z</lastUpdated>
+            <created>2026-06-25T00:00:00.000Z</created>
+            <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
-        </truth>
-    </truths>
+        </entry>
+    </entries>
 </root>

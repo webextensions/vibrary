@@ -2,7 +2,7 @@
 // be launched from different folders on the same origin, so one key holds a map keyed by the folder's absolute path -
 // each folder restores only its own tabs. All access is wrapped in try/catch since localStorage can be blocked.
 
-const SESSION_STORAGE_KEY = 'truths:open-tabs';
+const SESSION_STORAGE_KEY = 'runbooks:open-tabs';
 
 type SessionRecord = { paths: string[]; activePath: string | null };
 

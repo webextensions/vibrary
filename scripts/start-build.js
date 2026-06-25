@@ -10,7 +10,7 @@ const configFile = 'frontend/vite.config.ts';
 
 const announce = function () {
     console.log('Build complete');
-    notify('truths', 'Build complete');
+    notify('runbooks', 'Build complete');
 };
 
 if (values.watch) {

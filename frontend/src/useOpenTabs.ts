@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getFile } from './api.ts';
-import { parseTruthsXml, type Truth } from './truthsXml.ts';
+import { parseRunbooksXml, type Truth } from './runbooksXml.ts';
 
 type TabStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
 
@@ -117,7 +117,7 @@ const useOpenTabs = function () {
                         ...previous,
                         tabs: previous.tabs.map(function (tab) {
                             return tab.path === path ?
-                                { ...tab, loading: false, truths: parseTruthsXml(content), rawFallback: content, parseError: null } :
+                                { ...tab, loading: false, truths: parseRunbooksXml(content), rawFallback: content, parseError: null } :
                                 tab;
                         })
                     };
