@@ -45,6 +45,18 @@ export default [
     ]),
 
     {
+        // The codebase spells ref variables in full (`panelReference`, `lastYReference`), which `unicorn/name-replacements`
+        // enforces as an error (it expands `ref` -> `reference`). react-x's ref-name rule wants the opposite (`...Ref`), so
+        // the two conflict for every ref identifier. We defer to the error-level unicorn rule and silence this warning.
+        files: [
+            'frontend/**/*.{ts,tsx}'
+        ],
+        rules: {
+            '@eslint-react/naming-convention-ref-name': 'off'
+        }
+    },
+
+    {
         // react-refresh's "only-export-components" is about component-module HMR; it does not apply to the Vite config
         // or the plain helper modules, which intentionally export non-component values
         files: [
