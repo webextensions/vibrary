@@ -1,5 +1,3 @@
-truths.xml      diff=runbooks-canon
-truths-*.xml    diff=runbooks-canon
 reviews.xml     diff=runbooks-canon
 reviews-*.xml   diff=runbooks-canon
 specs.xml       diff=runbooks-canon

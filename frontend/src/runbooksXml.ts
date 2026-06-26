@@ -1,11 +1,11 @@
 // Runtime lives in the framework-free ./runbooksXmlCore.js so it can be reused outside the browser build (for example by
-// scripts/canonicalize-runbooks.js under plain node). This file is the type layer: it declares Agent/Truth and re-exports
+// scripts/canonicalize-runbooks.js under plain node). This file is the type layer: it declares Agent/Spec and re-exports
 // the core with precise signatures so all consumers keep full type-checking.
 import {
     AGENTS as AGENTSImpl,
     approvalState as approvalStateImpl,
-    countApprovedTruths as countApprovedTruthsImpl,
-    emptyTruth as emptyTruthImpl,
+    countApprovedSpecs as countApprovedSpecsImpl,
+    emptySpec as emptySpecImpl,
     ENTRY_TYPE_BY_FAMILY as ENTRY_TYPE_BY_FAMILYImpl,
     ENTRY_TYPES as ENTRY_TYPESImpl,
     entryTypeFromName as entryTypeFromNameImpl,
@@ -16,22 +16,22 @@ import {
 
 type Agent = 'Human' | 'AI';
 
-// A truth's sign-off state: never approved, approved on the current content, or approved on content that has since
+// A spec's sign-off state: never approved, approved on the current content, or approved on content that has since
 // changed (stale).
 type ApprovalState = 'none' | 'current' | 'stale';
 
 // The kinds of entry the app understands, carried per <entry type>. A file is just a container and may hold any mix;
-// only a 'truth' entry shows the "Apply this truth" action.
-type EntryType = 'truth' | 'review' | 'spec' | 'task' | 'idea';
+// only a 'spec' entry shows the "Apply this spec" action.
+type EntryType = 'spec' | 'review' | 'task' | 'idea';
 
-type Truth = {
+type Spec = {
     // Client-only stable identity for React keys; never serialized to XML
     id: string;
     // The entry's kind, written as the <entry type> attribute.
     type: EntryType;
     title: string;
     createdBy: Agent | '';
-    // The short hash of <content> captured when a human approved the truth (see hashContent). Empty when not approved;
+    // The short hash of <content> captured when a human approved the spec (see hashContent). Empty when not approved;
     // a stored hash that no longer matches the current content is a stale approval (the text changed since sign-off).
     approved: string;
     content: string;
@@ -40,9 +40,14 @@ type Truth = {
     contentHash: string;
     relatesTo: string[];
     notes: string;
+    // Optional reference to a per-run options form schema, as "<sibling-file>#<schemaId>" (e.g.
+    // "tasks.xml.schemas.json#update-npm-packages-options"). The file is resolved against the entry file's directory and
+    // the id looked up in it. Empty when the entry declares no form; only 'task' entries render it, as checkboxes above
+    // the "Run this task" button.
+    formSchemaRef: string;
     labels: string[];
     // ISO 8601 timestamps, managed automatically: `created` is stamped once at creation, `updated` on every edit.
-    // Empty when unknown (for example a truth parsed from a file written before these fields existed).
+    // Empty when unknown (for example a spec parsed from a file written before these fields existed).
     created: string;
     updated: string;
     // Who made the most recent edit, managed automatically like `updated`. Edits through the UI are always Human;
@@ -53,23 +58,23 @@ type Truth = {
 // The JS core is untyped, so its inferred signatures are too wide (for example createdBy: string rather than '' | Agent).
 // Pin each re-export to its precise type here - this file is the single place those types are declared.
 const AGENTS = AGENTSImpl as Agent[];
-const approvalState = approvalStateImpl as (truth: Truth) => ApprovalState;
-const countApprovedTruths = countApprovedTruthsImpl as (truths: Truth[]) => number;
-const emptyTruth = emptyTruthImpl as (type?: EntryType) => Truth;
+const approvalState = approvalStateImpl as (spec: Spec) => ApprovalState;
+const countApprovedSpecs = countApprovedSpecsImpl as (specs: Spec[]) => number;
+const emptySpec = emptySpecImpl as (type?: EntryType) => Spec;
 const ENTRY_TYPES = ENTRY_TYPESImpl as EntryType[];
 const ENTRY_TYPE_BY_FAMILY = ENTRY_TYPE_BY_FAMILYImpl as Record<string, EntryType>;
 const entryTypeFromName = entryTypeFromNameImpl as (name: string) => EntryType;
-const hashContent = hashContentImpl as (truth: Truth) => string;
-const parseRunbooksXml = parseRunbooksXmlImpl as (xml: string) => Truth[];
-const serializeRunbooksXml = serializeRunbooksXmlImpl as (entries: Truth[]) => string;
+const hashContent = hashContentImpl as (spec: Spec) => string;
+const parseRunbooksXml = parseRunbooksXmlImpl as (xml: string) => Spec[];
+const serializeRunbooksXml = serializeRunbooksXmlImpl as (entries: Spec[]) => string;
 
 export {
     type Agent,
     AGENTS,
     approvalState,
     type ApprovalState,
-    countApprovedTruths,
-    emptyTruth,
+    countApprovedSpecs,
+    emptySpec,
     ENTRY_TYPE_BY_FAMILY,
     ENTRY_TYPES,
     type EntryType,
@@ -77,7 +82,7 @@ export {
     hashContent,
     parseRunbooksXml,
     serializeRunbooksXml,
-    type Truth
+    type Spec
 };
 
 // Pure pass-through (no retyping needed), so re-export it straight from the core.

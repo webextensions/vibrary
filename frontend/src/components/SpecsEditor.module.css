@@ -1,4 +1,4 @@
-.truths-editor {
+.specs-editor {
     flex: 1;
     min-height: 0;
     display: flex;
@@ -14,8 +14,9 @@
     gap: 16px;
 }
 
-/* Fixed bar below the scrolling list: entry count on the left and the "Actions" button. Left-aligned so the
-   bottom-right floating "+" button does not cover it. position: relative anchors the popup above the button. */
+/* Fixed bar below the scrolling list: entry count and selection/Actions controls on the left, the "+" add button
+   pushed to the right via margin-left: auto on .speed-dial. align-items: center keeps the left-side text/links
+   vertically centered against the taller "+" button. */
 .footer {
     flex-shrink: 0;
     display: flex;
@@ -126,8 +127,9 @@
 }
 
 /* The status-filter controls, shown in their own row below the toolbar. Right-aligned to sit under the Filter toggle. */
-.truth-filter {
+.spec-filter {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: 12px;
@@ -136,7 +138,7 @@
 }
 
 /* react-select renders its control with the global `rs__` prefix set via classNamePrefix, so reach it through :global. */
-.truth-filter :global(.rs__control) {
+.spec-filter :global(.rs__control) {
     min-width: 280px;
 }
 
@@ -153,29 +155,25 @@
     color: #656d76;
 }
 
-/* Floating action area, anchored to the viewport's bottom-right. Holds the "+" button and, when expanded, the
-   speed-dial action buttons above it. Slides away when the list is scrolled down and returns on scroll up (see
-   .speed-dial-hidden); stays put while the menu is open. */
+/* The "+" add button area, anchored to the footer's bottom-right (pushed there by margin-left: auto). Holds the
+   "+" button and, when expanded, the speed-dial action buttons floating above it. position: relative anchors that
+   expanded menu. */
 .speed-dial {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 5;
+    position: relative;
+    margin-left: auto;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 12px;
-    transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
-.speed-dial-hidden {
-    transform: translateY(120px);
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* The two creation choices, stacked above the "+" button (AI on top, manual below). */
+/* The two creation choices, floating above the "+" button (AI on top, manual below) so opening them does not grow
+   the footer. */
 .speed-dial-actions {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    z-index: 6;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -211,14 +209,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
+    width: 32px;
+    height: 32px;
     border: none;
     border-radius: 50%;
     background: #1f883d;
     color: #fff;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* PlusIcon ships baked at 24px; scale it down to suit the smaller button. */
+.fab-icon svg {
+    width: 18px;
+    height: 18px;
 }
 
 .fab:hover {

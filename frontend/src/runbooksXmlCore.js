@@ -3,24 +3,23 @@ import { XMLBuilder, XMLParser, XMLValidator } from 'fast-xml-parser';
 const AGENTS = ['AI', 'Human'];
 
 // The kinds of entry the app understands, carried per <entry type> (singular). A file is just a container and may hold
-// any mix of these; 'truth' is the default for an entry with no type attribute.
-const ENTRY_TYPES = ['truth', 'review', 'spec', 'task', 'idea'];
+// any mix of these; 'spec' is the default for an entry with no type attribute.
+const ENTRY_TYPES = ['spec', 'review', 'task', 'idea'];
 
 // Maps a file-name family (plural) to its entry type (singular). Used for the "Create with AI" dropdown labels and to
 // seed that dialog's default from the open file's name - the name is only a hint, never a constraint on content.
 const ENTRY_TYPE_BY_FAMILY = {
-    truths: 'truth',
-    reviews: 'review',
     specs: 'spec',
+    reviews: 'review',
     tasks: 'task',
     ideas: 'idea'
 };
 
-// Derive a default entry type from a file's basename prefix (reviews-foo.xml -> 'review'). Defaults to 'truth'.
+// Derive a default entry type from a file's basename prefix (reviews-foo.xml -> 'review'). Defaults to 'spec'.
 const entryTypeFromName = function (name) {
     const base = String(name).split('/').at(-1) ?? '';
     const family = base.split(/[-.]/)[0];
-    return ENTRY_TYPE_BY_FAMILY[family] ?? 'truth';
+    return ENTRY_TYPE_BY_FAMILY[family] ?? 'spec';
 };
 
 const ARRAY_TAGS = new Set(['entry', 'ref', 'label']);
@@ -72,15 +71,15 @@ const toAgent = function (value) {
     return AGENTS.includes(text) ? text : '';
 };
 
-// Short hash of a truth's <content>. It is persisted as <contentHash> (kept in sync whenever the content changes) and
+// Short hash of a spec's <content>. It is persisted as <contentHash> (kept in sync whenever the content changes) and
 // captured inside <approved> at approval time, so the UI can tell when the text has changed since sign-off (stale
 // approval). A pure-JS hash is used on purpose: it is only a content-change detector,
 // not a security primitive, and the standard options do not fit here - crypto.subtle.digest is async and, like
 // crypto.randomUUID above, is unavailable over plain HTTP on a LAN address (the phone case), while Node's
 // crypto.createHash is not in the browser. cyrb53 is deterministic and identical in the browser and under node, so the
 // app, scripts, and migration all agree. Rendered as zero-padded hex (~13 chars).
-const hashContent = function (truth) {
-    const text = toText(truth.content);
+const hashContent = function (spec) {
+    const text = toText(spec.content);
     let h1 = 0xdeadbeef;
     let h2 = 0x41c6ce57;
     for (let index = 0; index < text.length; index += 1) {
@@ -103,7 +102,7 @@ const randomId = function () {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
         return crypto.randomUUID();
     }
-    return `truth-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    return `spec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 };
 
 const nowTimestamp = function () {
@@ -112,10 +111,10 @@ const nowTimestamp = function () {
 
 const toEntryType = function (value) {
     const text = toText(value);
-    return ENTRY_TYPES.includes(text) ? text : 'truth';
+    return ENTRY_TYPES.includes(text) ? text : 'spec';
 };
 
-const emptyTruth = function (type = 'truth') {
+const emptySpec = function (type = 'spec') {
     const now = nowTimestamp();
     return {
         id: randomId(),
@@ -127,15 +126,16 @@ const emptyTruth = function (type = 'truth') {
         contentHash: hashContent({ content: '' }),
         relatesTo: [],
         notes: '',
+        formSchemaRef: '',
         labels: [],
         created: now,
         updated: now,
-        updatedBy: 'Human' // a new truth is always added through the human-operated UI
+        updatedBy: 'Human' // a new spec is always added through the human-operated UI
     };
 };
 
 // Parse a runbooks XML document into a list of entry models. A file is just a container of <entry> elements, each
-// carrying its own type attribute (truth/review/spec/task/idea, default 'truth'). Returns [] for an empty/new file.
+// carrying its own type attribute (spec/review/task/idea, default 'spec'). Returns [] for an empty/new file.
 const parseRunbooksXml = function (xml) {
     if (xml.trim() === '') {
         return [];
@@ -165,6 +165,7 @@ const parseRunbooksXml = function (xml) {
             contentHash: hashContent({ content: content }),
             relatesTo: toList(raw.relatesTo, 'ref'),
             notes: toText(raw.notes),
+            formSchemaRef: toText(raw.formSchemaRef),
             labels: toList(raw.labels, 'label'),
             created: toText(raw.created),
             updated: toText(raw.updated),
@@ -173,44 +174,45 @@ const parseRunbooksXml = function (xml) {
     });
 };
 
-// A truth's approval state: 'none' (never signed off), 'current' (signed off on the present content), or 'stale'
+// A spec's approval state: 'none' (never signed off), 'current' (signed off on the present content), or 'stale'
 // (signed off, but the content changed since - the stored hash no longer matches). Pure, so it is shared by the UI's
 // status filter and any other consumer.
-const approvalState = function (truth) {
-    if (truth.approved === '') {
+const approvalState = function (spec) {
+    if (spec.approved === '') {
         return 'none';
     }
-    return truth.approved === hashContent(truth) ? 'current' : 'stale';
+    return spec.approved === hashContent(spec) ? 'current' : 'stale';
 };
 
-// A truth counts as approved once a human has signed off on its current content. An approval whose stored hash no
+// A spec counts as approved once a human has signed off on its current content. An approval whose stored hash no
 // longer matches the content is stale (the text changed since sign-off) and does not count.
-const countApprovedTruths = function (truths) {
-    return truths.filter(function (truth) {
-        return truth.approved === hashContent(truth);
+const countApprovedSpecs = function (specs) {
+    return specs.filter(function (spec) {
+        return spec.approved === hashContent(spec);
     }).length;
 };
 
 // Serialize a list of entries back to a runbooks XML document. Each entry carries its own type attribute
-// (truth/review/spec/task/idea, default 'truth'); the file itself has no type.
+// (spec/review/task/idea, default 'spec'); the file itself has no type.
 const serializeRunbooksXml = function (entries) {
     const document = {
         root: {
             entries: {
-                entry: entries.map(function (truth) {
+                entry: entries.map(function (spec) {
                     return {
-                        '@_type': toEntryType(truth.type),
-                        title: truth.title,
-                        createdBy: truth.createdBy,
-                        approved: truth.approved,
-                        content: truth.content,
-                        contentHash: truth.contentHash,
-                        relatesTo: { ref: truth.relatesTo },
-                        notes: truth.notes,
-                        labels: { label: truth.labels },
-                        created: truth.created,
-                        updated: truth.updated,
-                        updatedBy: truth.updatedBy
+                        '@_type': toEntryType(spec.type),
+                        title: spec.title,
+                        createdBy: spec.createdBy,
+                        approved: spec.approved,
+                        content: spec.content,
+                        contentHash: spec.contentHash,
+                        relatesTo: { ref: spec.relatesTo },
+                        notes: spec.notes,
+                        formSchemaRef: spec.formSchemaRef,
+                        labels: { label: spec.labels },
+                        created: spec.created,
+                        updated: spec.updated,
+                        updatedBy: spec.updatedBy
                     };
                 })
             }
@@ -223,8 +225,8 @@ const serializeRunbooksXml = function (entries) {
 export {
     AGENTS,
     approvalState,
-    countApprovedTruths,
-    emptyTruth,
+    countApprovedSpecs,
+    emptySpec,
     ENTRY_TYPE_BY_FAMILY,
     ENTRY_TYPES,
     entryTypeFromName,

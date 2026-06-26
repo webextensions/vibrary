@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { CLAUDE_STREAM_FLAGS, spawnClaudeStreamAsync } from './spawnClaude.js';
 
 // Give the headless agent room to read the codebase and write the file; reject rather than hang forever if it stalls.
 const GENERATE_TIMEOUT_MS = 10 * 60 * 1000;
@@ -31,46 +31,18 @@ const buildPrompt = function (name, type, count) {
     ].join('\n');
 };
 
-// Run the headless agent to append `count` entries of `type` to `name` within `cwd`. Resolves with the CLI's raw stdout
-// on a clean exit (the caller forwards it to the browser console for debugging); rejects with a descriptive Error
-// otherwise (missing CLI, non-zero exit, or timeout).
-const generateTruthsAsync = function ({ cwd, name, type, count }) {
-    return new Promise(function (resolve, reject) {
-        const child = spawn(
-            'claude',
-            ['-p', buildPrompt(name, type, count), '--dangerously-skip-permissions'],
-            { cwd, timeout: GENERATE_TIMEOUT_MS }
-        );
-
-        let stdout = '';
-        let stderr = '';
-        child.stdout.on('data', function (chunk) {
-            stdout += chunk.toString();
-        });
-        child.stderr.on('data', function (chunk) {
-            stderr += chunk.toString();
-        });
-
-        child.on('error', function (error) {
-            if (error.code === 'ENOENT') {
-                reject(new Error('Claude CLI not found on PATH'));
-                return;
-            }
-            reject(error);
-        });
-
-        child.on('close', function (code, signal) {
-            if (signal === 'SIGTERM') {
-                reject(new Error('Truth generation timed out'));
-                return;
-            }
-            if (code === 0) {
-                resolve(stdout);
-                return;
-            }
-            reject(new Error(stderr.trim() || `Claude exited with code ${code}`));
-        });
+// Run the headless agent to append `count` entries of `type` to `name` within `cwd`, streaming its activity line by
+// line through `onLine` (claude's stream-json events). Resolves on a clean exit; rejects with a descriptive Error
+// otherwise (missing CLI, non-zero exit, timeout, or abort).
+const generateSpecsAsync = function ({ cwd, name, type, count, signal, onLine }) {
+    return spawnClaudeStreamAsync({
+        cwd,
+        args: ['-p', buildPrompt(name, type, count), ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
+        timeoutMs: GENERATE_TIMEOUT_MS,
+        timeoutMessage: 'Spec generation timed out',
+        signal,
+        onLine
     });
 };
 
-export { generateTruthsAsync };
+export { generateSpecsAsync };

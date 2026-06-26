@@ -1,17 +1,17 @@
-import { spawn } from 'node:child_process';
+import { spawnClaudeAsync } from './spawnClaude.js';
 
 // Deriving a short title is a quick, read-free task; cap it well under the apply/generate budget so a stall fails fast.
 const TITLE_TIMEOUT_MS = 2 * 60 * 1000;
 
-// The instruction handed to "claude -p". It turns freeform truth content into one concise hyphenated-lowercase title,
+// The instruction handed to "claude -p". It turns freeform spec content into one concise hyphenated-lowercase title,
 // emitted on its own with no surrounding prose so the raw stdout can be slugified straight into the title field.
 const buildPrompt = function (content) {
     return [
-        'Derive a concise, descriptive title for the following truth content. Respond with ONLY the title as a single',
+        'Derive a concise, descriptive title for the following spec content. Respond with ONLY the title as a single',
         'line of lowercase words joined by hyphens (a-z, 0-9 and hyphens only), no quotes, no explanation, no trailing',
         'punctuation. Keep it under about ten words.',
         '',
-        'Truth content:',
+        'Spec content:',
         content
     ].join('\n');
 };
@@ -28,45 +28,17 @@ const slugify = function (output) {
         .replaceAll(/^-+|-+$/g, '');
 };
 
-// Run the headless agent to derive a hyphenated title from truth content. Resolves with the slugified title on a clean
+// Run the headless agent to derive a hyphenated title from spec content. Resolves with the slugified title on a clean
 // exit; rejects with a descriptive Error otherwise (missing CLI, non-zero exit, or timeout).
-const generateTitleAsync = function ({ cwd, content }) {
-    return new Promise(function (resolve, reject) {
-        const child = spawn(
-            'claude',
-            ['-p', buildPrompt(content)],
-            { cwd, timeout: TITLE_TIMEOUT_MS }
-        );
-
-        let stdout = '';
-        let stderr = '';
-        child.stdout.on('data', function (chunk) {
-            stdout += chunk.toString();
-        });
-        child.stderr.on('data', function (chunk) {
-            stderr += chunk.toString();
-        });
-
-        child.on('error', function (error) {
-            if (error.code === 'ENOENT') {
-                reject(new Error('Claude CLI not found on PATH'));
-                return;
-            }
-            reject(error);
-        });
-
-        child.on('close', function (code, signal) {
-            if (signal === 'SIGTERM') {
-                reject(new Error('Deriving the title timed out'));
-                return;
-            }
-            if (code === 0) {
-                resolve(slugify(stdout));
-                return;
-            }
-            reject(new Error(stderr.trim() || `Claude exited with code ${code}`));
-        });
+const generateTitleAsync = async function ({ cwd, content, signal }) {
+    const stdout = await spawnClaudeAsync({
+        cwd,
+        args: ['-p', buildPrompt(content)],
+        timeoutMs: TITLE_TIMEOUT_MS,
+        timeoutMessage: 'Deriving the title timed out',
+        signal
     });
+    return slugify(stdout);
 };
 
 export { generateTitleAsync };

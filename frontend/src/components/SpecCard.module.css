@@ -1,4 +1,4 @@
-.truth-card {
+.spec-card {
     margin: 0;
     padding: 16px;
     border: 1px solid #d0d7de;
@@ -8,7 +8,14 @@
     gap: 12px;
 }
 
-.truth-card-head {
+/* Transient ring after the card is scrolled to from a Search result; SpecsEditor clears it on a timer. */
+.spec-card.highlighted {
+    border-color: #54aeff;
+    box-shadow: 0 0 0 3px rgba(84, 174, 255, 0.4);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.spec-card-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -23,7 +30,7 @@
     cursor: pointer;
 }
 
-.truth-card-title-group {
+.spec-card-title-group {
     display: flex;
     flex: 1;
     align-items: center;
@@ -31,11 +38,11 @@
     min-width: 0;
 }
 
-.truth-card-title {
+.spec-card-title {
     font-weight: 600;
 }
 
-/* Marks each card with a glyph for its entry kind (truth/review/spec/task), sitting between the disclosure and title. */
+/* Marks each card with a glyph for its entry kind (spec/review/task), sitting between the disclosure and title. */
 .type-icon {
     display: inline-flex;
     align-items: center;
@@ -62,14 +69,14 @@
     transform: rotate(90deg);
 }
 
-.truth-card-actions {
+.spec-card-actions {
     display: flex;
     gap: 8px;
 }
 
-.truth-card .remove,
-.truth-card .edit,
-.truth-card .approve {
+.spec-card .remove,
+.spec-card .edit,
+.spec-card .approve {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -81,27 +88,27 @@
     font: inherit;
 }
 
-.truth-card .remove {
+.spec-card .remove {
     color: #cf222e;
 }
 
-.truth-card .edit {
+.spec-card .edit {
     color: #0969da;
 }
 
-.truth-card .approve {
+.spec-card .approve {
     min-width: 92px;
     justify-content: center;
     color: #1f883d;
 }
 
-.truth-card .approve.approved {
+.spec-card .approve.approved {
     border-color: #1f883d;
     background: #dafbe1;
 }
 
 /* Stale approval: content changed since sign-off, prompting a reapprove */
-.truth-card .approve.reapprove {
+.spec-card .approve.reapprove {
     color: #9a6700;
     border-color: #d4a72c;
     background: #fff8c5;
@@ -116,8 +123,8 @@
     margin-top: 2px;
 }
 
-/* Action button beneath the expanded fields: run the headless agent that conforms the codebase to this truth. */
-.truth-card .apply {
+/* Action button beneath the expanded fields: run the headless agent that conforms the codebase to this spec. */
+.spec-card .apply {
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
@@ -132,7 +139,7 @@
     font: inherit;
 }
 
-.truth-card .apply:disabled {
+.spec-card .apply:disabled {
     cursor: default;
     color: #656d76;
 }
@@ -153,13 +160,13 @@
 }
 
 /* Shared field layout: review and edit modes use the same label-left rows so toggling does not reflow the card */
-.truth-fields {
+.spec-fields {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.truth-row {
+.spec-row {
     display: grid;
     grid-template-columns: 140px 1fr;
     gap: 12px;
@@ -167,8 +174,8 @@
 }
 
 /* Less-used fields are collapsed by default; expanding the title's disclosure reveals them, boxed like a fieldset.
-   The left indent matches .truth-content so the box and the content text above it share a left edge, past the chevron. */
-.truth-more {
+   The left indent matches .spec-content so the box and the content text above it share a left edge, past the chevron. */
+.spec-more {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -191,12 +198,12 @@
 }
 
 .row-content .multiline,
-.truth-content .multiline {
+.spec-content .multiline {
     display: block;
     white-space: pre-wrap;
 }
 
-.truth-content {
+.spec-content {
     /* Indent to line up with the title text, which the expand-toggle (16px) plus the title-group gap (8px) push over */
     padding-left: 24px;
     font-size: 14px;
@@ -213,7 +220,7 @@
 }
 
 /* Sits beside the title input in edit mode: derives a hyphenated title from the content below via the headless agent. */
-.truth-card .populate {
+.spec-card .populate {
     flex: none;
     display: inline-flex;
     align-items: center;
@@ -228,7 +235,7 @@
     font: inherit;
 }
 
-.truth-card .populate:disabled {
+.spec-card .populate:disabled {
     cursor: default;
     color: #656d76;
 }
@@ -253,7 +260,7 @@
     color: #656d76;
 }
 
-.truth-card textarea {
+.spec-card textarea {
     flex: none;
     width: 100%;
     min-height: 80px;
@@ -269,7 +276,7 @@
 @media (max-width: 700px) {
     /* The title and its action buttons no longer fit on one row; give the title a full-width row and lift the
        Remove/Edit/Approve actions onto their own row above it, right-aligned, so the card never overflows the screen */
-    .truth-card-head {
+    .spec-card-head {
         flex-wrap: wrap;
     }
 
@@ -278,7 +285,7 @@
         order: -2;
     }
 
-    .truth-card-actions {
+    .spec-card-actions {
         order: -1;
         margin-left: auto;
     }
@@ -289,7 +296,7 @@
         display: none;
     }
 
-    .truth-card-title-group {
+    .spec-card-title-group {
         flex-basis: 100%;
     }
 
@@ -299,28 +306,28 @@
 
     /* Reclaim the chevron indent on narrow screens: content and the extra-fields box span the card's full width, so the
        text block sits symmetrically inside the card padding instead of pushed 24px to the right. */
-    .truth-content {
+    .spec-content {
         padding-left: 0;
     }
 
-    .truth-more {
+    .spec-more {
         margin-left: 0;
     }
 
     /* Stack each field's label above its value so the narrow screen's width goes to the content */
-    .truth-row {
+    .spec-row {
         grid-template-columns: 1fr;
         gap: 4px;
     }
 
     /* Short-valued rows keep their label beside the value on its own single row */
-    .truth-row-inline {
+    .spec-row-inline {
         grid-template-columns: auto 1fr;
         gap: 12px;
         align-items: start;
     }
 
-    .truth-row-inline .row-label {
+    .spec-row-inline .row-label {
         padding-top: 6px;
     }
 

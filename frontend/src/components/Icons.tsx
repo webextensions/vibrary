@@ -18,6 +18,54 @@ const AiIcon = function () {
     );
 };
 
+// Stacked-files glyph for the navigation rail's Explorer view.
+const ExplorerIcon = function () {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <path
+                d="M7 2.5h4.5L15 6v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                fill="none"
+                strokeLinejoin="round"
+            />
+            <path d="M11 2.5V6h4" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinejoin="round" />
+            <path
+                d="M5 5.5H4a1 1 0 0 0-1 1V16a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                fill="none"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+};
+
+// Magnifying-glass glyph for the navigation rail's Search view (larger than the entry-type ReviewIcon).
+const SearchIcon = function () {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="8.5" cy="8.5" r="5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <path d="M12.5 12.5l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+    );
+};
+
+// Git-branch glyph for the navigation rail's Source Control view: two nodes on a line with a branch curving off.
+const SourceControlIcon = function () {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <g stroke="currentColor" strokeWidth="1.5" fill="none">
+                <circle cx="6" cy="4.5" r="1.8" />
+                <circle cx="6" cy="15.5" r="1.8" />
+                <circle cx="14" cy="6.5" r="1.8" />
+                <path d="M6 6.3v7.4" strokeLinecap="round" />
+                <path d="M14 8.3c0 3-3 3.2-5 4" strokeLinecap="round" />
+            </g>
+        </svg>
+    );
+};
+
 const MenuIcon = function () {
     return (
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
@@ -69,7 +117,7 @@ const SaveIcon = function () {
     );
 };
 
-// Right-pointing chevron used by the truth card's expand toggle; CSS rotates it when the card is expanded.
+// Right-pointing chevron used by the spec card's expand toggle; CSS rotates it when the card is expanded.
 const ChevronIcon = function () {
     return (
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
@@ -111,6 +159,33 @@ const RefreshIcon = function () {
                 strokeLinejoin="round"
                 fill="none"
             />
+        </svg>
+    );
+};
+
+// Two upright bars for the "Pause queue" control (pause after the current job finishes).
+const PauseIcon = function () {
+    return (
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M5 3v10M11 3v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+    );
+};
+
+// Right-pointing triangle for the "Resume queue" control.
+const PlayIcon = function () {
+    return (
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M4.5 3l8 5-8 5z" fill="currentColor" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+        </svg>
+    );
+};
+
+// Filled square for the "Abort current job" control.
+const StopIcon = function () {
+    return (
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="4" y="4" width="8" height="8" rx="1" fill="currentColor" />
         </svg>
     );
 };
@@ -209,22 +284,6 @@ const CloseIcon = function () {
     );
 };
 
-// Lightbulb glyph for the "truth" entry type.
-const TruthIcon = function () {
-    return (
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <path
-                d="M5.5 11a4 4 0 1 1 5 0c-.6.5-.9 1-1 1.7h-3c-.1-.7-.4-1.2-1-1.7z"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinejoin="round"
-                fill="none"
-            />
-            <path d="M6.5 14h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-        </svg>
-    );
-};
-
 // Magnifying-glass glyph for the "review" entry type.
 const ReviewIcon = function () {
     return (
@@ -263,7 +322,7 @@ const TaskIcon = function () {
     );
 };
 
-// Sparkle glyph for the "idea" entry type; kept distinct from the truth lightbulb.
+// Sparkle glyph for the "idea" entry type; kept distinct from the AI sparkles.
 const IdeaIcon = function () {
     return (
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -285,18 +344,17 @@ const IdeaIcon = function () {
     );
 };
 
-// Maps each entry kind to its glyph; falls back to the truth glyph for an unknown type.
+// Maps each entry kind to its glyph; falls back to the spec glyph for an unknown type.
 const TYPE_ICONS: Record<EntryType, () => ReactNode> = {
-    truth: TruthIcon,
-    review: ReviewIcon,
     spec: SpecIcon,
+    review: ReviewIcon,
     task: TaskIcon,
     idea: IdeaIcon
 };
 
 // Renders the glyph for an entry's `type`, used to mark each card with its kind.
 const TypeIcon = function ({ type }: { type: EntryType }) {
-    const Glyph = TYPE_ICONS[type] ?? TruthIcon;
+    const Glyph = TYPE_ICONS[type] ?? SpecIcon;
     return <Glyph />;
 };
 
@@ -308,13 +366,21 @@ export {
     CloseIcon,
     CodeIcon,
     EditIcon,
+    ExplorerIcon,
     FilterIcon,
     ListIcon,
     MenuIcon,
     MoreIcon,
+    PauseIcon,
+    PlayIcon,
     PlusIcon,
     RefreshIcon,
     RemoveIcon,
     SaveIcon,
+    SearchIcon,
+    SourceControlIcon,
+    SpecIcon,
+    StopIcon,
+    TaskIcon,
     TypeIcon
 };

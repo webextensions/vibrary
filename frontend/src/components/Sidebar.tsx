@@ -1,7 +1,10 @@
 import cx from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 
+import { AccordionSection } from './AccordionSection.tsx';
+import { ActivityMonitor } from './ActivityMonitor.tsx';
 import { ChevronIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
+import { useActivityQueue } from '../activityQueue.ts';
 import { buildFileTree, type TreeNode } from '../fileTree.ts';
 import { type FileCount } from '../useFileCounts.ts';
 
@@ -10,16 +13,14 @@ import styles from './Sidebar.module.css';
 type SidebarProperties = {
     files: string[];
     selected: string | null;
-    open: boolean;
-    isCollapsed: boolean;
     refreshing: boolean;
     countForFile: (name: string) => FileCount;
     onOpen: (name: string) => void;
-    onClose: () => void;
     onRefresh: () => void;
     onAddFile: () => void;
     onDelete: (node: TreeNode) => void;
-    onNewFile: (folderPath: string) => void
+    onNewFile: (folderPath: string) => void;
+    onOpenActivity: (jobId: string, title: string) => void
 };
 
 // The approved/total badge beside each file name. A ready count is green; loading shows '...' and an unreadable file '!'.
@@ -182,7 +183,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
     });
 };
 
-const Sidebar = function ({ files, selected, open, isCollapsed, refreshing, countForFile, onOpen, onClose, onRefresh, onAddFile, onDelete, onNewFile }: SidebarProperties) {
+const Sidebar = function ({ files, selected, refreshing, countForFile, onOpen, onRefresh, onAddFile, onDelete, onNewFile, onOpenActivity }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -191,6 +192,15 @@ const Sidebar = function ({ files, selected, open, isCollapsed, refreshing, coun
     });
     // Which row's "More" menu is open (by path), or null when none. Only one menu is open at a time.
     const [openMenuPath, setOpenMenuPath] = useState<string | null>(null);
+    // Accordion section state. The "Runbooks" section is local; the "Activity monitor" section's open state lives in
+    // the queue context so enqueuing a job can auto-expand it. Its header badge shows the running+queued count.
+    const [runbooksOpen, setRunbooksOpen] = useState<boolean>(true);
+    const { jobs, monitorOpen, setMonitorOpen } = useActivityQueue();
+    const activeCount = useMemo(function () {
+        return jobs.filter(function (job) {
+            return job.status === 'running' || job.status === 'queued';
+        }).length;
+    }, [jobs]);
 
     // Close the open menu on any click outside it. The menu's own buttons stop propagation, so this only fires for
     // clicks elsewhere; the toggle button also stops propagation so opening one menu does not immediately re-close it.
@@ -226,13 +236,17 @@ const Sidebar = function ({ files, selected, open, isCollapsed, refreshing, coun
     };
 
     return (
-        <>
-            {open && <div className={styles.sidebarOverlay} onClick={onClose} />}
-
-            <aside className={cx(styles.sidebar, open && styles.open, isCollapsed && styles.collapsed)}>
-                <div className={styles.sidebarHead}>
-                    <h1>Runbooks</h1>
-                    <div className={styles.sidebarActions}>
+        <div className={styles.sidebar}>
+            <AccordionSection
+                title="Runbooks"
+                expanded={runbooksOpen}
+                onToggle={function () {
+                    setRunbooksOpen(function (previous) {
+                        return !previous;
+                    });
+                }}
+                actions={(
+                    <>
                         <button
                             type="button"
                             className={styles.sidebarAction}
@@ -252,11 +266,12 @@ const Sidebar = function ({ files, selected, open, isCollapsed, refreshing, coun
                         >
                             <RefreshIcon />
                         </button>
-                    </div>
-                </div>
+                    </>
+                )}
+            >
                 {files.length === 0 ?
                     (
-                        <p className={styles.empty}>No truths / reviews / specs / tasks files in this folder.</p>
+                        <p className={styles.empty}>No reviews / specs / tasks files in this folder.</p>
                     ) :
                     (
                         <ul>
@@ -275,8 +290,19 @@ const Sidebar = function ({ files, selected, open, isCollapsed, refreshing, coun
                             />
                         </ul>
                     )}
-            </aside>
-        </>
+            </AccordionSection>
+
+            <AccordionSection
+                title="Activity monitor"
+                expanded={monitorOpen}
+                onToggle={function () {
+                    setMonitorOpen(!monitorOpen);
+                }}
+                badge={activeCount > 0 ? <span className={styles.activityCount}>{activeCount}</span> : undefined}
+            >
+                <ActivityMonitor onOpenActivity={onOpenActivity} />
+            </AccordionSection>
+        </div>
     );
 };
 

@@ -26,7 +26,7 @@
             <title>file-name-validation-blocks-path-traversal</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>A runbooks file name may be a nested path like "docs/reviews.xml", but every route guards it twice: isValidRunbooksName requires the basename to match the family regex and each leading segment to match SEGMENT_REGEX (which excludes path separators and rejects "." and ".."), and resolveWithinCwd then resolves the name against cwd and confirms the result stays inside cwd as defense-in-depth. Beyond traversal, the create route writes with the 'wx' flag so adding a file is create-only and never overwrites, and an .runbooksignore match is rejected before any filesystem access.</content>
+            <content>A runbooks file name may be a nested path like "docs/reviews.xml", but every route guards it twice: isValidRunbooksName requires the basename to match the family regex and each leading segment to match SEGMENT_REGEX (which excludes path separators and rejects "." and ".."), and resolveWithinCwd then resolves the name against cwd and confirms the result stays inside cwd as defense-in-depth. Beyond traversal, the create route writes with the 'wx' flag so adding a file is create-only and never overwrites, and a name not matched by .runbooksinclude is rejected before any filesystem access.</content>
             <contentHash></contentHash>
             <relatesTo>
                 <ref>backend-imports-the-frontend-xml-core</ref>
@@ -45,7 +45,7 @@
             <title>backend-imports-the-frontend-xml-core</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The Express backend imports ENTRY_TYPES directly from frontend/src/runbooksXmlCore.js to validate the generate route's "type" field, so the list of entry kinds (truth/review/spec/task) has a single source of truth shared across both tiers rather than being duplicated. This works because runbooksXmlCore.js is plain ESM with no DOM or React dependency - the same module is consumed by the browser editor and by Node on the server.</content>
+            <content>The Express backend imports ENTRY_TYPES directly from frontend/src/runbooksXmlCore.js to validate the generate route's "type" field, so the list of entry kinds (review/spec/task) has a single source of truth shared across both tiers rather than being duplicated. This works because runbooksXmlCore.js is plain ESM with no DOM or React dependency - the same module is consumed by the browser editor and by Node on the server.</content>
             <contentHash></contentHash>
             <relatesTo>
                 <ref>file-name-validation-blocks-path-traversal</ref>

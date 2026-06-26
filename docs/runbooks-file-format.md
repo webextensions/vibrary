@@ -1,9 +1,9 @@
 # runbooks file format
 
-A runbooks file is a container of entries. Each `<entry>` carries its own `type` attribute - one of `truth`, `review`,
-`spec`, `task`, or `idea` - and a single file may hold any mix of them. The file itself has no type.
+A runbooks file is a container of entries. Each `<entry>` carries its own `type` attribute - one of `spec`, `review`,
+`task`, or `idea` - and a single file may hold any mix of them. The file itself has no type.
 
-File names follow five families (`truths.xml`/`truths-*.xml`, `reviews.xml`/`reviews-*.xml`, `specs.xml`/`specs-*.xml`,
+File names follow four families (`reviews.xml`/`reviews-*.xml`, `specs.xml`/`specs-*.xml`,
 `tasks.xml`/`tasks-*.xml`, `ideas.xml`/`ideas-*.xml`); the name is only a discovery and naming convention (and seeds the
 default in "Create entries with AI"), not a constraint on what an individual file may contain.
 
@@ -13,7 +13,7 @@ elements:
 ```xml
 <root>
     <entries>
-        <entry type="truth">
+        <entry type="spec">
             <title>some-hyphenated-title</title>
             <createdBy>Human</createdBy>
             <approved>1b6cecf787222b</approved>
@@ -35,9 +35,9 @@ elements:
 </root>
 ```
 
-All entry types share the same fields for now; the only behavioral difference is that the editor's "Apply this truth"
-action is shown only on `type="truth"` entries. Type-specific features for reviews/specs/tasks/ideas come later. An entry with
-no `type` attribute is treated as a `truth`.
+All entry types share the same fields for now; the only behavioral difference is that the editor's "Apply this spec"
+action is shown only on `type="spec"` entries. Type-specific features for reviews/tasks/ideas come later. An entry with
+no `type` attribute is treated as a `spec`.
 
 ## Fields
 

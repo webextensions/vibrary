@@ -1,6 +1,6 @@
 <root>
     <entries>
-        <entry type="truth">
+        <entry type="spec">
             <title>globally-installable-npm-package</title>
             <createdBy>AI</createdBy>
             <approved>18bbfa9e4f1e9</approved>
@@ -18,14 +18,14 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>frontend-react-vite</title>
             <createdBy>AI</createdBy>
             <approved>6541bd413c907</approved>
             <content>The frontend is a React single-page app written in TypeScript and built with Vite. The build output goes to dist/, which the server serves as static assets.</content>
             <contentHash>6541bd413c907</contentHash>
             <relatesTo>
-                <ref>truths-stored-as-xml</ref>
+                <ref>specs-stored-as-xml</ref>
             </relatesTo>
             <notes></notes>
             <labels>
@@ -36,14 +36,14 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>backend-express-server</title>
             <createdBy>AI</createdBy>
             <approved>2b10586f123c1</approved>
-            <content>The backend is a JavaScript (ESM) Express server. It lists runbooks files (truths / reviews / specs / tasks, named &lt;family&gt;.xml or &lt;family&gt;-*.xml) in the current folder and exposes a small JSON API to read and save them. It starts on port 3000 and advances to the next free port if busy.</content>
-            <contentHash>68db094eaee89</contentHash>
+            <content>The backend is a JavaScript (ESM) Express server. It lists runbooks files (reviews / specs / tasks, named &lt;family&gt;.xml or &lt;family&gt;-*.xml) in the current folder and exposes a small JSON API to read and save them. It starts on port 3000 and advances to the next free port if busy.</content>
+            <contentHash>f46c441bec224</contentHash>
             <relatesTo>
-                <ref>truths-stored-as-xml</ref>
+                <ref>specs-stored-as-xml</ref>
             </relatesTo>
             <notes>Port selection uses the get-port package; the browser is opened automatically on start.</notes>
             <labels>
@@ -54,12 +54,12 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
-            <title>truths-stored-as-xml</title>
+        <entry type="spec">
+            <title>specs-stored-as-xml</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>Each runbooks file is XML: a root element holding a &lt;metadata&gt; block with a &lt;type&gt; (truths, reviews, specs, or tasks) and an &lt;entries&gt; wrapper of &lt;entry type=&quot;...&quot;&gt; elements, each with a title, createdBy, approved, content, relatesTo, notes, and labels. The editor uses fast-xml-parser to round-trip between the XML and the structured form.</content>
-            <contentHash>7f093f2148029</contentHash>
+            <content>Each runbooks file is XML: a root element holding a &lt;metadata&gt; block with a &lt;type&gt; (reviews, specs, or tasks) and an &lt;entries&gt; wrapper of &lt;entry type=&quot;...&quot;&gt; elements, each with a title, createdBy, approved, content, relatesTo, notes, and labels. The editor uses fast-xml-parser to round-trip between the XML and the structured form.</content>
+            <contentHash>99cf18f0bfe5d</contentHash>
             <relatesTo>
                 <ref>frontend-react-vite</ref>
             </relatesTo>
@@ -72,7 +72,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>linting-with-eslint-config-ironplate</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -88,14 +88,14 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy></updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>content-hash-uses-cyrb53</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>A truth&apos;s &lt;contentHash&gt; is a cyrb53 hash of its &lt;content&gt;, computed by a pure-JS function shared by the browser, the node scripts, and the migration. A JS implementation is used deliberately: crypto.subtle.digest is async, and like crypto.randomUUID it is unavailable over plain HTTP on a LAN address (the phone case), while Node&apos;s crypto.createHash is not in the browser. cyrb53 is deterministic and identical across all of them, rendered as zero-padded hex (~13 chars).</content>
-            <contentHash>139fcd7a618733</contentHash>
+            <content>A spec&apos;s &lt;contentHash&gt; is a cyrb53 hash of its &lt;content&gt;, computed by a pure-JS function shared by the browser, the node scripts, and the migration. A JS implementation is used deliberately: crypto.subtle.digest is async, and like crypto.randomUUID it is unavailable over plain HTTP on a LAN address (the phone case), while Node&apos;s crypto.createHash is not in the browser. cyrb53 is deterministic and identical across all of them, rendered as zero-padded hex (~13 chars).</content>
+            <contentHash>c41c8a11f17be</contentHash>
             <relatesTo>
-                <ref>truths-stored-as-xml</ref>
+                <ref>specs-stored-as-xml</ref>
                 <ref>approval-tracks-content-staleness</ref>
             </relatesTo>
             <notes>The hash is recomputed from content on load rather than read from the stored &lt;contentHash&gt;, so a hand-edited value is corrected on the next save.</notes>
@@ -107,15 +107,15 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>approval-tracks-content-staleness</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>Human approval is stored as the content hash captured at sign-off time, kept in the &lt;approved&gt; field. A truth&apos;s approval state is derived by comparing that stored hash against the current content hash: &apos;none&apos; when never approved, &apos;current&apos; when they match, and &apos;stale&apos; when the content changed since sign-off. Only &apos;current&apos; truths count as approved; a stale approval drops out of the approved count until reapproved.</content>
-            <contentHash>88456c776a904</contentHash>
+            <content>Human approval is stored as the content hash captured at sign-off time, kept in the &lt;approved&gt; field. A spec&apos;s approval state is derived by comparing that stored hash against the current content hash: &apos;none&apos; when never approved, &apos;current&apos; when they match, and &apos;stale&apos; when the content changed since sign-off. Only &apos;current&apos; specs count as approved; a stale approval drops out of the approved count until reapproved.</content>
+            <contentHash>14819eb2d9a6e5</contentHash>
             <relatesTo>
                 <ref>content-hash-uses-cyrb53</ref>
-                <ref>truths-stored-as-xml</ref>
+                <ref>specs-stored-as-xml</ref>
             </relatesTo>
             <notes>The derivation is a pure function, so the same logic backs both the editor&apos;s status filter and any other consumer.</notes>
             <labels>
@@ -126,14 +126,14 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>order-insensitive-git-diff-driver</title>
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>Runbooks XML files (all four families) get a custom git diff driver (diff=runbooks-canon in .gitattributes) that runs node scripts/runbooks-diff.js, which canonicalizes both sides via scripts/canonicalize-runbooks.js. Canonicalization sorts fields within an entry, sorts whole &lt;entry&gt; elements by title, and sorts relatesTo/labels items, so any pure reordering collapses to identical output and produces no diff. git refuses to let a repo commit a diff driver command, so the command lives in a committed .gitconfig fragment that the prepare script wires into .git/config via include.path.</content>
             <contentHash>1be0a29bbb3e8f</contentHash>
             <relatesTo>
-                <ref>truths-stored-as-xml</ref>
+                <ref>specs-stored-as-xml</ref>
             </relatesTo>
             <notes>The prepare-script bootstrap is guarded to a real checkout: installed as a registry dependency there is no .git, so it is a no-op.</notes>
             <labels>
@@ -144,15 +144,15 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
-            <title>ai-generated-truths-via-headless-claude</title>
+        <entry type="spec">
+            <title>ai-generated-specs-via-headless-claude</title>
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>The backend can generate new entries on demand by spawning a headless &quot;claude -p&quot; agent with --dangerously-skip-permissions in the workspace folder. The agent is prompted to read the codebase and the file&apos;s existing entries and append new &lt;entry&gt; elements directly to the target file, matching the file&apos;s &lt;metadata&gt;&lt;type&gt;. A request is capped at 50 entries to guard against a runaway run, and the child process is killed after a 10-minute timeout.</content>
             <contentHash>d7ec806b54609</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
-                <ref>truths-stored-as-xml</ref>
+                <ref>specs-stored-as-xml</ref>
             </relatesTo>
             <notes>The CLI&apos;s raw stdout is forwarded to the browser console for debugging; a missing claude binary surfaces as a &quot;Claude CLI not found on PATH&quot; error.</notes>
             <labels>
@@ -163,16 +163,16 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
-            <title>truths-file-discovery-and-ignore</title>
+        <entry type="spec">
+            <title>specs-file-discovery-and-include</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The server discovers runbooks files by globbing **/{truths,reviews,specs,tasks}*.xml under the workspace (excluding node_modules and .git), then filtering names through a validator and a .runbooksignore file. The validator only accepts a basename of &lt;family&gt;.xml or &lt;family&gt;-&lt;something&gt;.xml (family is truths, reviews, specs, or tasks) and rejects any &quot;..&quot;/&quot;.&quot; path segment; combined with a defense-in-depth check that the resolved path stays inside cwd, a request can never traverse out of the workspace.</content>
-            <contentHash>32e8428adfea3</contentHash>
+            <content>The server discovers runbooks files by globbing **/{reviews,specs,tasks}*.xml under the workspace (excluding node_modules and .git), then keeping only names that pass a validator and match the .runbooksinclude file. .runbooksinclude is an include-list: a file is shown only when a pattern matches it, and a leading &quot;!&quot; excludes a match; with no file (or no match) nothing is shown. The validator only accepts a basename of &lt;family&gt;.xml or &lt;family&gt;-&lt;something&gt;.xml (family is reviews, specs, or tasks) and rejects any &quot;..&quot;/&quot;.&quot; path segment; combined with a defense-in-depth check that the resolved path stays inside cwd, a request can never traverse out of the workspace.</content>
+            <contentHash>106e3b277a074e</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
             </relatesTo>
-            <notes>.runbooksignore uses gitignore semantics and is re-read on every request, so edits take effect without a server restart, mirroring how git re-reads .gitignore.</notes>
+            <notes>.runbooksinclude uses gitignore-style glob semantics (comments, &quot;!&quot; exclusion, directory rules) and is re-read on every request, so edits take effect without a server restart, mirroring how git re-reads .gitignore.</notes>
             <labels>
                 <label>backend</label>
                 <label>security</label>
@@ -181,7 +181,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>potentially-truncated-text-should-have-title-attribute</title>
             <createdBy></createdBy>
             <approved>0ea73934b8fc2</approved>
@@ -194,7 +194,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>add-files-from-explorer-view-in-left-panel</title>
             <createdBy></createdBy>
             <approved>f91bd0b78869c</approved>
@@ -207,7 +207,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>more-options-for-files-and-folders-in-explorer-view</title>
             <createdBy></createdBy>
             <approved>732b392b15520</approved>

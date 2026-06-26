@@ -1,5 +1,0 @@
-# Files matching truths/reviews/specs/tasks*.xml that should be hidden from the runbooks listing.
-# gitignore semantics: comments, negation (!), and directory rules all work.
-
-# Scratch / throwaway runbooks files
-temp/

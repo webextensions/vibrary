@@ -1,11 +1,11 @@
 <root>
     <entries>
-        <entry type="truth">
-            <title>apply-this-truth-feature-with-custom-one-time-instructions</title>
+        <entry type="spec">
+            <title>apply-this-spec-feature-with-custom-one-time-instructions</title>
             <createdBy></createdBy>
-            <approved>19795c64caa3c1</approved>
-            <content>We have &quot;Apply this truth&quot; button, along with that, we should have a checkbox with message &quot;Provide custom one time instructions&quot;. Its default value should be unchecked. If it is checked, then when the user clicks &quot;Apply this truth&quot; button, then we shall prompt the user to provide custom one time instructions which would also be passed as part of the prompt for &quot;claude -p ...&quot; command which is going to be run.</content>
-            <contentHash>19795c64caa3c1</contentHash>
+            <approved>1ddf85990cf876</approved>
+            <content>We have &quot;Apply this spec&quot; button, along with that, we should have a checkbox with message &quot;Provide custom one time instructions&quot;. Its default value should be unchecked. If it is checked, then when the user clicks &quot;Apply this spec&quot; button, then we shall prompt the user to provide custom one time instructions which would also be passed as part of the prompt for &quot;claude -p ...&quot; command which is going to be run.</content>
+            <contentHash>1ddf85990cf876</contentHash>
             <relatesTo></relatesTo>
             <notes></notes>
             <labels></labels>
@@ -13,12 +13,12 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>populate-button-for-hyphenated-title-in-edit-mode</title>
             <createdBy></createdBy>
-            <approved>19b4675f89cf76</approved>
-            <content>When we are in edit mode for a &quot;truth&quot;, the &quot;hyphenated-title&quot; field should have a button right next to it called &quot;Populate&quot; which would populate the value of the field based on the &quot;truth&quot; content from the textarea below.</content>
-            <contentHash>19b4675f89cf76</contentHash>
+            <approved>39117bf57d5e8</approved>
+            <content>When we are in edit mode for a &quot;spec&quot;, the &quot;hyphenated-title&quot; field should have a button right next to it called &quot;Populate&quot; which would populate the value of the field based on the &quot;spec&quot; content from the textarea below.</content>
+            <contentHash>39117bf57d5e8</contentHash>
             <relatesTo></relatesTo>
             <notes></notes>
             <labels></labels>
@@ -26,7 +26,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>Human</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>husky-for-git-hooks</title>
             <createdBy></createdBy>
             <approved></approved>

@@ -1,30 +1,38 @@
+import type { RJSFSchema } from '@rjsf/utils';
 import cx from 'classnames';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
-import { applyTruth, populateTitle } from '../api.ts';
+import { useActivityQueue } from '../activityQueue.ts';
+import { applySpec, populateTitle, runTask } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
+import { type SchemaMap } from '../loadRunbooksFile.ts';
 import { promptDialog } from '../promptDialog.ts';
-import { AGENTS, hashContent, type Truth } from '../runbooksXml.ts';
+import { AGENTS, hashContent, type Spec } from '../runbooksXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
 import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, RemoveIcon, TypeIcon } from './Icons.tsx';
+import { optionsToPrompt, schemaDefaults } from './taskOptions.ts';
+import { TaskOptionsForm } from './TaskOptionsForm.tsx';
 
 import formStyles from './forms.module.css';
-import styles from './TruthCard.module.css';
+import styles from './SpecCard.module.css';
 
 type Option = { value: string; label: string };
 
 type Mode = 'review' | 'edit';
 
-type TruthCardProperties = {
-    value: Truth;
+type SpecCardProperties = {
+    value: Spec;
     index: number;
     mode: Mode;
+    // Briefly true after the card is scrolled to from a Search result, to ring-highlight it.
+    highlighted?: boolean;
+    schemas: SchemaMap;
     allTitles: string[];
-    onChange: (next: Truth) => void;
+    onChange: (next: Spec) => void;
     onToggleMode: () => void;
     onRemove: () => void;
     selected: boolean;
@@ -63,7 +71,7 @@ const Row = function (
     { label: string; htmlFor?: string; inline?: boolean; children: ReactNode }
 ) {
     return (
-        <div className={cx(styles.truthRow, inline && styles.truthRowInline)}>
+        <div className={cx(styles.specRow, inline && styles.specRowInline)}>
             {htmlFor === undefined ?
                 <span className={styles.rowLabel}>{label}</span> :
                 <label className={styles.rowLabel} htmlFor={htmlFor}>{label}</label>}
@@ -85,14 +93,29 @@ const Chips = function ({ items }: { items: string[] }) {
     );
 };
 
-const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleMode, onRemove, selected, onToggleSelect }: TruthCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onChange, onToggleMode, onRemove, selected, onToggleSelect }: SpecCardProperties) {
     const isEditing = mode === 'edit';
+    const { enqueue } = useActivityQueue();
     const [expanded, setExpanded] = useState(false);
     const [applying, setApplying] = useState(false);
     const [populating, setPopulating] = useState(false);
     const [useCustomInstructions, setUseCustomInstructions] = useState(false);
 
-    const update = function (patch: Partial<Truth>) {
+    // A task may declare a per-run options form via `formSchemaRef` ("<sibling-file>#<schemaId>"), resolved when the
+    // file loads into the `schemas` map (keyed by that same ref). A missing/dangling ref simply means "no form". The
+    // selected values are ephemeral (seeded from the schema defaults, sent only with the run), so they live in local
+    // state and are never written back to the entry.
+    const optionsSchema = useMemo<RJSFSchema | null>(function () {
+        if (value.type !== 'task' || value.formSchemaRef === '') {
+            return null;
+        }
+        return schemas[value.formSchemaRef] ?? null;
+    }, [value.type, value.formSchemaRef, schemas]);
+    const [optionsData, setOptionsData] = useState<Record<string, unknown>>(function () {
+        return optionsSchema ? schemaDefaults(optionsSchema) : {};
+    });
+
+    const update = function (patch: Partial<Spec>) {
         onChange({ ...value, ...patch });
     };
 
@@ -104,7 +127,13 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
         }
         setPopulating(true);
         try {
-            const title = await populateTitle(value.content);
+            const title = await enqueue({
+                kind: 'title',
+                label: value.title || 'derive title',
+                run: function (signal) {
+                    return populateTitle(value.content, signal);
+                }
+            });
             if (title !== '') {
                 update({ title });
             }
@@ -115,39 +144,57 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
         }
     };
 
-    // Run the headless agent that makes the codebase conform to this truth. Uses the in-memory value (current edits), so
-    // no save is needed first. The agent's raw stdout is logged to the browser console for debugging. When "Provide
-    // custom one time instructions" is ticked, prompt first and forward the entered text to this single run; cancelling
-    // (or leaving it blank) aborts the apply rather than running without the instructions the user opted to give.
+    // The expanded view exposes one headless-agent action whose meaning depends on the entry type: a spec is "applied"
+    // (the codebase is made to conform to it), a task is "run" (the work it describes is carried out). Both backend
+    // calls share the same signature, so a single handler drives either; only spec and task entries show the action.
+    const runAction = value.type === 'task' ?
+        { label: 'Run this task', busyLabel: 'Running...', run: runTask } :
+        { label: 'Apply this spec', busyLabel: 'Applying...', run: applySpec };
+    const hasRunAction = value.type === 'spec' || value.type === 'task';
+
+    // Queue the headless agent for this entry on the activity monitor (one job runs at a time). Uses the in-memory value
+    // (current edits), so no save is needed first; the job's raw stdout is logged to the browser console for debugging.
+    // When "Provide custom one time instructions" is ticked, prompt first and forward the entered text to this run;
+    // cancelling (or leaving it blank) aborts queuing rather than proceeding without the instructions the user opted to
+    // give. The card returns as soon as the job is enqueued - progress lives in the activity monitor.
     const handleApply = async function () {
         if (applying) {
             return;
         }
         let instructions = '';
         if (useCustomInstructions) {
+            setApplying(true);
             const entered = await promptDialog({
                 message: 'Custom one-time instructions for this run:',
                 placeholder: 'e.g. focus on the backend only, skip tests',
-                confirmLabel: 'Apply this truth'
+                confirmLabel: runAction.label
             });
+            setApplying(false);
             if (entered === null) {
                 return;
             }
             instructions = entered;
         }
-        setApplying(true);
+        const options = optionsSchema ? optionsToPrompt(optionsSchema, optionsData) : '';
+        const runArguments = { title: value.title, content: value.content, notes: value.notes, instructions, options };
+        // Enqueue and let the activity monitor own the run; await only to log the job's stdout when it eventually
+        // finishes (the await does not block the UI - the card has already returned control to the user).
         try {
-            const output = await applyTruth({ title: value.title, content: value.content, notes: value.notes, instructions });
+            const output = await enqueue({
+                kind: value.type === 'task' ? 'run-task' : 'apply-spec',
+                label: value.title,
+                run: function (signal, onEvent) {
+                    return runAction.run(runArguments, { signal, onEvent });
+                }
+            });
             console.log(output);
         } catch (error) {
             console.error(error);
-        } finally {
-            setApplying(false);
         }
     };
 
     const fieldId = function (name: string) {
-        return `truth-${value.id}-${name}`;
+        return `spec-${value.id}-${name}`;
     };
 
     const relatesToOptions = toOptions(allTitles.filter(function (title) {
@@ -168,7 +215,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
     const toggleApprove = async function () {
         if (isHumanApproved && !isHumanStale) {
             const confirmed = await confirmDialog(
-                'Remove your approval from this truth?',
+                'Remove your approval from this spec?',
                 'Remove approval'
             );
             if (!confirmed) {
@@ -180,10 +227,10 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
         update({ approved: currentHash });
     };
 
-    // Confirm before deleting the whole truth - removal is destructive and not undoable.
+    // Confirm before deleting the whole spec - removal is destructive and not undoable.
     const confirmRemove = async function () {
         const confirmed = await confirmDialog(
-            'Remove this truth?',
+            'Remove this spec?',
             'Remove'
         );
         if (confirmed) {
@@ -199,8 +246,8 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
         undefined;
 
     return (
-        <fieldset className={styles.truthCard}>
-            <div className={styles.truthCardHead}>
+        <fieldset id={`spec-${value.id}`} className={cx(styles.specCard, highlighted && styles.highlighted)}>
+            <div className={styles.specCardHead}>
                 <input
                     type="checkbox"
                     className={styles.selectCheckbox}
@@ -208,7 +255,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                     aria-label="Select entry"
                     onChange={onToggleSelect}
                 />
-                <div className={styles.truthCardTitleGroup}>
+                <div className={styles.specCardTitleGroup}>
                     <button
                         type="button"
                         className={styles.expandToggle}
@@ -233,7 +280,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                                     type="text"
                                     value={value.title}
                                     placeholder="hyphenated-title"
-                                    aria-label="Truth title"
+                                    aria-label="Spec title"
                                     onChange={function (changeEvent) {
                                         update({ title: changeEvent.target.value });
                                     }}
@@ -257,10 +304,10 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                             </>
                         ) :
                         (
-                            <span className={styles.truthCardTitle}>{value.title || `(untitled truth #${index + 1})`}</span>
+                            <span className={styles.specCardTitle}>{value.title || `(untitled spec #${index + 1})`}</span>
                         )}
                 </div>
-                <div className={styles.truthCardActions}>
+                <div className={styles.specCardActions}>
                     <button type="button" className={styles.remove} onClick={confirmRemove}>
                         <RemoveIcon /><span className={styles.actionText}>Remove</span>
                     </button>
@@ -278,13 +325,13 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                 </div>
             </div>
 
-            <div className={styles.truthFields}>
-                <div className={styles.truthContent}>
+            <div className={styles.specFields}>
+                <div className={styles.specContent}>
                     {isEditing ?
                         (
                             <textarea
                                 id={fieldId('content')}
-                                aria-label="Truth content"
+                                aria-label="Spec content"
                                 value={value.content}
                                 spellCheck={false}
                                 onChange={function (changeEvent) {
@@ -297,7 +344,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                 </div>
 
                 {expanded &&
-                <div className={styles.truthMore}>
+                <div className={styles.specMore}>
                     <Row label="Notes" htmlFor={isEditing ? fieldId('notes') : undefined}>
                         {isEditing ?
                             (
@@ -337,7 +384,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                                     inputId={fieldId('relates-to')}
                                     classNamePrefix="rs"
                                     isMulti
-                                    placeholder="Search truths..."
+                                    placeholder="Search specs..."
                                     options={relatesToOptions}
                                     value={toOptions(value.relatesTo)}
                                     onChange={function (options: MultiValue<Option>) {
@@ -404,8 +451,14 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                         <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
 
-                    {value.type === 'truth' &&
+                    {hasRunAction &&
                     <div className={styles.applyRow}>
+                        {optionsSchema &&
+                        <TaskOptionsForm
+                            schema={optionsSchema}
+                            formData={optionsData}
+                            onChange={setOptionsData}
+                        />}
                         <button
                             type="button"
                             className={styles.apply}
@@ -413,7 +466,7 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
                             onClick={handleApply}
                         >
                             {applying && <span className={styles.spinner} aria-hidden="true" />}
-                            {applying ? 'Applying...' : 'Apply this truth'}
+                            {applying ? runAction.busyLabel : runAction.label}
                         </button>
                         <label className={formStyles.checkbox} htmlFor={fieldId('custom-instructions')}>
                             <input
@@ -433,4 +486,4 @@ const TruthCard = function ({ value, index, mode, allTitles, onChange, onToggleM
     );
 };
 
-export { TruthCard };
+export { SpecCard };

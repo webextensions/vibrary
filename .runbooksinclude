@@ -1,0 +1,4 @@
+# Only runbooks files matching these patterns are shown in the listing.
+# gitignore-style globs; a leading "!" excludes a match. With no file (or no match), nothing is shown.
+*.xml
+!temp/**

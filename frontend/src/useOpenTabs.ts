@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getFile } from './api.ts';
-import { parseRunbooksXml, type Truth } from './runbooksXml.ts';
+import { loadRunbooksFile, type SchemaMap } from './loadRunbooksFile.ts';
+import { type Spec } from './runbooksXml.ts';
 
 type TabStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
 
 type InnerTab = 'structured' | 'raw';
 
 // Everything that used to be a single open file's state, now held once per open tab. The models live here so a tab's
-// unsaved edits survive switching to another tab (switching only changes activePath, never these arrays).
+// unsaved edits survive switching to another tab (switching only changes activePath, never these arrays). Tabs are
+// polymorphic: a 'file' tab edits a runbooks file; an 'activity' tab shows a queued job's live detail (keyed by jobId,
+// rendered from the activity queue) and carries no file state.
 type TabState = {
-    path: string; // unique key and sidebar identity
-    loading: boolean; // initial getFile() still in flight
+    path: string; // unique key and sidebar identity ('activity:<jobId>' for activity tabs)
+    kind: 'file' | 'activity';
+    jobId?: string; // activity tabs only: the job this tab tracks
+    title?: string; // activity tabs only: the label shown in the tab strip
+    loading: boolean; // initial getFile() still in flight (file tabs only)
     reloading: boolean; // reload-from-disk in flight
-    truths: Truth[];
+    specs: Spec[];
+    schemas: SchemaMap; // resolved option-form schemas for this file's entries, keyed by formSchemaRef
     rawFallback: string; // original XML, shown in the raw view when parsing failed
     parseError: string | null;
     innerTab: InnerTab; // the structured/raw toggle, independent per tab
@@ -28,9 +34,30 @@ type TabsState = { tabs: TabState[]; activePath: string | null };
 const newTab = function (path: string): TabState {
     return {
         path,
+        kind: 'file',
         loading: true,
         reloading: false,
-        truths: [],
+        specs: [],
+        schemas: {},
+        rawFallback: '',
+        parseError: null,
+        innerTab: 'structured',
+        status: { kind: 'idle' },
+        dirty: false,
+        reloadNonce: 0
+    };
+};
+
+const newActivityTab = function (jobId: string, title: string): TabState {
+    return {
+        path: `activity:${jobId}`,
+        kind: 'activity',
+        jobId,
+        title,
+        loading: false,
+        reloading: false,
+        specs: [],
+        schemas: {},
         rawFallback: '',
         parseError: null,
         innerTab: 'structured',
@@ -78,6 +105,18 @@ const useOpenTabs = function () {
         });
     }, []);
 
+    // Open (or focus) an activity tab for a queued job. Its content is read live from the activity queue, so unlike a
+    // file tab there is nothing to fetch.
+    const openActivity = useCallback(function (jobId: string, title: string) {
+        const path = `activity:${jobId}`;
+        setState(function (previous) {
+            if (previous.tabs.some(function (tab) { return tab.path === path; })) {
+                return { ...previous, activePath: path };
+            }
+            return { tabs: [...previous.tabs, newActivityTab(jobId, title)], activePath: path };
+        });
+    }, []);
+
     const closeTab = useCallback(function (path: string) {
         setState(function (previous) {
             const index = previous.tabs.findIndex(function (tab) { return tab.path === path; });
@@ -108,7 +147,7 @@ const useOpenTabs = function () {
 
         const loadAsync = async function (path: string) {
             try {
-                const content = await getFile(path);
+                const { content, specs, schemas } = await loadRunbooksFile(path);
                 setState(function (previous) {
                     if (previous.tabs.every(function (tab) { return tab.path !== path; })) {
                         return previous;
@@ -117,7 +156,7 @@ const useOpenTabs = function () {
                         ...previous,
                         tabs: previous.tabs.map(function (tab) {
                             return tab.path === path ?
-                                { ...tab, loading: false, truths: parseRunbooksXml(content), rawFallback: content, parseError: null } :
+                                { ...tab, loading: false, specs, schemas, rawFallback: content, parseError: null } :
                                 tab;
                         })
                     };
@@ -131,7 +170,7 @@ const useOpenTabs = function () {
                     return {
                         ...previous,
                         tabs: previous.tabs.map(function (tab) {
-                            return tab.path === path ? { ...tab, loading: false, truths: [], parseError: message } : tab;
+                            return tab.path === path ? { ...tab, loading: false, specs: [], schemas: {}, parseError: message } : tab;
                         })
                     };
                 });
@@ -156,6 +195,7 @@ const useOpenTabs = function () {
         activeTab,
         anyDirty,
         openOrFocus,
+        openActivity,
         closeTab,
         setActive,
         setInnerTab,

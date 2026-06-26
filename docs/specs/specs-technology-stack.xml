@@ -1,6 +1,6 @@
 <root>
     <entries>
-        <entry type="truth">
+        <entry type="spec">
             <title>pure-esm-and-node-version-requirements</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -19,12 +19,12 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>css-modules-camelcase-convention</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>Frontend styling uses CSS Modules: each component pairs with a *.module.css file that Vite scopes locally. The Vite config sets css.modules.localsConvention to camelCaseOnly, so a kebab-case class such as .truth-card is referenced from TypeScript as styles.truthCard while the CSS keeps its kebab-case names.</content>
-            <contentHash>b2a0add7d74fe</contentHash>
+            <content>Frontend styling uses CSS Modules: each component pairs with a *.module.css file that Vite scopes locally. The Vite config sets css.modules.localsConvention to camelCaseOnly, so a kebab-case class such as .spec-card is referenced from TypeScript as styles.specCard while the CSS keeps its kebab-case names.</content>
+            <contentHash>38ff74ec02a74</contentHash>
             <relatesTo>
                 <ref>vite-dev-proxy-and-concurrently</ref>
                 <ref>typescript-is-typecheck-only</ref>
@@ -39,7 +39,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>vite-dev-proxy-and-concurrently</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -59,7 +59,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>typescript-is-typecheck-only</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -79,7 +79,7 @@
             <updated>2026-06-25T00:00:00.000Z</updated>
             <updatedBy>AI</updatedBy>
         </entry>
-        <entry type="truth">
+        <entry type="spec">
             <title>git-diff-driver-bootstrapped-by-prepare</title>
             <createdBy>AI</createdBy>
             <approved></approved>
@@ -88,7 +88,7 @@
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
             </relatesTo>
-            <notes>.gitattributes binds the runbooks families (truths/reviews/specs/tasks, as &lt;family&gt;.xml / &lt;family&gt;-*.xml) to the runbooks-canon diff driver.</notes>
+            <notes>.gitattributes binds the runbooks families (reviews/specs/tasks, as &lt;family&gt;.xml / &lt;family&gt;-*.xml) to the runbooks-canon diff driver.</notes>
             <labels>
                 <label>tech-stack</label>
                 <label>git</label>

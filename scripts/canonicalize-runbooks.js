@@ -22,33 +22,33 @@ const compare = function (a, b) {
 };
 
 // approved needs no sort: it is a single string field, so it is already canonical.
-const sortLists = function (truth) {
+const sortLists = function (spec) {
     return {
-        ...truth,
-        relatesTo: truth.relatesTo.toSorted(compare),
-        labels: truth.labels.toSorted(compare)
+        ...spec,
+        relatesTo: spec.relatesTo.toSorted(compare),
+        labels: spec.labels.toSorted(compare)
     };
 };
 
 const canonicalize = function (xml) {
     // The file's own <metadata><type> drives output; the diff driver only sees a temp blob, so the name is unavailable.
     const { type, entries } = parseRunbooksXml(xml);
-    const fileType = type ?? 'truths';
-    const sorted = entries.map(function (truth) {
-        return sortLists(truth);
+    const fileType = type ?? 'specs';
+    const sorted = entries.map(function (spec) {
+        return sortLists(spec);
     });
 
     // Sort entries by <title>, then by the entry's own canonical text as a deterministic tiebreak so blank or
     // duplicate titles cannot leave a residual diff.
-    const keyed = sorted.map(function (truth) {
-        return { truth, key: serializeRunbooksXml(fileType, [truth]) };
+    const keyed = sorted.map(function (spec) {
+        return { spec, key: serializeRunbooksXml(fileType, [spec]) };
     });
     keyed.sort(function (a, b) {
-        return compare(a.truth.title, b.truth.title) || compare(a.key, b.key);
+        return compare(a.spec.title, b.spec.title) || compare(a.key, b.key);
     });
 
     return serializeRunbooksXml(fileType, keyed.map(function (entry) {
-        return entry.truth;
+        return entry.spec;
     }));
 };
 

@@ -1,40 +1,21 @@
+/* The Explorer view's content. The width, padding, scrolling and responsive shell live on the LeftPanel that hosts this;
+   this class stays as the scope for the file-tree styles below. */
 .sidebar {
-    width: 260px;
+    display: block;
+}
+
+/* Count of running + queued jobs, shown beside the "Activity monitor" accordion title. */
+.activity-count {
     flex-shrink: 0;
-    border-right: 1px solid #d0d7de;
-    padding: 16px;
-    overflow-y: auto;
-    transition: width 0.2s ease;
-}
-
-/* Desktop-only inline collapse: the sidebar shrinks to nothing and the editor reflows to fill the freed width. Scoped
-   to wide screens so a persisted collapse never zeroes out the mobile off-canvas drawer below. */
-@media (min-width: 701px) {
-    .sidebar.collapsed {
-        width: 0;
-        padding: 0;
-        border-right: 0;
-        overflow: hidden;
-    }
-}
-
-.sidebar-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 36px;
-    margin: 0 0 12px;
-}
-
-.sidebar h1 {
-    margin: 0;
-    font-size: 18px;
-}
-
-.sidebar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #0969da;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
 }
 
 .sidebar-action,
@@ -191,7 +172,7 @@
     background: #ffebe9;
 }
 
-/* Folder disclosure row: the chevron rotates from pointing right (collapsed) to down (expanded), like the truth card */
+/* Folder disclosure row: the chevron rotates from pointing right (collapsed) to down (expanded), like the spec card */
 .folder-row svg {
     flex-shrink: 0;
     color: #656d76;
@@ -205,35 +186,4 @@
 .empty {
     color: #656d76;
     font-size: 14px;
-}
-
-.sidebar-overlay {
-    display: none;
-}
-
-@media (max-width: 700px) {
-    /* The sidebar becomes an off-canvas drawer that slides in when open */
-    .sidebar {
-        position: fixed;
-        inset: 0 auto 0 0;
-        z-index: 20;
-        width: 80%;
-        max-width: 300px;
-        background: #fff;
-        transform: translateX(-100%);
-        transition: transform 0.2s ease;
-        box-shadow: 0 0 16px rgba(0, 0, 0, 0.25);
-    }
-
-    .sidebar.open {
-        transform: translateX(0);
-    }
-
-    .sidebar-overlay {
-        display: block;
-        position: fixed;
-        inset: 0;
-        z-index: 10;
-        background: rgba(0, 0, 0, 0.4);
-    }
 }

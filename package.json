@@ -1,7 +1,7 @@
 {
     "name": "runbooks",
     "version": "1.0.0",
-    "description": "Browse and edit runbooks (truths / reviews / specs / tasks) XML files in the current folder through a small web UI",
+    "description": "Browse and edit runbooks (reviews / specs / tasks) XML files in the current folder through a small web UI",
     "type": "module",
     "bin": {
         "runbooks": "./bin/runbooks.js",
@@ -55,6 +55,9 @@
     "devDependencies": {
         "@eslint-react/eslint-plugin": "^5.9.1",
         "@eslint/js": "^10.0.1",
+        "@rjsf/core": "^6.6.2",
+        "@rjsf/utils": "^6.6.2",
+        "@rjsf/validator-ajv8": "^6.6.2",
         "@stylistic/eslint-plugin": "^5.10.0",
         "@types/node": "^26.0.0",
         "@types/react": "^19.2.17",
@@ -80,6 +83,7 @@
         "react-draggable": "^4.7.0",
         "react-responsive": "^10.0.1",
         "react-select": "^5.10.2",
+        "streamdown": "^2.5.0",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.61.1",
         "vite": "^8.0.16"

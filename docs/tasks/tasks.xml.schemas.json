@@ -1,0 +1,28 @@
+{
+    "update-npm-packages-options": {
+        "$id": "update-npm-packages-options",
+        "type": "object",
+        "properties": {
+            "updateDependencies": {
+                "type": "boolean",
+                "title": "Update dependencies",
+                "default": true
+            },
+            "updateDevDependencies": {
+                "type": "boolean",
+                "title": "Update devDependencies",
+                "default": true
+            },
+            "thoroughAnalysis": {
+                "type": "boolean",
+                "title": "Thorough analysis (research upgrade/migration guides online)",
+                "default": true
+            },
+            "ignorePinnedPackages": {
+                "type": "boolean",
+                "title": "Ignore upgrading packages pinned with \"=\" in their semver",
+                "default": true
+            }
+        }
+    }
+}

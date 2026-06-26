@@ -1,4 +1,4 @@
-// Turns the flat list of file paths from the API (POSIX-style, e.g. "docs/api/truths-auth.xml") into a nested tree for
+// Turns the flat list of file paths from the API (POSIX-style, e.g. "docs/api/specs-auth.xml") into a nested tree for
 // the sidebar. Only folders that lead to a file appear, since the list itself only contains files.
 
 type FileNode = { kind: 'file'; name: string; path: string };

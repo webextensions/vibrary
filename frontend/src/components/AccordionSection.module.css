@@ -1,0 +1,64 @@
+.section {
+    border-top: 1px solid #d0d7de;
+}
+
+.section:first-child {
+    border-top: 0;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 36px;
+}
+
+/* The chevron + title fills the bar so the whole width toggles the section; the actions slot sits beside it and is not
+   part of the toggle button, so clicking an action never collapses the section. */
+.header-toggle {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 6px 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    color: #1f2328;
+}
+
+/* Chevron points right when collapsed, rotates down when expanded - mirrors the file tree's folder rows. */
+.header-toggle svg {
+    flex-shrink: 0;
+    color: #656d76;
+    transition: transform 0.15s ease;
+}
+
+.header-toggle[aria-expanded="true"] svg {
+    transform: rotate(90deg);
+}
+
+.title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #656d76;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.body {
+    padding: 0 0 12px;
+}

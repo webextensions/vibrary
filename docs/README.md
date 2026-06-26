@@ -1,7 +1,7 @@
 # Runbooks documentation
 
-Runbooks is a small, globally-installable web app for browsing and editing runbooks files - `truths`, `reviews`,
-`specs`, and `tasks` XML files (`<family>.xml` / `<family>-*.xml`) in a folder. Run `runbooks-server` (or
+Runbooks is a small, globally-installable web app for browsing and editing runbooks files - `reviews`, `specs`,
+and `tasks` XML files (`<family>.xml` / `<family>-*.xml`) in a folder. Run `runbooks-server` (or
 `runbooks server`) in a folder, and it opens a browser UI listing those files; selecting one opens it in an editor.
 
 - [runbooks-file-format.md](runbooks-file-format.md) - the XML schema for a runbooks file and what each field means.

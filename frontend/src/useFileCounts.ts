@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getApprovalCount } from './api.ts';
-import { countApprovedTruths, type Truth } from './runbooksXml.ts';
+import { countApprovedSpecs, type Spec } from './runbooksXml.ts';
 
 // Per-file approved/total tally shown in the sidebar; loaded lazily, so each file is 'loading' until its count arrives.
 type FileCount = { kind: 'loading' } | { kind: 'ready'; approved: number; total: number } | { kind: 'error' };
 
 // An open tab whose tally is derived from its live in-memory model rather than a fetch.
-type OpenTab = { path: string; truths: Truth[]; parseError: string | null };
+type OpenTab = { path: string; specs: Spec[]; parseError: string | null };
 
 // Owns the sidebar's approved/total tallies: loads them lazily for every file, keeps every open tab's badge in sync with
 // unsaved edits, and lets a save record its just-written count so the badge stays right after switching away.
@@ -46,9 +46,9 @@ const useFileCounts = function (files: string[], openTabs: OpenTab[]) {
 
     // Record a file's tally directly from its model (called after a save) so its badge stays correct once it is no
     // longer the open file and countForFile falls back to this stored value.
-    const markCounted = useCallback(function (name: string, truths: Truth[]) {
+    const markCounted = useCallback(function (name: string, specs: Spec[]) {
         setFileCounts(function (previous) {
-            return { ...previous, [name]: { kind: 'ready', approved: countApprovedTruths(truths), total: truths.length } };
+            return { ...previous, [name]: { kind: 'ready', approved: countApprovedSpecs(specs), total: specs.length } };
         });
     }, []);
 
@@ -59,7 +59,7 @@ const useFileCounts = function (files: string[], openTabs: OpenTab[]) {
             return tab.path === name;
         });
         if (open !== undefined && open.parseError === null) {
-            return { kind: 'ready', approved: countApprovedTruths(open.truths), total: open.truths.length };
+            return { kind: 'ready', approved: countApprovedSpecs(open.specs), total: open.specs.length };
         }
         return fileCounts[name] ?? { kind: 'loading' };
     };

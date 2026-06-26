@@ -1,0 +1,66 @@
+/* The left panel: rail + body laid out side by side. The whole thing is the off-canvas drawer on small screens. */
+.left-panel {
+    display: flex;
+    flex-shrink: 0;
+    height: 100%;
+}
+
+/* The view body beside the rail: a fixed-width, scrolling column with its own right border separating it from the
+   editor. Each view (Explorer / Search / Source Control) fills it. */
+.panel-body {
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid #d0d7de;
+    padding: 16px;
+    overflow-y: auto;
+    transition: width 0.2s ease;
+}
+
+/* Desktop-only inline collapse: only the body collapses, so the rail stays reachable (VS Code behavior). Scoped to wide
+   screens so a persisted collapse never zeroes out the mobile off-canvas drawer below. */
+@media (min-width: 701px) {
+    .left-panel.collapsed .panel-body {
+        width: 0;
+        padding: 0;
+        border-right: 0;
+        overflow: hidden;
+    }
+}
+
+.overlay {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    /* The rail + body slide in together as an off-canvas drawer. */
+    .left-panel {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 20;
+        width: 85%;
+        max-width: 320px;
+        background: #fff;
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+        box-shadow: 0 0 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .left-panel.open {
+        transform: translateX(0);
+    }
+
+    /* Fill whatever width remains beside the rail rather than the desktop fixed column. */
+    .panel-body {
+        width: auto;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.4);
+    }
+}

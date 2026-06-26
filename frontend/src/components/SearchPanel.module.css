@@ -1,0 +1,102 @@
+.search-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* The search box: an inline icon beside a borderless input, wrapped in one bordered field. */
+.search-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #656d76;
+}
+
+.search-field:focus-within {
+    border-color: #54aeff;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: none;
+    color: #1f2328;
+    font: inherit;
+    outline: none;
+}
+
+.message {
+    margin: 0;
+    color: #656d76;
+    font-size: 14px;
+}
+
+.summary {
+    margin: 0;
+    color: #656d76;
+    font-size: 12px;
+}
+
+.result-list,
+.match-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.file-group {
+    margin-bottom: 8px;
+}
+
+.file-path {
+    margin: 0 0 2px;
+    overflow: hidden;
+    color: #656d76;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.match-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: none;
+    color: #1f2328;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.match-row:hover {
+    background: #f3f4f6;
+}
+
+.line-number {
+    flex-shrink: 0;
+    color: #656d76;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.match-text {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mark {
+    background: #fff3c4;
+    color: inherit;
+}

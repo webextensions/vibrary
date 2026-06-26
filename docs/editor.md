@@ -1,7 +1,7 @@
 # The editor
 
 When you select a file in the sidebar, it opens in an editor with two tabs. Every entry uses the same editor regardless
-of its type; the only difference today is that the "Apply this truth" action is shown only on `truth` entries. A single
+of its type; the only difference today is that the "Apply this spec" action is shown only on `spec` entries. A single
 file can hold a mix of entry types.
 
 ## Structured tab (source of truth)
@@ -11,7 +11,7 @@ get saved, and the Raw tab is generated from this form.
 
 Each entry is shown as a card with these controls:
 
-- **Truth title** - text input. On blur it is normalized to a hyphenated form (lowercase, whitespace -> `-`).
+- **Spec title** - text input. On blur it is normalized to a hyphenated form (lowercase, whitespace -> `-`).
 - **Created by** - single-select (`Human` or `AI`), clearable.
 - **Approved by** - a single `Human` checkbox; editable in both review and edit modes. Approving stores a hash of the
   current content, so the approval can later be detected as stale (see the Approve button below and
@@ -28,7 +28,7 @@ Each entry is shown as a card with these controls:
   after a save.
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
-entries with AI** opens a dialog where you pick what to create (truths / reviews / specs / tasks - defaulting to the
+entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks - defaulting to the
 open file's name family) and how many; a headless agent then appends that many entries of the chosen type to the file.
 **Remove** on a card deletes that entry.
 

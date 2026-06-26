@@ -1,19 +1,19 @@
-import { spawn } from 'node:child_process';
+import { CLAUDE_STREAM_FLAGS, spawnClaudeStreamAsync } from './spawnClaude.js';
 
 // Give the headless agent room to read the codebase and edit files; reject rather than hang forever if it stalls.
 const APPLY_TIMEOUT_MS = 10 * 60 * 1000;
 
-// The instruction handed to "claude -p". It makes the codebase conform to every selected truth in a single run, editing
+// The instruction handed to "claude -p". It makes the codebase conform to every selected spec in a single run, editing
 // files on disk as needed. Each entry becomes a labeled block (Title / Content / optional Notes); the Notes line is
 // omitted when an entry has none.
 const buildPrompt = function (entries) {
     const lines = [
-        'Apply the following truths to this project\'s codebase. Read them, then make any code changes needed so the',
+        'Apply the following specs to this project\'s codebase. Read them, then make any code changes needed so the',
         'project conforms to all of them. Edit files directly.',
         ''
     ];
     for (const [index, { title, content, notes }] of entries.entries()) {
-        lines.push(`Truth ${index + 1}:`);
+        lines.push(`Spec ${index + 1}:`);
         lines.push(`Title: ${title}`);
         lines.push(`Content: ${content}`);
         if (notes !== '') {
@@ -24,46 +24,18 @@ const buildPrompt = function (entries) {
     return lines.join('\n');
 };
 
-// Run the headless agent to make `cwd` conform to all the given truths in one run. Resolves with the CLI's raw stdout on
-// a clean exit (the caller forwards it to the browser console for debugging); rejects with a descriptive Error otherwise
-// (missing CLI, non-zero exit, or timeout).
-const applyTruthsAsync = function ({ cwd, entries }) {
-    return new Promise(function (resolve, reject) {
-        const child = spawn(
-            'claude',
-            ['-p', buildPrompt(entries), '--dangerously-skip-permissions'],
-            { cwd, timeout: APPLY_TIMEOUT_MS }
-        );
-
-        let stdout = '';
-        let stderr = '';
-        child.stdout.on('data', function (chunk) {
-            stdout += chunk.toString();
-        });
-        child.stderr.on('data', function (chunk) {
-            stderr += chunk.toString();
-        });
-
-        child.on('error', function (error) {
-            if (error.code === 'ENOENT') {
-                reject(new Error('Claude CLI not found on PATH'));
-                return;
-            }
-            reject(error);
-        });
-
-        child.on('close', function (code, signal) {
-            if (signal === 'SIGTERM') {
-                reject(new Error('Applying the truths timed out'));
-                return;
-            }
-            if (code === 0) {
-                resolve(stdout);
-                return;
-            }
-            reject(new Error(stderr.trim() || `Claude exited with code ${code}`));
-        });
+// Run the headless agent to make `cwd` conform to all the given specs in one run, streaming its activity line by line
+// through `onLine` (claude's stream-json events). Resolves on a clean exit; rejects with a descriptive Error otherwise
+// (missing CLI, non-zero exit, timeout, or abort).
+const applySpecsAsync = function ({ cwd, entries, signal, onLine }) {
+    return spawnClaudeStreamAsync({
+        cwd,
+        args: ['-p', buildPrompt(entries), ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
+        timeoutMs: APPLY_TIMEOUT_MS,
+        timeoutMessage: 'Applying the specs timed out',
+        signal,
+        onLine
     });
 };
 
-export { applyTruthsAsync };
+export { applySpecsAsync };
