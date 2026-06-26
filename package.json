@@ -50,6 +50,7 @@
         "helpmate": "^1.9.0",
         "ignore": "^7.0.5",
         "open": "^11.0.0",
+        "re-resizable": "^6.11.2",
         "react-syntax-highlighter": "^16.1.1"
     },
     "devDependencies": {

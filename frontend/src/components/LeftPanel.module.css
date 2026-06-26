@@ -5,26 +5,41 @@
     height: 100%;
 }
 
-/* The view body beside the rail: a fixed-width, scrolling column with its own right border separating it from the
-   editor. Each view (Explorer / Search / Source Control) fills it. */
+/* The view body beside the rail: a scrolling column with its own right border separating it from the editor. It fills
+   the resizable wrapper that owns its width. Each view (Explorer / Search / Source Control) fills it. */
 .panel-body {
-    width: 260px;
-    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
     border-right: 1px solid #d0d7de;
     padding: 16px;
     overflow-y: auto;
+}
+
+/* The re-resizable wrapper owns the body's width on desktop. overflow:hidden makes the collapsed (zero-width) state
+   clip the body's border and padding cleanly - the collapse is driven by the controlled size prop, animated here, and
+   the mobile drawer never mounts this wrapper. */
+.resizable-body {
+    flex-shrink: 0;
+    height: 100%;
+    overflow: hidden;
     transition: width 0.2s ease;
 }
 
-/* Desktop-only inline collapse: only the body collapses, so the rail stays reachable (VS Code behavior). Scoped to wide
-   screens so a persisted collapse never zeroes out the mobile off-canvas drawer below. */
-@media (min-width: 701px) {
-    .left-panel.collapsed .panel-body {
-        width: 0;
-        padding: 0;
-        border-right: 0;
-        overflow: hidden;
-    }
+/* Drop the width transition mid-drag so the grabber tracks the pointer without lag; also stop text selection. */
+.resizable-body.resizing {
+    transition: none;
+    user-select: none;
+}
+
+/* The grabber on the body's right edge, overlapping the border. Transparent until hovered/dragged. */
+.resize-handle {
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.resize-handle:hover,
+.resizable-body.resizing .resize-handle {
+    background: #54aeff;
 }
 
 .overlay {
