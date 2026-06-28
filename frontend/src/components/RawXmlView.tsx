@@ -26,7 +26,7 @@ const containerStyle = {
 };
 
 // Persist the line-wrap choice so it survives reloads and new sessions. Defaults to wrapping when nothing is stored.
-const WRAP_STORAGE_KEY = 'runbooks:raw-wrap';
+const WRAP_STORAGE_KEY = 'vibrary:raw-wrap';
 
 const RawXmlView = function ({ xml }: { xml: string }) {
     // markup is the only grammar this build needs; registering here is idempotent and cheap (the Raw pane re-renders

@@ -63,7 +63,7 @@
             <title>typescript-is-typecheck-only</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>TypeScript is configured with noEmit and strict (target ES2023, moduleResolution bundler), so it only type-checks; Vite (esbuild for transpilation, Rollup for bundling) produces the actual dist/ output. allowJs is enabled so plain .js modules such as frontend/src/runbooksXmlCore.js can coexist with and be imported by the .ts sources.</content>
+            <content>TypeScript is configured with noEmit and strict (target ES2023, moduleResolution bundler), so it only type-checks; Vite (esbuild for transpilation, Rollup for bundling) produces the actual dist/ output. allowJs is enabled so plain .js modules such as frontend/src/vibraryXmlCore.js can coexist with and be imported by the .ts sources.</content>
             <contentHash>185fdc682281b</contentHash>
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
@@ -83,12 +83,12 @@
             <title>git-diff-driver-bootstrapped-by-prepare</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The diff driver for runbooks XML files is bootstrapped per-clone by the prepare npm script (scripts/setup-git-textconv.js), which adds include.path=../.gitconfig to the local .git/config. git refuses to let a repository commit the command a diff driver runs, so that command lives in the committed .gitconfig fragment and each clone only wires in the include. The script is a no-op when there is no .git directory, for example when runbooks is installed as a dependency from the registry.</content>
+            <content>The diff driver for vibrary XML files is bootstrapped per-clone by the prepare npm script (scripts/setup-git-textconv.js), which adds include.path=../.gitconfig to the local .git/config. git refuses to let a repository commit the command a diff driver runs, so that command lives in the committed .gitconfig fragment and each clone only wires in the include. The script is a no-op when there is no .git directory, for example when vibrary is installed as a dependency from the registry.</content>
             <contentHash>5c01103fea94b</contentHash>
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
             </relatesTo>
-            <notes>.gitattributes binds the runbooks families (reviews/specs/tasks, as &lt;family&gt;.xml / &lt;family&gt;-*.xml) to the runbooks-canon diff driver.</notes>
+            <notes>.gitattributes binds the vibrary families (reviews/specs/tasks, as &lt;family&gt;.xml / &lt;family&gt;-*.xml) to the vibrary-canon diff driver.</notes>
             <labels>
                 <label>tech-stack</label>
                 <label>git</label>

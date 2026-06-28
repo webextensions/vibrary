@@ -13,7 +13,7 @@ import { notify } from './notifier.js';
 // per-session marker keyed by that parent pid so the browser opens and the notification fire only on the first run,
 // not on every watch restart.
 const isFirstRunOfSession = function () {
-    const marker = path.join(tmpdir(), `runbooks-start-${process.ppid}.marker`);
+    const marker = path.join(tmpdir(), `vibrary-start-${process.ppid}.marker`);
     if (existsSync(marker)) {
         return false;
     }
@@ -52,5 +52,5 @@ const firstRun = isFirstRunOfSession();
 const { url } = await startServer({ open: firstRun, hmr: values.hmr });
 
 if (firstRun) {
-    notify('runbooks-server', `Running at ${url}`);
+    notify('vibrary-server', `Running at ${url}`);
 }

@@ -61,7 +61,7 @@ export default [
         // or the plain helper modules, which intentionally export non-component values
         files: [
             'frontend/src/api.ts',
-            'frontend/src/runbooksXml.ts',
+            'frontend/src/vibraryXml.ts',
             'frontend/vite.config.ts'
         ],
         rules: {

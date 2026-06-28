@@ -12,16 +12,16 @@ import { TabBar } from './components/TabBar.tsx';
 import { SpecsEditor, type Option } from './components/SpecsEditor.tsx';
 import { confirmDialog } from './confirmDialog.ts';
 import { promptDialog } from './promptDialog.ts';
-import { loadRunbooksFile } from './loadRunbooksFile.ts';
+import { loadVibraryFile } from './loadVibraryFile.ts';
 import { readSessionTabs, writeSessionTabs } from './sessionTabs.ts';
-import { type EntryType, entryTypeFromName, serializeRunbooksXml, type Spec } from './runbooksXml.ts';
+import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './vibraryXml.ts';
 import { useFileCounts } from './useFileCounts.ts';
 import { useOpenTabs } from './useOpenTabs.ts';
 
 import styles from './App.module.css';
 
 // Persist the desktop collapse choice so it survives reloads. Defaults to expanded when nothing is stored.
-const SIDEBAR_STORAGE_KEY = 'runbooks:sidebar-collapsed';
+const SIDEBAR_STORAGE_KEY = 'vibrary:sidebar-collapsed';
 
 // Below this width the sidebar is an off-canvas drawer; above it, an inline panel that collapses in place.
 const MOBILE_QUERY = '(max-width: 700px)';
@@ -154,7 +154,7 @@ const App = function () {
     }, [openOrFocus]);
 
     // The sidebar's add button: prompt for a name, create the empty file on the server, then refresh the list and open
-    // it. The name must match the runbooks naming convention (<family>.xml or <family>-<name>.xml, where family is
+    // it. The name must match the vibrary naming convention (<family>.xml or <family>-<name>.xml, where family is
     // reviews/specs/tasks); the server validates and surfaces any problem (bad name, already exists) as the
     // load-error banner.
     const handleAddFile = useCallback(async function () {
@@ -204,7 +204,7 @@ const App = function () {
 
     // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
     // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
-    // server validates the runbooks naming convention, mirroring handleAddFile.
+    // server validates the vibrary naming convention, mirroring handleAddFile.
     const handleNewFile = useCallback(async function (folderPath: string) {
         const name = await promptDialog({
             message: `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml):`,
@@ -244,7 +244,7 @@ const App = function () {
         }
         patchTab(path, { reloading: true });
         try {
-            const { content, specs, schemas } = await loadRunbooksFile(path);
+            const { content, specs, schemas } = await loadVibraryFile(path);
             patchTab(path, {
                 specs,
                 schemas,
@@ -266,7 +266,7 @@ const App = function () {
         if (activeTab === null) {
             return '';
         }
-        return activeTab.parseError === null ? serializeRunbooksXml(activeTab.specs) : activeTab.rawFallback;
+        return activeTab.parseError === null ? serializeVibraryXml(activeTab.specs) : activeTab.rawFallback;
     }, [activeTab]);
 
     const onSave = useCallback(async function () {
@@ -277,7 +277,7 @@ const App = function () {
         const specs = activeTab.specs;
         patchTab(path, { status: { kind: 'saving' } });
         try {
-            await saveFile(path, serializeRunbooksXml(specs));
+            await saveFile(path, serializeVibraryXml(specs));
             patchTab(path, { status: { kind: 'idle' }, dirty: false });
             markCounted(path, specs);
             setAllTitles(await loadAllSpecTitles());
@@ -294,7 +294,7 @@ const App = function () {
         }
         const path = activeTab.path;
         if (activeTab.dirty) {
-            await saveFile(path, serializeRunbooksXml(activeTab.specs));
+            await saveFile(path, serializeVibraryXml(activeTab.specs));
             patchTab(path, { dirty: false, status: { kind: 'idle' } });
         }
         const claudeOutput = await enqueue({
@@ -305,8 +305,8 @@ const App = function () {
             }
         });
         // Surface the agent's raw output for debugging the generation run.
-        console.log(`[runbooks] claude -p output for ${path}:\n${claudeOutput}`);
-        const { content, specs, schemas } = await loadRunbooksFile(path);
+        console.log(`[vibrary] claude -p output for ${path}:\n${claudeOutput}`);
+        const { content, specs, schemas } = await loadVibraryFile(path);
         patchTab(path, {
             specs,
             schemas,

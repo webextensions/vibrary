@@ -6,8 +6,8 @@ import Select from 'react-select';
 import { useActivityQueue } from '../activityQueue.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
-import { type SchemaMap } from '../loadRunbooksFile.ts';
-import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPE_BY_FAMILY, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, type Spec } from '../runbooksXml.ts';
+import { type SchemaMap } from '../loadVibraryFile.ts';
+import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPE_BY_FAMILY, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, type Spec } from '../vibraryXml.ts';
 
 import { AiIcon, PlusIcon } from './Icons.tsx';
 import { ResponsiveDialog } from './ResponsiveDialog.tsx';

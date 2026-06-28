@@ -1,2 +1,2 @@
-[diff "runbooks-canon"]
-	command = node scripts/runbooks-diff.js
+[diff "vibrary-canon"]
+	command = node scripts/vibrary-diff.js

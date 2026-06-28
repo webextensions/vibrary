@@ -34,7 +34,7 @@ const highlight = function (text: string, query: string): ReactNode {
     return parts;
 };
 
-// Full-text search across the included runbooks files. Results are grouped by file; clicking a match opens the file and
+// Full-text search across the included vibrary files. Results are grouped by file; clicking a match opens the file and
 // asks the editor to scroll to / highlight the first matching entry (see App's searchTarget wiring).
 const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, query: string) => void }) {
     const [query, setQuery] = useState('');

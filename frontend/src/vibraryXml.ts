@@ -1,5 +1,5 @@
-// Runtime lives in the framework-free ./runbooksXmlCore.js so it can be reused outside the browser build (for example by
-// scripts/canonicalize-runbooks.js under plain node). This file is the type layer: it declares Agent/Spec and re-exports
+// Runtime lives in the framework-free ./vibraryXmlCore.js so it can be reused outside the browser build (for example by
+// scripts/canonicalize-vibrary.js under plain node). This file is the type layer: it declares Agent/Spec and re-exports
 // the core with precise signatures so all consumers keep full type-checking.
 import {
     AGENTS as AGENTSImpl,
@@ -10,9 +10,9 @@ import {
     ENTRY_TYPES as ENTRY_TYPESImpl,
     entryTypeFromName as entryTypeFromNameImpl,
     hashContent as hashContentImpl,
-    parseRunbooksXml as parseRunbooksXmlImpl,
-    serializeRunbooksXml as serializeRunbooksXmlImpl
-} from './runbooksXmlCore.js';
+    parseVibraryXml as parseVibraryXmlImpl,
+    serializeVibraryXml as serializeVibraryXmlImpl
+} from './vibraryXmlCore.js';
 
 type Agent = 'Human' | 'AI';
 
@@ -65,8 +65,8 @@ const ENTRY_TYPES = ENTRY_TYPESImpl as EntryType[];
 const ENTRY_TYPE_BY_FAMILY = ENTRY_TYPE_BY_FAMILYImpl as Record<string, EntryType>;
 const entryTypeFromName = entryTypeFromNameImpl as (name: string) => EntryType;
 const hashContent = hashContentImpl as (spec: Spec) => string;
-const parseRunbooksXml = parseRunbooksXmlImpl as (xml: string) => Spec[];
-const serializeRunbooksXml = serializeRunbooksXmlImpl as (entries: Spec[]) => string;
+const parseVibraryXml = parseVibraryXmlImpl as (xml: string) => Spec[];
+const serializeVibraryXml = serializeVibraryXmlImpl as (entries: Spec[]) => string;
 
 export {
     type Agent,
@@ -80,10 +80,10 @@ export {
     type EntryType,
     entryTypeFromName,
     hashContent,
-    parseRunbooksXml,
-    serializeRunbooksXml,
+    parseVibraryXml,
+    serializeVibraryXml,
     type Spec
 };
 
 // Pure pass-through (no retyping needed), so re-export it straight from the core.
-export { nowTimestamp } from './runbooksXmlCore.js';
+export { nowTimestamp } from './vibraryXmlCore.js';

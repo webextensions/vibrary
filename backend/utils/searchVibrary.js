@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { listRunbooksFiles } from './runbooksFiles.js';
+import { listVibraryFiles } from './vibraryFiles.js';
 
 // Bound the response so a broad query against a large folder cannot return an unbounded payload; the UI notes when a
 // result set was truncated.
@@ -26,15 +26,15 @@ const collectMatchesInFile = function (content, needle, limit) {
     return matches;
 };
 
-// Case-insensitive substring search across exactly the files the Explorer lists (the .runbooksinclude-scoped runbooks
+// Case-insensitive substring search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary
 // files), so Search and Explorer always agree on scope. Returns per-file line matches; a file with no match is skipped
 // without reading its body twice. `truncated` flags that a cap was hit so the UI can say results are incomplete.
-const searchRunbooks = async function (cwd, query) {
+const searchVibrary = async function (cwd, query) {
     if (typeof query !== 'string' || query.trim() === '') {
         return { results: [], truncated: false };
     }
     const needle = query.toLowerCase();
-    const names = await listRunbooksFiles(cwd);
+    const names = await listVibraryFiles(cwd);
     const results = [];
     let total = 0;
     let isTruncated = false;
@@ -69,4 +69,4 @@ const searchRunbooks = async function (cwd, query) {
     return { results, truncated: isTruncated };
 };
 
-export { searchRunbooks };
+export { searchVibrary };

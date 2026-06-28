@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { loadRunbooksFile, type SchemaMap } from './loadRunbooksFile.ts';
-import { type Spec } from './runbooksXml.ts';
+import { loadVibraryFile, type SchemaMap } from './loadVibraryFile.ts';
+import { type Spec } from './vibraryXml.ts';
 
 type TabStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
 
@@ -9,7 +9,7 @@ type InnerTab = 'structured' | 'raw';
 
 // Everything that used to be a single open file's state, now held once per open tab. The models live here so a tab's
 // unsaved edits survive switching to another tab (switching only changes activePath, never these arrays). Tabs are
-// polymorphic: a 'file' tab edits a runbooks file; an 'activity' tab shows a queued job's live detail (keyed by jobId,
+// polymorphic: a 'file' tab edits a vibrary file; an 'activity' tab shows a queued job's live detail (keyed by jobId,
 // rendered from the activity queue) and carries no file state.
 type TabState = {
     path: string; // unique key and sidebar identity ('activity:<jobId>' for activity tabs)
@@ -147,7 +147,7 @@ const useOpenTabs = function () {
 
         const loadAsync = async function (path: string) {
             try {
-                const { content, specs, schemas } = await loadRunbooksFile(path);
+                const { content, specs, schemas } = await loadVibraryFile(path);
                 setState(function (previous) {
                     if (previous.tabs.every(function (tab) { return tab.path !== path; })) {
                         return previous;

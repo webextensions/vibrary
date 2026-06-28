@@ -17,9 +17,9 @@ import styles from './LeftPanel.module.css';
 const MOBILE_QUERY = '(max-width: 700px)';
 
 // The resizable body's width is remembered across reloads, like the collapse flag in App. Same plain-localStorage idiom
-// (try/catch, 'runbooks:' namespace). Clamped to [MIN_WIDTH, 40% of the viewport] so a stale or hand-edited value can
+// (try/catch, 'vibrary:' namespace). Clamped to [MIN_WIDTH, 40% of the viewport] so a stale or hand-edited value can
 // never wedge the panel off-screen or too narrow to use; DEFAULT_WIDTH matches the original fixed column.
-const PANEL_WIDTH_KEY = 'runbooks:panel-width';
+const PANEL_WIDTH_KEY = 'vibrary:panel-width';
 const MIN_WIDTH = 180;
 const DEFAULT_WIDTH = 260;
 

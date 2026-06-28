@@ -134,9 +134,9 @@ const emptySpec = function (type = 'spec') {
     };
 };
 
-// Parse a runbooks XML document into a list of entry models. A file is just a container of <entry> elements, each
+// Parse a vibrary XML document into a list of entry models. A file is just a container of <entry> elements, each
 // carrying its own type attribute (spec/review/task/idea, default 'spec'). Returns [] for an empty/new file.
-const parseRunbooksXml = function (xml) {
+const parseVibraryXml = function (xml) {
     if (xml.trim() === '') {
         return [];
     }
@@ -192,9 +192,9 @@ const countApprovedSpecs = function (specs) {
     }).length;
 };
 
-// Serialize a list of entries back to a runbooks XML document. Each entry carries its own type attribute
+// Serialize a list of entries back to a vibrary XML document. Each entry carries its own type attribute
 // (spec/review/task/idea, default 'spec'); the file itself has no type.
-const serializeRunbooksXml = function (entries) {
+const serializeVibraryXml = function (entries) {
     const document = {
         root: {
             entries: {
@@ -232,6 +232,6 @@ export {
     entryTypeFromName,
     hashContent,
     nowTimestamp,
-    parseRunbooksXml,
-    serializeRunbooksXml
+    parseVibraryXml,
+    serializeVibraryXml
 };

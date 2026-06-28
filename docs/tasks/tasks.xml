@@ -22,10 +22,10 @@
             <updatedBy>AI</updatedBy>
         </entry>
         <entry type="task">
-            <title>add-test-suite-for-runbooks-xml</title>
+            <title>add-test-suite-for-vibrary-xml</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The "test" script in package.json is still the placeholder `echo "Warning: no test specified"` and the repo ships no test files. Add a real test suite for the framework-free core in frontend/src/runbooksXmlCore.js: parseRunbooksXml, serializeRunbooksXml, the cyrb53-based hashContent, approvalState, and countApprovedSpecs. Cover a parse -> serialize -> parse round-trip for idempotency, malformed-XML rejection, empty files, and entries missing optional fields. fast-xml-parser is already a devDependency and can back the runner; wire the chosen runner into the "test" script so `npm test` exercises it.</content>
+            <content>The "test" script in package.json is still the placeholder `echo "Warning: no test specified"` and the repo ships no test files. Add a real test suite for the framework-free core in frontend/src/vibraryXmlCore.js: parseVibraryXml, serializeVibraryXml, the cyrb53-based hashContent, approvalState, and countApprovedSpecs. Cover a parse -> serialize -> parse round-trip for idempotency, malformed-XML rejection, empty files, and entries missing optional fields. fast-xml-parser is already a devDependency and can back the runner; wire the chosen runner into the "test" script so `npm test` exercises it.</content>
             <contentHash></contentHash>
             <relatesTo>
                 <ref>update-npm-packages</ref>
@@ -47,7 +47,7 @@
             <content>backend/utils holds five near-identical headless-agent spawners (runClaudeRunTask.js, runClaudeGenerate.js, runClaudeTitle.js, runClaudeApply.js, runClaudeApplyBatch.js). Each redefines its own *_TIMEOUT_MS constant and repeats the same spawn('claude', ...) wiring: stdout/stderr accumulation, an 'error' handler mapping ENOENT to "Claude CLI not found on PATH", and a 'close' handler that rejects on SIGTERM timeout and otherwise falls back to `Claude exited with code ${code}`. Extract one shared helper parameterized by args, cwd, timeout, and a result-mapping callback so each caller keeps only its prompt building and output handling. While there, reconcile the policy inconsistency that runClaudeTitle.js omits --dangerously-skip-permissions while the run-task and generate spawners pass it.</content>
             <contentHash></contentHash>
             <relatesTo>
-                <ref>add-test-suite-for-runbooks-xml</ref>
+                <ref>add-test-suite-for-vibrary-xml</ref>
             </relatesTo>
             <notes></notes>
             <labels>
@@ -59,10 +59,10 @@
             <updatedBy>AI</updatedBy>
         </entry>
         <entry type="task">
-            <title>surface-empty-listing-hint-for-missing-runbooksinclude</title>
+            <title>surface-empty-listing-hint-for-missing-vibraryinclude</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>listRunbooksFiles in backend/utils/runbooksFiles.js treats a missing .runbooksinclude as an empty "ignore" matcher, so inclusion is opt-in: when the file is absent (or its patterns match nothing) the listing returns empty with no explanation, which reads as "no runbooks files found" even when files exist on disk. Surface a clear empty-state hint in the UI (and/or in the listing API response) that distinguishes "no .runbooksinclude present" from "present but no patterns match", and point the user at how to add gitignore-style include patterns (with "!" to re-exclude).</content>
+            <content>listVibraryFiles in backend/utils/vibraryFiles.js treats a missing .vibraryinclude as an empty "ignore" matcher, so inclusion is opt-in: when the file is absent (or its patterns match nothing) the listing returns empty with no explanation, which reads as "no vibrary files found" even when files exist on disk. Surface a clear empty-state hint in the UI (and/or in the listing API response) that distinguishes "no .vibraryinclude present" from "present but no patterns match", and point the user at how to add gitignore-style include patterns (with "!" to re-exclude).</content>
             <contentHash></contentHash>
             <relatesTo>
             </relatesTo>

@@ -4,7 +4,7 @@
             <title>globally-installable-npm-package</title>
             <createdBy>AI</createdBy>
             <approved>18bbfa9e4f1e9</approved>
-            <content>Runbooks is published as an npm package that can be installed globally. It exposes two bin scripts: &quot;runbooks&quot; (an umbrella CLI built with commander) and &quot;runbooks-server&quot; (a shortcut that launches the HTTP server).</content>
+            <content>Vibrary is published as an npm package that can be installed globally. It exposes two bin scripts: &quot;vibrary&quot; (an umbrella CLI built with commander) and &quot;vibrary-server&quot; (a shortcut that launches the HTTP server).</content>
             <contentHash>1c2625713e7123</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
@@ -40,7 +40,7 @@
             <title>backend-express-server</title>
             <createdBy>AI</createdBy>
             <approved>2b10586f123c1</approved>
-            <content>The backend is a JavaScript (ESM) Express server. It lists runbooks files (reviews / specs / tasks, named &lt;family&gt;.xml or &lt;family&gt;-*.xml) in the current folder and exposes a small JSON API to read and save them. It starts on port 3000 and advances to the next free port if busy.</content>
+            <content>The backend is a JavaScript (ESM) Express server. It lists vibrary files (reviews / specs / tasks, named &lt;family&gt;.xml or &lt;family&gt;-*.xml) in the current folder and exposes a small JSON API to read and save them. It starts on port 3000 and advances to the next free port if busy.</content>
             <contentHash>f46c441bec224</contentHash>
             <relatesTo>
                 <ref>specs-stored-as-xml</ref>
@@ -58,7 +58,7 @@
             <title>specs-stored-as-xml</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>Each runbooks file is XML: a root element holding a &lt;metadata&gt; block with a &lt;type&gt; (reviews, specs, or tasks) and an &lt;entries&gt; wrapper of &lt;entry type=&quot;...&quot;&gt; elements, each with a title, createdBy, approved, content, relatesTo, notes, and labels. The editor uses fast-xml-parser to round-trip between the XML and the structured form.</content>
+            <content>Each vibrary file is XML: a root element holding a &lt;metadata&gt; block with a &lt;type&gt; (reviews, specs, or tasks) and an &lt;entries&gt; wrapper of &lt;entry type=&quot;...&quot;&gt; elements, each with a title, createdBy, approved, content, relatesTo, notes, and labels. The editor uses fast-xml-parser to round-trip between the XML and the structured form.</content>
             <contentHash>99cf18f0bfe5d</contentHash>
             <relatesTo>
                 <ref>frontend-react-vite</ref>
@@ -130,7 +130,7 @@
             <title>order-insensitive-git-diff-driver</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>Runbooks XML files (all four families) get a custom git diff driver (diff=runbooks-canon in .gitattributes) that runs node scripts/runbooks-diff.js, which canonicalizes both sides via scripts/canonicalize-runbooks.js. Canonicalization sorts fields within an entry, sorts whole &lt;entry&gt; elements by title, and sorts relatesTo/labels items, so any pure reordering collapses to identical output and produces no diff. git refuses to let a repo commit a diff driver command, so the command lives in a committed .gitconfig fragment that the prepare script wires into .git/config via include.path.</content>
+            <content>Vibrary XML files (all four families) get a custom git diff driver (diff=vibrary-canon in .gitattributes) that runs node scripts/vibrary-diff.js, which canonicalizes both sides via scripts/canonicalize-vibrary.js. Canonicalization sorts fields within an entry, sorts whole &lt;entry&gt; elements by title, and sorts relatesTo/labels items, so any pure reordering collapses to identical output and produces no diff. git refuses to let a repo commit a diff driver command, so the command lives in a committed .gitconfig fragment that the prepare script wires into .git/config via include.path.</content>
             <contentHash>1be0a29bbb3e8f</contentHash>
             <relatesTo>
                 <ref>specs-stored-as-xml</ref>
@@ -167,12 +167,12 @@
             <title>specs-file-discovery-and-include</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The server discovers runbooks files by globbing **/{reviews,specs,tasks}*.xml under the workspace (excluding node_modules and .git), then keeping only names that pass a validator and match the .runbooksinclude file. .runbooksinclude is an include-list: a file is shown only when a pattern matches it, and a leading &quot;!&quot; excludes a match; with no file (or no match) nothing is shown. The validator only accepts a basename of &lt;family&gt;.xml or &lt;family&gt;-&lt;something&gt;.xml (family is reviews, specs, or tasks) and rejects any &quot;..&quot;/&quot;.&quot; path segment; combined with a defense-in-depth check that the resolved path stays inside cwd, a request can never traverse out of the workspace.</content>
+            <content>The server discovers vibrary files by globbing **/{reviews,specs,tasks}*.xml under the workspace (excluding node_modules and .git), then keeping only names that pass a validator and match the .vibraryinclude file. .vibraryinclude is an include-list: a file is shown only when a pattern matches it, and a leading &quot;!&quot; excludes a match; with no file (or no match) nothing is shown. The validator only accepts a basename of &lt;family&gt;.xml or &lt;family&gt;-&lt;something&gt;.xml (family is reviews, specs, or tasks) and rejects any &quot;..&quot;/&quot;.&quot; path segment; combined with a defense-in-depth check that the resolved path stays inside cwd, a request can never traverse out of the workspace.</content>
             <contentHash>106e3b277a074e</contentHash>
             <relatesTo>
                 <ref>backend-express-server</ref>
             </relatesTo>
-            <notes>.runbooksinclude uses gitignore-style glob semantics (comments, &quot;!&quot; exclusion, directory rules) and is re-read on every request, so edits take effect without a server restart, mirroring how git re-reads .gitignore.</notes>
+            <notes>.vibraryinclude uses gitignore-style glob semantics (comments, &quot;!&quot; exclusion, directory rules) and is re-read on every request, so edits take effect without a server restart, mirroring how git re-reads .gitignore.</notes>
             <labels>
                 <label>backend</label>
                 <label>security</label>

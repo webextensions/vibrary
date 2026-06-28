@@ -1,6 +1,6 @@
-# runbooks file format
+# vibrary file format
 
-A runbooks file is a container of entries. Each `<entry>` carries its own `type` attribute - one of `spec`, `review`,
+A vibrary file is a container of entries. Each `<entry>` carries its own `type` attribute - one of `spec`, `review`,
 `task`, or `idea` - and a single file may hold any mix of them. The file itself has no type.
 
 File names follow four families (`reviews.xml`/`reviews-*.xml`, `specs.xml`/`specs-*.xml`,
@@ -54,13 +54,13 @@ Each `<entry>` has these child elements:
 - `contentHash` - a short hash of `content`, kept in sync by the editor whenever the content changes. This is the value
   written into `approved` when a human signs off; comparing it against the stored approval hash is how a stale approval
   is detected. It is regenerated from `content` on load, so a hand-edited value is corrected on next save.
-- `relatesTo` - zero or more `<ref>` entries, each the `title` of another entry (in any runbooks file in the folder).
+- `relatesTo` - zero or more `<ref>` entries, each the `title` of another entry (in any vibrary file in the folder).
 - `notes` - free text.
 - `labels` - zero or more `<label>` entries; freeform tags chosen by the user.
 
 ## Notes
 
 - Saving from the editor's Structured tab regenerates the XML from the fields above. Any content outside this schema is
-  not preserved, so keep runbooks files to this structure.
+  not preserved, so keep vibrary files to this structure.
 - Indentation is four spaces, matching the project's [.editorconfig](../.editorconfig).
 - An entry may leave any field empty; empty elements are written as `<content></content>`.

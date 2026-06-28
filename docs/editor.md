@@ -15,7 +15,7 @@ Each entry is shown as a card with these controls:
 - **Created by** - single-select (`Human` or `AI`), clearable.
 - **Approved by** - a single `Human` checkbox; editable in both review and edit modes. Approving stores a hash of the
   current content, so the approval can later be detected as stale (see the Approve button below and
-  [runbooks-file-format.md](runbooks-file-format.md)).
+  [vibrary-file-format.md](vibrary-file-format.md)).
 - **Approve button** - the card's top-right one-click action mirrors the checkbox. It reads **Approve** when
   unapproved, green **Approved** when approved against the current content, and yellow **Reapprove** when the content
   changed since approval (hover for the hash-mismatch details). Clicking **Reapprove** re-signs against the current
@@ -24,7 +24,7 @@ Each entry is shown as a card with these controls:
 - **Notes** - multi-line textarea.
 - **Labels** - freeform creatable multi-select. Type a label and press Enter to add it; any value is allowed.
 - **Relates to** - searchable multi-select shown at the bottom. Type to filter; options are the titles of all entries
-  across every runbooks file in the folder (the current entry's own title is excluded). The option list refreshes
+  across every vibrary file in the folder (the current entry's own title is excluded). The option list refreshes
   after a save.
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
@@ -43,4 +43,4 @@ you can see it, and saving is disabled until the file is fixed (edit it outside 
 ## Saving
 
 The **Save** button writes the file. It always serializes the Structured model to XML (see
-[runbooks-file-format.md](runbooks-file-format.md)), regardless of which tab is active.
+[vibrary-file-format.md](vibrary-file-format.md)), regardless of which tab is active.

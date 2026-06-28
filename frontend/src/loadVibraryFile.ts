@@ -1,7 +1,7 @@
 import type { RJSFSchema } from '@rjsf/utils';
 
 import { getFile, getSchemaFile } from './api.ts';
-import { parseRunbooksXml, type Spec } from './runbooksXml.ts';
+import { parseVibraryXml, type Spec } from './vibraryXml.ts';
 
 // Resolved per-run option form schemas for one open file, keyed by the entry's full formSchemaRef ("<file>#<id>"), so a
 // SpecCard looks its schema up directly by value.formSchemaRef. Empty for files whose entries declare no form.
@@ -68,13 +68,13 @@ const loadSchemasForEntries = async function (filePath: string, specs: Spec[]): 
     return map;
 };
 
-// Load one runbooks file: its raw content, the parsed entries, and the resolved schema map for any formSchemaRefs. Only
-// parseRunbooksXml can throw (malformed XML, surfaced by callers as a parse error); schema resolution never throws.
-const loadRunbooksFile = async function (filePath: string): Promise<{ content: string; specs: Spec[]; schemas: SchemaMap }> {
+// Load one vibrary file: its raw content, the parsed entries, and the resolved schema map for any formSchemaRefs. Only
+// parseVibraryXml can throw (malformed XML, surfaced by callers as a parse error); schema resolution never throws.
+const loadVibraryFile = async function (filePath: string): Promise<{ content: string; specs: Spec[]; schemas: SchemaMap }> {
     const content = await getFile(filePath);
-    const specs = parseRunbooksXml(content);
+    const specs = parseVibraryXml(content);
     const schemas = await loadSchemasForEntries(filePath, specs);
     return { content, specs, schemas };
 };
 
-export { loadRunbooksFile, parseSchemaReference, type SchemaMap };
+export { loadVibraryFile, parseSchemaReference, type SchemaMap };

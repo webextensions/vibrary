@@ -1,5 +1,5 @@
 import { type ClaudeStreamEvent } from './activityStream.ts';
-import { countApprovedSpecs, type EntryType, parseRunbooksXml } from './runbooksXml.ts';
+import { countApprovedSpecs, type EntryType, parseVibraryXml } from './vibraryXml.ts';
 
 type ApprovalCount = { approved: number; total: number };
 
@@ -118,7 +118,7 @@ const getFile = async function (name: string): Promise<string> {
 };
 
 // Read a form-schemas sidecar (e.g. "docs/tasks/tasks.xml.schemas.json") referenced by an entry's formSchemaRef. Served
-// by a dedicated read-only endpoint, separate from the runbooks file listing. Rejects (e.g. 404) when the sidecar is
+// by a dedicated read-only endpoint, separate from the vibrary file listing. Rejects (e.g. 404) when the sidecar is
 // absent; callers resolving an entry's schema treat that as "no form".
 const getSchemaFile = async function (name: string): Promise<string> {
     const output = await request<{ name: string; content: string }>(`/api/schema-file/${encodeURIComponent(name)}`);
@@ -192,11 +192,11 @@ const populateTitle = async function (content: string, signal?: AbortSignal): Pr
 
 // Loads a single file and tallies its approved/total spec counts, for the at-a-glance overview in the file list.
 const getApprovalCount = async function (name: string): Promise<ApprovalCount> {
-    const entries = parseRunbooksXml(await getFile(name));
+    const entries = parseVibraryXml(await getFile(name));
     return { approved: countApprovedSpecs(entries), total: entries.length };
 };
 
-// Collects every entry title across all runbooks files in the folder, for the "Relates to" option list. Files that
+// Collects every entry title across all vibrary files in the folder, for the "Relates to" option list. Files that
 // fail to parse are skipped so one bad file does not break the option list.
 const loadAllSpecTitles = async function (): Promise<string[]> {
     const files = await listFiles();
@@ -205,7 +205,7 @@ const loadAllSpecTitles = async function (): Promise<string[]> {
     await Promise.all(files.map(async function (name) {
         try {
             const content = await getFile(name);
-            for (const spec of parseRunbooksXml(content)) {
+            for (const spec of parseVibraryXml(content)) {
                 if (spec.title !== '') {
                     titles.add(spec.title);
                 }
@@ -239,7 +239,7 @@ type SearchMatch = { line: number; text: string };
 type SearchFileResult = { path: string; matches: SearchMatch[] };
 type SearchResult = { results: SearchFileResult[]; truncated: boolean };
 
-// Full-text search across the included runbooks files (the same set the Explorer lists). The backend caps the result
+// Full-text search across the included vibrary files (the same set the Explorer lists). The backend caps the result
 // set and flags `truncated` when it does.
 const searchFiles = function (query: string): Promise<SearchResult> {
     return request<SearchResult>(`/api/search?q=${encodeURIComponent(query)}`);

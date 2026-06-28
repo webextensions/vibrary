@@ -4,16 +4,16 @@ import path from 'node:path';
 import { glob } from 'glob';
 import ignore from 'ignore';
 
-const RUNBOOKS_INCLUDE_FILE = '.runbooksinclude';
+const VIBRARY_INCLUDE_FILE = '.vibraryinclude';
 
-// Matches a runbooks file basename: "<family>.xml" or "<family>-<something>.xml", where family is one of the four kinds
+// Matches a vibrary file basename: "<family>.xml" or "<family>-<something>.xml", where family is one of the four kinds
 // the app understands. A name may be a nested path (e.g. "docs/reviews.xml"): each leading segment must match
 // SEGMENT_REGEX, which excludes path separators and rejects ".."/"." segments, so a valid name can never traverse out of
 // the working directory.
-const RUNBOOKS_NAME_REGEX = /^(reviews|specs|tasks|ideas)(-[A-Za-z0-9._-]+)?\.xml$/;
-// Matches the sidecar that holds a runbooks file's form schemas: "<runbooks-basename>.schemas.json" (e.g.
+const VIBRARY_NAME_REGEX = /^(reviews|specs|tasks|ideas)(-[A-Za-z0-9._-]+)?\.xml$/;
+// Matches the sidecar that holds a vibrary file's form schemas: "<vibrary-basename>.schemas.json" (e.g.
 // "tasks.xml.schemas.json"). Read on demand to resolve an entry's <formSchemaRef>; never listed or edited via the app.
-const RUNBOOKS_SCHEMAS_NAME_REGEX = /^(reviews|specs|tasks|ideas)(-[A-Za-z0-9._-]+)?\.xml\.schemas\.json$/;
+const VIBRARY_SCHEMAS_NAME_REGEX = /^(reviews|specs|tasks|ideas)(-[A-Za-z0-9._-]+)?\.xml\.schemas\.json$/;
 const SEGMENT_REGEX = /^[A-Za-z0-9._-]+$/;
 
 const hasSafeSegments = function (name) {
@@ -22,29 +22,29 @@ const hasSafeSegments = function (name) {
     });
 };
 
-const isValidRunbooksName = function (name) {
+const isValidVibraryName = function (name) {
     if (typeof name !== 'string' || name === '') {
         return false;
     }
-    return hasSafeSegments(name) && RUNBOOKS_NAME_REGEX.test(name.split('/').at(-1));
+    return hasSafeSegments(name) && VIBRARY_NAME_REGEX.test(name.split('/').at(-1));
 };
 
 const isValidSchemasName = function (name) {
     if (typeof name !== 'string' || name === '') {
         return false;
     }
-    return hasSafeSegments(name) && RUNBOOKS_SCHEMAS_NAME_REGEX.test(name.split('/').at(-1));
+    return hasSafeSegments(name) && VIBRARY_SCHEMAS_NAME_REGEX.test(name.split('/').at(-1));
 };
 
-// Load the ".runbooksinclude" file from the cwd root and return an "ignore" matcher whose patterns name the files shown
+// Load the ".vibraryinclude" file from the cwd root and return an "ignore" matcher whose patterns name the files shown
 // in the listing (gitignore-style globs, with "!" excluding a match). Read fresh per call so edits take effect without a
 // server restart, mirroring how git re-reads ".gitignore". A missing file yields an empty matcher (nothing matches, so
 // nothing is shown); other read errors propagate. The "ignore" library's match result maps directly onto inclusion:
 // ig.ignores(name) is true for a name matched by a plain pattern and false for one re-negated by "!".
-const loadRunbooksInclude = async function (cwd) {
+const loadVibraryInclude = async function (cwd) {
     const ig = ignore();
     try {
-        const content = await readFile(path.join(cwd, RUNBOOKS_INCLUDE_FILE), 'utf8');
+        const content = await readFile(path.join(cwd, VIBRARY_INCLUDE_FILE), 'utf8');
         ig.add(content);
     } catch (error) {
         if (error.code !== 'ENOENT') {
@@ -54,21 +54,21 @@ const loadRunbooksInclude = async function (cwd) {
     return ig;
 };
 
-const isRunbooksNameIncluded = async function (cwd, name) {
-    const ig = await loadRunbooksInclude(cwd);
+const isVibraryNameIncluded = async function (cwd, name) {
+    const ig = await loadVibraryInclude(cwd);
     return ig.ignores(name);
 };
 
-const listRunbooksFiles = async function (cwd) {
-    const ig = await loadRunbooksInclude(cwd);
+const listVibraryFiles = async function (cwd) {
+    const ig = await loadVibraryInclude(cwd);
     const matches = await glob('**/{reviews,specs,tasks,ideas}*.xml', { cwd, nodir: true, ignore: ['**/node_modules/**', '**/.git/**'] });
     return matches
         .filter(function (name) {
-            return isValidRunbooksName(name) && ig.ignores(name);
+            return isValidVibraryName(name) && ig.ignores(name);
         })
         .toSorted(function (a, b) {
             return a.localeCompare(b);
         });
 };
 
-export { isRunbooksNameIncluded, isValidRunbooksName, isValidSchemasName, listRunbooksFiles };
+export { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles };

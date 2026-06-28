@@ -3,8 +3,8 @@ import path from 'node:path';
 
 import { Router } from 'express';
 
-import { ENTRY_TYPES } from '../../frontend/src/runbooksXmlCore.js';
-import { isRunbooksNameIncluded, isValidRunbooksName, isValidSchemasName, listRunbooksFiles } from '../utils/runbooksFiles.js';
+import { ENTRY_TYPES } from '../../frontend/src/vibraryXmlCore.js';
+import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles } from '../utils/vibraryFiles.js';
 import { applySpecAsync } from '../utils/runClaudeApply.js';
 import { applySpecsAsync } from '../utils/runClaudeApplyBatch.js';
 import { generateSpecsAsync } from '../utils/runClaudeGenerate.js';
@@ -20,7 +20,7 @@ const createFilesRouter = function ({ cwd }) {
 
     router.get('/files', async function (request, response) {
         try {
-            const files = await listRunbooksFiles(cwd);
+            const files = await listVibraryFiles(cwd);
             return sendSuccessResponse(response, { files });
         } catch {
             return sendErrorResponse(response, 500, 'Unable to list files');
@@ -92,15 +92,15 @@ const createFilesRouter = function ({ cwd }) {
     // create-only, so adding a file never silently overwrites an existing one.
     router.post('/files', async function (request, response) {
         const { name } = request.body || {};
-        if (!isValidRunbooksName(name)) {
+        if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (!(await isRunbooksNameIncluded(cwd, name))) {
-            return sendErrorResponse(response, 400, 'File name is not included by .runbooksinclude');
+        if (!(await isVibraryNameIncluded(cwd, name))) {
+            return sendErrorResponse(response, 400, 'File name is not included by .vibraryinclude');
         }
 
         try {
@@ -117,14 +117,14 @@ const createFilesRouter = function ({ cwd }) {
 
     router.get('/files/:name', async function (request, response) {
         const { name } = request.params;
-        if (!isValidRunbooksName(name)) {
+        if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (!(await isRunbooksNameIncluded(cwd, name))) {
+        if (!(await isVibraryNameIncluded(cwd, name))) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
@@ -140,8 +140,8 @@ const createFilesRouter = function ({ cwd }) {
     });
 
     // Read a form-schemas sidecar (e.g. "docs/tasks/tasks.xml.schemas.json") that an entry's <formSchemaRef> points at.
-    // Read-only and deliberately outside the listing/.runbooksinclude surface: the sidecar is resolved on demand, never
-    // browsed or edited through the app. The name is tightly constrained to a "<runbooks>.xml.schemas.json" basename.
+    // Read-only and deliberately outside the listing/.vibraryinclude surface: the sidecar is resolved on demand, never
+    // browsed or edited through the app. The name is tightly constrained to a "<vibrary>.xml.schemas.json" basename.
     router.get('/schema-file/:name', async function (request, response) {
         const { name } = request.params;
         if (!isValidSchemasName(name)) {
@@ -165,14 +165,14 @@ const createFilesRouter = function ({ cwd }) {
 
     router.put('/files/:name', async function (request, response) {
         const { name } = request.params;
-        if (!isValidRunbooksName(name)) {
+        if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (!(await isRunbooksNameIncluded(cwd, name))) {
+        if (!(await isVibraryNameIncluded(cwd, name))) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
@@ -193,14 +193,14 @@ const createFilesRouter = function ({ cwd }) {
     // no on-disk entity (they are derived from file paths), so the frontend deletes a folder by deleting each file in it.
     router.delete('/files/:name', async function (request, response) {
         const { name } = request.params;
-        if (!isValidRunbooksName(name)) {
+        if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (!(await isRunbooksNameIncluded(cwd, name))) {
+        if (!(await isVibraryNameIncluded(cwd, name))) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
@@ -218,14 +218,14 @@ const createFilesRouter = function ({ cwd }) {
     // Run a headless "claude -p" agent that reads the codebase and existing entries, then appends new ones to the file.
     router.post('/files/:name/generate', async function (request, response) {
         const { name } = request.params;
-        if (!isValidRunbooksName(name)) {
+        if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
         const target = resolveWithinCwd(name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (!(await isRunbooksNameIncluded(cwd, name))) {
+        if (!(await isVibraryNameIncluded(cwd, name))) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 

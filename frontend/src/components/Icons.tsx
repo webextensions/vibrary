@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 
-import type { EntryType } from '../runbooksXml.ts';
+import type { EntryType } from '../vibraryXml.ts';
 
 // Sparkles glyph for the "Create with AI" action; a large four-point star with a small companion.
 const AiIcon = function () {

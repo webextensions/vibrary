@@ -8,9 +8,9 @@ import CreatableSelect from 'react-select/creatable';
 import { useActivityQueue } from '../activityQueue.ts';
 import { applySpec, populateTitle, runTask } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
-import { type SchemaMap } from '../loadRunbooksFile.ts';
+import { type SchemaMap } from '../loadVibraryFile.ts';
 import { promptDialog } from '../promptDialog.ts';
-import { AGENTS, hashContent, type Spec } from '../runbooksXml.ts';
+import { AGENTS, hashContent, type Spec } from '../vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
 import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, RemoveIcon, TypeIcon } from './Icons.tsx';

@@ -192,9 +192,9 @@ const Sidebar = function ({ files, selected, refreshing, countForFile, onOpen, o
     });
     // Which row's "More" menu is open (by path), or null when none. Only one menu is open at a time.
     const [openMenuPath, setOpenMenuPath] = useState<string | null>(null);
-    // Accordion section state. The "Runbooks" section is local; the "Activity monitor" section's open state lives in
+    // Accordion section state. The "Vibrary" section is local; the "Activity monitor" section's open state lives in
     // the queue context so enqueuing a job can auto-expand it. Its header badge shows the running+queued count.
-    const [runbooksOpen, setRunbooksOpen] = useState<boolean>(true);
+    const [vibraryOpen, setVibraryOpen] = useState<boolean>(true);
     const { jobs, monitorOpen, setMonitorOpen } = useActivityQueue();
     const activeCount = useMemo(function () {
         return jobs.filter(function (job) {
@@ -238,10 +238,10 @@ const Sidebar = function ({ files, selected, refreshing, countForFile, onOpen, o
     return (
         <div className={styles.sidebar}>
             <AccordionSection
-                title="Runbooks"
-                expanded={runbooksOpen}
+                title="Vibrary"
+                expanded={vibraryOpen}
                 onToggle={function () {
-                    setRunbooksOpen(function (previous) {
+                    setVibraryOpen(function (previous) {
                         return !previous;
                     });
                 }}

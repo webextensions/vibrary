@@ -11,13 +11,13 @@ const buildProgram = function () {
     const program = new Command();
 
     program
-        .name('runbooks')
+        .name('vibrary')
         .description(package_.description)
         .version(package_.version);
 
     program
         .command('server')
-        .description('Start the runbooks web server for the current folder')
+        .description('Start the vibrary web server for the current folder')
         .option('-p, --port <number>', 'preferred port (advances to the next free one if busy)', '3000')
         .option('--no-open', 'do not open the browser automatically')
         .action(async function (options) {

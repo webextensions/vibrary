@@ -4,12 +4,12 @@ import { CLAUDE_STREAM_FLAGS, spawnClaudeStreamAsync } from './spawnClaude.js';
 const GENERATE_TIMEOUT_MS = 10 * 60 * 1000;
 
 // The instruction handed to "claude -p". It edits the target file on disk directly; <contentHash> is left empty because
-// the editor recomputes it from <content> on load (see runbooksXmlCore.parseRunbooksXml).
+// the editor recomputes it from <content> on load (see vibraryXmlCore.parseVibraryXml).
 const buildPrompt = function (name, type, count) {
     return [
         `Add exactly ${count} new <entry type="${type}"> elements to the file "${name}" in this project.`,
         '',
-        `First read docs/runbooks-file-format.md to learn the XML format, then read the existing entries in ${name} and`,
+        `First read docs/vibrary-file-format.md to learn the XML format, then read the existing entries in ${name} and`,
         'explore the project\'s codebase to find accurate, non-obvious facts about it worth capturing.',
         '',
         'Rules:',

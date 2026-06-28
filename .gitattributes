@@ -1,6 +1,6 @@
-reviews.xml     diff=runbooks-canon
-reviews-*.xml   diff=runbooks-canon
-specs.xml       diff=runbooks-canon
-specs-*.xml     diff=runbooks-canon
-tasks.xml       diff=runbooks-canon
-tasks-*.xml     diff=runbooks-canon
+reviews.xml     diff=vibrary-canon
+reviews-*.xml   diff=vibrary-canon
+specs.xml       diff=vibrary-canon
+specs-*.xml     diff=vibrary-canon
+tasks.xml       diff=vibrary-canon
+tasks-*.xml     diff=vibrary-canon
