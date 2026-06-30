@@ -2,9 +2,8 @@ import cx from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AccordionSection } from './AccordionSection.tsx';
-import { ActivityMonitor } from './ActivityMonitor.tsx';
-import { ChevronIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
-import { useActivityQueue } from '../activityQueue.ts';
+import { ChevronIcon, CloseIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
+import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { buildFileTree, type TreeNode } from '../fileTree.ts';
 import { type FileCount } from '../useFileCounts.ts';
 
@@ -15,12 +14,14 @@ type SidebarProperties = {
     selected: string | null;
     refreshing: boolean;
     countForFile: (name: string) => FileCount;
+    openTabs: TabInfo[];
     onOpen: (name: string) => void;
     onRefresh: () => void;
     onAddFile: () => void;
     onDelete: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void;
-    onOpenActivity: (jobId: string, title: string) => void
+    onSelectTab: (path: string) => void;
+    onCloseTab: (path: string) => void
 };
 
 // The approved/total badge beside each file name. A ready count is green; loading shows '...' and an unreadable file '!'.
@@ -33,6 +34,43 @@ const FileCountBadge = function ({ count }: { count: FileCount }) {
         );
     }
     return <span className={cx(styles.fileCount, styles.muted)}>{count.kind === 'error' ? '!' : '...'}</span>;
+};
+
+// One row of the "Open Editors" list: the open tab's label (basename for files, the job name for activity tabs - same
+// labelling as the editor tab bar), a dirty dot, and a hover-revealed close button. Clicking the row focuses the tab.
+const OpenEditorRow = function (
+    { tab, active, onSelect, onClose }:
+    { tab: TabInfo; active: boolean; onSelect: (path: string) => void; onClose: (path: string) => void }
+) {
+    return (
+        <li>
+            <div className={styles.treeRow}>
+                <button
+                    type="button"
+                    className={cx(styles.rowButton, active && styles.active)}
+                    title={tab.label ?? tab.path}
+                    onClick={function () {
+                        onSelect(tab.path);
+                    }}
+                >
+                    {tab.dirty && <span className={styles.tabDot} aria-hidden="true" />}
+                    <span className={styles.fileName}>{tabLabel(tab)}</span>
+                </button>
+                <button
+                    type="button"
+                    className={styles.rowClose}
+                    aria-label={`Close ${tabLabel(tab)}`}
+                    title="Close"
+                    onClick={function (clickEvent) {
+                        clickEvent.stopPropagation();
+                        onClose(tab.path);
+                    }}
+                >
+                    <CloseIcon />
+                </button>
+            </div>
+        </li>
+    );
 };
 
 type RowMoreProperties = {
@@ -183,7 +221,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
     });
 };
 
-const Sidebar = function ({ files, selected, refreshing, countForFile, onOpen, onRefresh, onAddFile, onDelete, onNewFile, onOpenActivity }: SidebarProperties) {
+const Sidebar = function ({ files, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -192,15 +230,9 @@ const Sidebar = function ({ files, selected, refreshing, countForFile, onOpen, o
     });
     // Which row's "More" menu is open (by path), or null when none. Only one menu is open at a time.
     const [openMenuPath, setOpenMenuPath] = useState<string | null>(null);
-    // Accordion section state. The "Vibrary" section is local; the "Activity monitor" section's open state lives in
-    // the queue context so enqueuing a job can auto-expand it. Its header badge shows the running+queued count.
+    // Accordion section open state, both local and defaulting to open.
+    const [openEditorsOpen, setOpenEditorsOpen] = useState<boolean>(true);
     const [vibraryOpen, setVibraryOpen] = useState<boolean>(true);
-    const { jobs, monitorOpen, setMonitorOpen } = useActivityQueue();
-    const activeCount = useMemo(function () {
-        return jobs.filter(function (job) {
-            return job.status === 'running' || job.status === 'queued';
-        }).length;
-    }, [jobs]);
 
     // Close the open menu on any click outside it. The menu's own buttons stop propagation, so this only fires for
     // clicks elsewhere; the toggle button also stops propagation so opening one menu does not immediately re-close it.
@@ -237,6 +269,37 @@ const Sidebar = function ({ files, selected, refreshing, countForFile, onOpen, o
 
     return (
         <div className={styles.sidebar}>
+            <AccordionSection
+                title="Open Editors"
+                expanded={openEditorsOpen}
+                onToggle={function () {
+                    setOpenEditorsOpen(function (previous) {
+                        return !previous;
+                    });
+                }}
+                badge={openTabs.length > 0 ? <span className={styles.activityCount}>{openTabs.length}</span> : undefined}
+            >
+                {openTabs.length === 0 ?
+                    (
+                        <p className={styles.empty}>No open editors.</p>
+                    ) :
+                    (
+                        <ul>
+                            {openTabs.map(function (tab) {
+                                return (
+                                    <OpenEditorRow
+                                        key={tab.path}
+                                        tab={tab}
+                                        active={tab.path === selected}
+                                        onSelect={onSelectTab}
+                                        onClose={onCloseTab}
+                                    />
+                                );
+                            })}
+                        </ul>
+                    )}
+            </AccordionSection>
+
             <AccordionSection
                 title="Vibrary"
                 expanded={vibraryOpen}
@@ -290,17 +353,6 @@ const Sidebar = function ({ files, selected, refreshing, countForFile, onOpen, o
                             />
                         </ul>
                     )}
-            </AccordionSection>
-
-            <AccordionSection
-                title="Activity monitor"
-                expanded={monitorOpen}
-                onToggle={function () {
-                    setMonitorOpen(!monitorOpen);
-                }}
-                badge={activeCount > 0 ? <span className={styles.activityCount}>{activeCount}</span> : undefined}
-            >
-                <ActivityMonitor onOpenActivity={onOpenActivity} />
             </AccordionSection>
         </div>
     );

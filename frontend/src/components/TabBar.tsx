@@ -1,6 +1,7 @@
 import cx from 'classnames';
 
 import { CloseIcon } from './Icons.tsx';
+import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { useMediaQuery } from '../useMediaQuery.ts';
 
 import styles from './TabBar.module.css';
@@ -8,22 +9,11 @@ import styles from './TabBar.module.css';
 // Below this width the strip collapses to a dropdown switcher; matches the sidebar's drawer breakpoint in App.
 const MOBILE_QUERY = '(max-width: 700px)';
 
-type TabInfo = { path: string; dirty: boolean; label?: string };
-
 type TabBarProperties = {
     tabs: TabInfo[];
     activePath: string;
     onSelect: (path: string) => void;
     onClose: (path: string) => void
-};
-
-const fileName = function (path: string): string {
-    return path.split('/').pop() ?? path;
-};
-
-// Activity tabs supply an explicit label (the job's name); file tabs fall back to the file's basename.
-const tabLabel = function (tab: TabInfo): string {
-    return tab.label ?? fileName(tab.path);
 };
 
 const TabBar = function ({ tabs, activePath, onSelect, onClose }: TabBarProperties) {

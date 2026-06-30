@@ -1,14 +1,17 @@
 import cx from 'classnames';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Resizable } from 're-resizable';
 
+import { useActivityQueue } from '../activityQueue.ts';
 import { type FileCount } from '../useFileCounts.ts';
 import { type TreeNode } from '../fileTree.ts';
 import { useMediaQuery } from '../useMediaQuery.ts';
+import { ActivityPanel } from './ActivityPanel.tsx';
 import { type LeftView, NavigationRail } from './NavigationRail.tsx';
 import { SearchPanel } from './SearchPanel.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { SourceControlPanel } from './SourceControlPanel.tsx';
+import { type TabInfo } from './tabLabel.ts';
 
 import styles from './LeftPanel.module.css';
 
@@ -68,11 +71,15 @@ type LeftPanelProperties = {
     selected: string | null;
     refreshing: boolean;
     countForFile: (name: string) => FileCount;
+    openTabs: TabInfo[];
     onOpen: (name: string) => void;
     onRefresh: () => void;
     onAddFile: () => void;
     onDelete: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void;
+    onSelectTab: (path: string) => void;
+    onCloseTab: (path: string) => void;
+    // Activity monitor: open a job's detail editor tab when its row is clicked.
     onOpenActivity: (jobId: string, title: string) => void;
     // Search: open the file holding a clicked match and ask the editor to scroll to / highlight it.
     onOpenMatch: (name: string, query: string) => void;
@@ -90,6 +97,14 @@ type LeftPanelProperties = {
 const LeftPanel = function (properties: LeftPanelProperties) {
     const { open, onClose, isCollapsed, onToggleCollapse, onExpand, onOpenMatch } = properties;
     const [activeView, setActiveView] = useState<LeftView>('explorer');
+    // Running+queued job count, surfaced as a badge on the Activity monitor rail icon so new activity is visible from
+    // any view.
+    const { jobs } = useActivityQueue();
+    const activeCount = useMemo(function () {
+        return jobs.filter(function (job) {
+            return job.status === 'running' || job.status === 'queued';
+        }).length;
+    }, [jobs]);
     // Below the mobile breakpoint the panel is an off-canvas drawer that fills its width, so it is not resizable; above
     // it, the body is a draggable column whose width is remembered.
     const isMobile = useMediaQuery(MOBILE_QUERY);
@@ -124,15 +139,18 @@ const LeftPanel = function (properties: LeftPanelProperties) {
                 selected={properties.selected}
                 refreshing={properties.refreshing}
                 countForFile={properties.countForFile}
+                openTabs={properties.openTabs}
                 onOpen={properties.onOpen}
                 onRefresh={properties.onRefresh}
                 onAddFile={properties.onAddFile}
                 onDelete={properties.onDelete}
                 onNewFile={properties.onNewFile}
-                onOpenActivity={properties.onOpenActivity}
+                onSelectTab={properties.onSelectTab}
+                onCloseTab={properties.onCloseTab}
             />}
             {activeView === 'search' && <SearchPanel onOpenMatch={onOpenMatch} />}
             {activeView === 'sourceControl' && <SourceControlPanel />}
+            {activeView === 'activity' && <ActivityPanel onOpenActivity={properties.onOpenActivity} />}
         </div>
     );
 
@@ -141,7 +159,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
             {open && <div className={styles.overlay} onClick={onClose} />}
 
             <aside className={cx(styles.leftPanel, open && styles.open)}>
-                <NavigationRail active={activeView} onSelect={handleSelectView} />
+                <NavigationRail active={activeView} onSelect={handleSelectView} badges={{ activity: activeCount }} onClose={isMobile ? onClose : undefined} />
 
                 {isMobile ?
                     body :

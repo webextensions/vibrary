@@ -1,26 +1,40 @@
 import cx from 'classnames';
 import type { ReactNode } from 'react';
 
-import { ExplorerIcon, SearchIcon, SourceControlIcon } from './Icons.tsx';
+import { ActivityIcon, CloseIcon, ExplorerIcon, SearchIcon, SourceControlIcon } from './Icons.tsx';
 
 import styles from './NavigationRail.module.css';
 
 // Which view the left panel currently shows. Owned by LeftPanel; the rail selects it.
-type LeftView = 'explorer' | 'search' | 'sourceControl';
+type LeftView = 'explorer' | 'search' | 'sourceControl' | 'activity';
 
 const RAIL_ITEMS: { view: LeftView; label: string; Icon: () => ReactNode }[] = [
     { view: 'explorer', label: 'Explorer', Icon: ExplorerIcon },
     { view: 'search', label: 'Search', Icon: SearchIcon },
-    { view: 'sourceControl', label: 'Source Control', Icon: SourceControlIcon }
+    { view: 'sourceControl', label: 'Source Control', Icon: SourceControlIcon },
+    { view: 'activity', label: 'Activity monitor', Icon: ActivityIcon }
 ];
 
 // The VS Code-style activity bar down the far-left edge: one icon button per view. The active button is highlighted and
 // carries an accent indicator bar. Clicking the active button is how the caller collapses/expands the panel, so it stays
-// a normal button (no disabled state).
-const NavigationRail = function ({ active, onSelect }: { active: LeftView; onSelect: (view: LeftView) => void }) {
+// a normal button (no disabled state). A view's badge (e.g. the running+queued job count) is shown over its icon. When
+// onClose is passed (the mobile drawer), a close button leads the rail so the drawer can be dismissed without reaching
+// back to the toolbar toggle.
+const NavigationRail = function ({ active, onSelect, badges, onClose }: { active: LeftView; onSelect: (view: LeftView) => void; badges?: Partial<Record<LeftView, number>>; onClose?: () => void }) {
     return (
         <nav className={styles.rail} aria-label="Views">
+            {onClose &&
+            <button
+                type="button"
+                className={styles.railButton}
+                aria-label="Close panel"
+                title="Close panel"
+                onClick={onClose}
+            >
+                <CloseIcon />
+            </button>}
             {RAIL_ITEMS.map(function ({ view, label, Icon }) {
+                const count = badges?.[view] ?? 0;
                 return (
                     <button
                         key={view}
@@ -34,6 +48,7 @@ const NavigationRail = function ({ active, onSelect }: { active: LeftView; onSel
                         }}
                     >
                         <Icon />
+                        {count > 0 && <span className={styles.railBadge}>{count}</span>}
                     </button>
                 );
             })}

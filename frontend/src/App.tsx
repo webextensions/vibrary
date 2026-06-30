@@ -363,6 +363,12 @@ const App = function () {
         setDrawerOpen(false);
     }, [openOrFocus]);
 
+    // The open tabs in tab-bar shape, shared by the editor's TabBar and the Explorer's "Open Editors" list so the two
+    // stay in sync. Activity tabs carry the job's title; file tabs fall back to their basename in the consumer.
+    const openTabInfos = tabs.map(function (tab) {
+        return { path: tab.path, dirty: tab.dirty, label: tab.kind === 'activity' ? tab.title : undefined };
+    });
+
     return (
         <div className={styles.layout}>
             <LeftPanel
@@ -374,6 +380,7 @@ const App = function () {
                 onExpand={expandSidebar}
                 refreshing={refreshing}
                 countForFile={countForFile}
+                openTabs={openTabInfos}
                 onOpen={handleOpen}
                 onClose={function () {
                     setDrawerOpen(false);
@@ -382,6 +389,8 @@ const App = function () {
                 onAddFile={handleAddFile}
                 onDelete={handleDelete}
                 onNewFile={handleNewFile}
+                onSelectTab={setActive}
+                onCloseTab={closeTab}
                 onOpenActivity={openActivity}
                 onOpenMatch={handleOpenMatch}
             />
@@ -398,9 +407,7 @@ const App = function () {
                     </button>
                     {tabs.length > 0 && activePath !== null &&
                     <TabBar
-                        tabs={tabs.map(function (tab) {
-                            return { path: tab.path, dirty: tab.dirty, label: tab.kind === 'activity' ? tab.title : undefined };
-                        })}
+                        tabs={openTabInfos}
                         activePath={activePath}
                         onSelect={setActive}
                         onClose={closeTab}

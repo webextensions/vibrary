@@ -32,6 +32,22 @@
     color: #1f2328;
 }
 
+/* Count badge over a view's icon (e.g. running+queued jobs on Activity monitor), anchored to the icon's top-right. */
+.rail-badge {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #0969da;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
+}
+
 /* Accent indicator on the active view, anchored to the rail's left edge. */
 .rail-button.active::before {
     content: "";

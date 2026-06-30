@@ -123,6 +123,41 @@
     flex-shrink: 0;
 }
 
+/* Unsaved indicator on an Open Editors row, mirroring the editor tab bar's dirty dot. */
+.tab-dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #1f883d;
+}
+
+/* Open Editors close button; hidden until the row is hovered (or focused) so the list stays quiet, like the kebab. */
+.tree-row .row-close {
+    flex-shrink: 0;
+    width: auto;
+    padding: 6px;
+    color: #656d76;
+    opacity: 0;
+}
+
+.tree-row .row-close svg {
+    width: 14px;
+    height: 14px;
+}
+
+.tree-row:hover .row-close,
+.row-close:focus-visible {
+    opacity: 1;
+}
+
+/* No hover on touch layouts, so keep the close affordance visible there. */
+@media (max-width: 700px) {
+    .tree-row .row-close {
+        opacity: 1;
+    }
+}
+
 /* Compact icon button; stays hidden until the row is hovered or its menu is open, so it does not clutter the list. */
 .tree-row .more-button {
     flex-shrink: 0;

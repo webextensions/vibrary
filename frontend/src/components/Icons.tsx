@@ -66,6 +66,22 @@ const SourceControlIcon = function () {
     );
 };
 
+// Pulse/heartbeat glyph for the navigation rail's Activity monitor view.
+const ActivityIcon = function () {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <path
+                d="M2.5 10h3l2-5 3 10 2-5h5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    );
+};
+
 const MenuIcon = function () {
     return (
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
@@ -359,6 +375,7 @@ const TypeIcon = function ({ type }: { type: EntryType }) {
 };
 
 export {
+    ActivityIcon,
     AiIcon,
     ApproveIcon,
     ChevronIcon,
