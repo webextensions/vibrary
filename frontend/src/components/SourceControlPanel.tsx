@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react
 
 import { commitChanges, generateCommitMessage, getGitStatus, type GitFileStatus, type GitStatus, pushChanges, stagePaths, unstagePaths } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
+import { AccordionSection } from './AccordionSection.tsx';
 import { AiIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
 
 import styles from './SourceControlPanel.module.css';
@@ -48,6 +49,10 @@ const SourceControlPanel = function () {
 
     const [summary, setSummary] = useState('');
     const [body, setBody] = useState('');
+
+    // The two collapsible sections, open by default like the Explorer's accordions.
+    const [statusOpen, setStatusOpen] = useState(true);
+    const [commitOpen, setCommitOpen] = useState(true);
 
     const [generating, setGenerating] = useState(false);
     const [committing, setCommitting] = useState(false);
@@ -209,139 +214,158 @@ const SourceControlPanel = function () {
             <div className={styles.header}>
                 <span className={styles.title}>Source Control</span>
                 {status !== null && status.current && <span className={styles.branch} title={`Branch ${status.current}`}>{status.current}</span>}
-                <button type="button" className={cx(styles.iconButton, loading && styles.spinning)} aria-label="Refresh" title="Refresh" onClick={refresh} disabled={loading || busy}>
-                    <RefreshIcon />
-                </button>
             </div>
 
-            <div className={styles.commitBox}>
-                <input
-                    type="text"
-                    className={styles.summaryInput}
-                    placeholder="Summary (required)"
-                    aria-label="Commit summary"
-                    value={summary}
-                    disabled={busy}
-                    onChange={function (changeEvent) {
-                        setSummary(changeEvent.target.value);
-                    }}
-                />
-                <textarea
-                    className={styles.bodyInput}
-                    placeholder="Extended description"
-                    aria-label="Commit description"
-                    rows={4}
-                    value={body}
-                    disabled={busy}
-                    onChange={function (changeEvent) {
-                        setBody(changeEvent.target.value);
-                    }}
-                />
-                <div className={styles.commitActions}>
-                    <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={handleGenerate}
-                        disabled={busy || staged.length === 0}
-                        title={staged.length === 0 ? 'Stage changes to generate a message' : 'Draft a commit message with Claude'}
-                    >
-                        {generating ? <span className={styles.spinner} role="status" aria-label="Generating" /> : <AiIcon />}
-                        Generate
+            <AccordionSection
+                title="Status"
+                expanded={statusOpen}
+                onToggle={function () {
+                    setStatusOpen(!statusOpen);
+                }}
+                badge={totalChanged > 0 ? <span className={styles.statusCount}>{totalChanged}</span> : undefined}
+                actions={
+                    <button type="button" className={cx(styles.iconButton, loading && styles.spinning)} aria-label="Refresh" title="Refresh" onClick={refresh} disabled={loading || busy}>
+                        <RefreshIcon />
                     </button>
-                    <button
-                        type="button"
-                        className={styles.primaryButton}
-                        onClick={handleCommit}
-                        disabled={busy || summary.trim() === '' || staged.length === 0}
-                    >
-                        {committing ? <span className={styles.spinner} role="status" aria-label="Committing" /> : 'Commit'}
-                    </button>
-                    <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={handlePush}
+                }
+            >
+                {totalChanged === 0 && <p className={styles.message}>No changes.</p>}
+
+                {staged.length > 0 &&
+                <section className={styles.group}>
+                    <p className={styles.groupTitle}>Staged ({staged.length})</p>
+                    <ul className={styles.fileList}>
+                        {staged.map(function (file) {
+                            return (
+                                <FileRow
+                                    key={file.path}
+                                    file={file}
+                                    statusChar={file.index}
+                                    actionLabel="Unstage"
+                                    ActionIcon={RemoveIcon}
+                                    disabled={busy}
+                                    onAction={function () {
+                                        void runStatusAction(function () {
+                                            return unstagePaths([file.path]);
+                                        });
+                                    }}
+                                />
+                            );
+                        })}
+                    </ul>
+                </section>}
+
+                {changes.length > 0 &&
+                <section className={styles.group}>
+                    <p className={styles.groupTitle}>Changes ({changes.length})</p>
+                    <ul className={styles.fileList}>
+                        {changes.map(function (file) {
+                            return (
+                                <FileRow
+                                    key={file.path}
+                                    file={file}
+                                    statusChar={file.working_dir}
+                                    actionLabel="Stage"
+                                    ActionIcon={PlusIcon}
+                                    disabled={busy}
+                                    onAction={function () {
+                                        void runStatusAction(function () {
+                                            return stagePaths([file.path]);
+                                        });
+                                    }}
+                                />
+                            );
+                        })}
+                    </ul>
+                </section>}
+
+                {untracked.length > 0 &&
+                <section className={styles.group}>
+                    <p className={styles.groupTitle}>Untracked ({untracked.length})</p>
+                    <ul className={styles.fileList}>
+                        {untracked.map(function (file) {
+                            return (
+                                <FileRow
+                                    key={file.path}
+                                    file={file}
+                                    statusChar="?"
+                                    actionLabel="Stage"
+                                    ActionIcon={PlusIcon}
+                                    disabled={busy}
+                                    onAction={function () {
+                                        void runStatusAction(function () {
+                                            return stagePaths([file.path]);
+                                        });
+                                    }}
+                                />
+                            );
+                        })}
+                    </ul>
+                </section>}
+            </AccordionSection>
+
+            <AccordionSection
+                title="Commit"
+                expanded={commitOpen}
+                onToggle={function () {
+                    setCommitOpen(!commitOpen);
+                }}
+            >
+                <div className={styles.commitBox}>
+                    <input
+                        type="text"
+                        className={styles.summaryInput}
+                        placeholder="Summary (required)"
+                        aria-label="Commit summary"
+                        value={summary}
                         disabled={busy}
-                    >
-                        {pushing ? <span className={styles.spinner} role="status" aria-label="Pushing" /> : 'Push'}
-                    </button>
+                        onChange={function (changeEvent) {
+                            setSummary(changeEvent.target.value);
+                        }}
+                    />
+                    <textarea
+                        className={styles.bodyInput}
+                        placeholder="Extended description"
+                        aria-label="Commit description"
+                        rows={4}
+                        value={body}
+                        disabled={busy}
+                        onChange={function (changeEvent) {
+                            setBody(changeEvent.target.value);
+                        }}
+                    />
+                    <div className={styles.commitActions}>
+                        <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={handleGenerate}
+                            disabled={busy || staged.length === 0}
+                            title={staged.length === 0 ? 'Stage changes to generate a message' : 'Draft a commit message with Claude'}
+                        >
+                            {generating ? <span className={styles.spinner} role="status" aria-label="Generating" /> : <AiIcon />}
+                            Generate
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.primaryButton}
+                            onClick={handleCommit}
+                            disabled={busy || summary.trim() === '' || staged.length === 0}
+                        >
+                            {committing ? <span className={styles.spinner} role="status" aria-label="Committing" /> : 'Commit'}
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={handlePush}
+                            disabled={busy}
+                        >
+                            {pushing ? <span className={styles.spinner} role="status" aria-label="Pushing" /> : 'Push'}
+                        </button>
+                    </div>
+                    {actionError !== null && <p className={styles.error}>{actionError}</p>}
+                    {notice !== null && <p className={styles.notice}>{notice}</p>}
                 </div>
-                {actionError !== null && <p className={styles.error}>{actionError}</p>}
-                {notice !== null && <p className={styles.notice}>{notice}</p>}
-            </div>
-
-            {totalChanged === 0 && <p className={styles.message}>No changes.</p>}
-
-            {staged.length > 0 &&
-            <section className={styles.group}>
-                <p className={styles.groupTitle}>Staged ({staged.length})</p>
-                <ul className={styles.fileList}>
-                    {staged.map(function (file) {
-                        return (
-                            <FileRow
-                                key={file.path}
-                                file={file}
-                                statusChar={file.index}
-                                actionLabel="Unstage"
-                                ActionIcon={RemoveIcon}
-                                disabled={busy}
-                                onAction={function () {
-                                    void runStatusAction(function () {
-                                        return unstagePaths([file.path]);
-                                    });
-                                }}
-                            />
-                        );
-                    })}
-                </ul>
-            </section>}
-
-            {changes.length > 0 &&
-            <section className={styles.group}>
-                <p className={styles.groupTitle}>Changes ({changes.length})</p>
-                <ul className={styles.fileList}>
-                    {changes.map(function (file) {
-                        return (
-                            <FileRow
-                                key={file.path}
-                                file={file}
-                                statusChar={file.working_dir}
-                                actionLabel="Stage"
-                                ActionIcon={PlusIcon}
-                                disabled={busy}
-                                onAction={function () {
-                                    void runStatusAction(function () {
-                                        return stagePaths([file.path]);
-                                    });
-                                }}
-                            />
-                        );
-                    })}
-                </ul>
-            </section>}
-
-            {untracked.length > 0 &&
-            <section className={styles.group}>
-                <p className={styles.groupTitle}>Untracked ({untracked.length})</p>
-                <ul className={styles.fileList}>
-                    {untracked.map(function (file) {
-                        return (
-                            <FileRow
-                                key={file.path}
-                                file={file}
-                                statusChar="?"
-                                actionLabel="Stage"
-                                ActionIcon={PlusIcon}
-                                disabled={busy}
-                                onAction={function () {
-                                    void runStatusAction(function () {
-                                        return stagePaths([file.path]);
-                                    });
-                                }}
-                            />
-                        );
-                    })}
-                </ul>
-            </section>}
+            </AccordionSection>
         </div>
     );
 };
