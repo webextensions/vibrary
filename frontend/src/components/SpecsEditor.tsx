@@ -9,7 +9,7 @@ import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
 import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPE_BY_FAMILY, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, type Spec } from '../vibraryXml.ts';
 
-import { AiIcon, PlusIcon } from './Icons.tsx';
+import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from './Icons.tsx';
 import { ResponsiveDialog } from './ResponsiveDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 
@@ -513,9 +513,9 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
                     {operationsOpen &&
                     <div className={styles.actionsPopup}>
                         <p className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkApprove}>Approve</button>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}>Remove Approval</button>
-                        <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}>Delete</button>
+                        <button type="button" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
+                        <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
+                        <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
                     </div>}
                     <button
                         type="button"
