@@ -98,18 +98,22 @@ const SourceControlPanel = function () {
     }, []);
 
     // Staged entries carry an index change; Changes are tracked files with a worktree change; Untracked are new files.
-    // A file mid-edit after staging (e.g. "MM") legitimately appears in both Staged and Changes.
+    // A file mid-edit after staging (e.g. "MM") legitimately appears in both Staged and Changes. Untracked is git's "??"
+    // (both columns "?"); a real letter in a column means that column changed.
     const { staged, changes, untracked } = useMemo(function () {
         const files = status?.files ?? [];
+        const isUntracked = function (file: GitFileStatus) {
+            return file.index === '?' && file.working_dir === '?';
+        };
         return {
             staged: files.filter(function (file) {
-                return file.staged;
+                return !isUntracked(file) && file.index !== ' ';
             }),
             changes: files.filter(function (file) {
-                return file.unstaged;
+                return !isUntracked(file) && file.working_dir !== ' ';
             }),
             untracked: files.filter(function (file) {
-                return file.untracked;
+                return isUntracked(file);
             })
         };
     }, [status]);
@@ -181,7 +185,7 @@ const SourceControlPanel = function () {
     };
 
     const handlePush = async function () {
-        const confirmed = await confirmDialog(`Push ${status?.branch || 'the current branch'} to its remote?`, 'Push');
+        const confirmed = await confirmDialog(`Push ${status?.current || 'the current branch'} to its remote?`, 'Push');
         if (!confirmed) {
             return;
         }
@@ -204,7 +208,7 @@ const SourceControlPanel = function () {
         <div className={styles.sourceControl}>
             <div className={styles.header}>
                 <span className={styles.title}>Source Control</span>
-                {status !== null && status.branch !== '' && <span className={styles.branch} title={`Branch ${status.branch}`}>{status.branch}</span>}
+                {status !== null && status.current && <span className={styles.branch} title={`Branch ${status.current}`}>{status.current}</span>}
                 <button type="button" className={cx(styles.iconButton, loading && styles.spinning)} aria-label="Refresh" title="Refresh" onClick={refresh} disabled={loading || busy}>
                     <RefreshIcon />
                 </button>
@@ -276,7 +280,7 @@ const SourceControlPanel = function () {
                             <FileRow
                                 key={file.path}
                                 file={file}
-                                statusChar={file.indexStatus}
+                                statusChar={file.index}
                                 actionLabel="Unstage"
                                 ActionIcon={RemoveIcon}
                                 disabled={busy}
@@ -300,7 +304,7 @@ const SourceControlPanel = function () {
                             <FileRow
                                 key={file.path}
                                 file={file}
-                                statusChar={file.worktreeStatus}
+                                statusChar={file.working_dir}
                                 actionLabel="Stage"
                                 ActionIcon={PlusIcon}
                                 disabled={busy}

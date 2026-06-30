@@ -220,19 +220,16 @@ const loadAllSpecTitles = async function (): Promise<string[]> {
     });
 };
 
-// One changed file from `git status`, with the staged (index) and unstaged (worktree) state split out so the Source
-// Control panel can group rows into Staged / Changes / Untracked.
+// One changed file from `git status`, in simple-git's native shape: `index` is the staged (index) column and
+// `working_dir` the unstaged (worktree) column, which the Source Control panel uses to group rows into
+// Staged / Changes / Untracked.
 type GitFileStatus = {
     path: string;
-    originalPath: string | null;
-    indexStatus: string;
-    worktreeStatus: string;
-    untracked: boolean;
-    staged: boolean;
-    unstaged: boolean
+    index: string;
+    working_dir: string
 };
 
-type GitStatus = { branch: string; files: GitFileStatus[] };
+type GitStatus = { current: string | null; files: GitFileStatus[] };
 
 // One line match inside a file; `line` is 1-based and `text` is the trimmed, length-capped line.
 type SearchMatch = { line: number; text: string };
@@ -276,10 +273,10 @@ const commitChanges = function (message: { summary: string; body: string }): Pro
     });
 };
 
-// Push the current branch. Resolves with git's raw stdout (surfaced by the panel); rejects with git's stderr on failure.
-const pushChanges = async function (): Promise<string> {
-    const output = await request<{ output: string }>('/api/git/push', { method: 'POST' });
-    return output.output;
+// Push the current branch; rejects with git's stderr on failure. The panel only needs success/failure, so the push
+// result is not returned.
+const pushChanges = async function (): Promise<void> {
+    await request<{ output: unknown }>('/api/git/push', { method: 'POST' });
 };
 
 // Draft a commit summary + extended body from the staged diff via the backend's headless agent (buffered, like
