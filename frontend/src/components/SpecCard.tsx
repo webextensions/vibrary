@@ -10,6 +10,7 @@ import { applySpec, populateTitle, runTask } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
 import { promptDialog } from '../promptDialog.ts';
+import { useSettings } from '../settingsContext.ts';
 import { AGENTS, hashContent, type Spec } from '../vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
@@ -96,6 +97,7 @@ const Chips = function ({ items }: { items: string[] }) {
 const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onChange, onToggleMode, onRemove, selected, onToggleSelect }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueue();
+    const { loaded: settingsLoaded, getTaskOptions, setTaskOptions, resetTaskOptions } = useSettings();
     const [expanded, setExpanded] = useState(false);
     const [applying, setApplying] = useState(false);
     const [populating, setPopulating] = useState(false);
@@ -111,9 +113,40 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
         }
         return schemas[value.formSchemaRef] ?? null;
     }, [value.type, value.formSchemaRef, schemas]);
+    // The task's options form is keyed by its stable formSchemaRef (entry ids are regenerated on every parse). The last
+    // used values are remembered in the per-project settings and re-applied here; a "Reset to default options" button
+    // drops them back to the schema defaults.
+    const optionsReference = value.formSchemaRef;
     const [optionsData, setOptionsData] = useState<Record<string, unknown>>(function () {
         return optionsSchema ? schemaDefaults(optionsSchema) : {};
     });
+    // Settings load asynchronously, so the initial state above is seeded from schema defaults. Once they arrive, apply
+    // any remembered values by adjusting state during render (the React-recommended alternative to a setState effect),
+    // guarded so it runs once and never clobbers edits the user already made this session (`optionsTouched`).
+    const [optionsTouched, setOptionsTouched] = useState(false);
+    const [optionsSeeded, setOptionsSeeded] = useState(false);
+    if (!optionsSeeded && settingsLoaded && optionsSchema !== null && !optionsTouched) {
+        setOptionsSeeded(true);
+        const stored = getTaskOptions(optionsReference);
+        if (stored !== null) {
+            setOptionsData({ ...schemaDefaults(optionsSchema), ...stored });
+        }
+    }
+
+    const handleOptionsChange = function (next: Record<string, unknown>) {
+        setOptionsTouched(true);
+        setOptionsData(next);
+        setTaskOptions(optionsReference, next);
+    };
+
+    const handleResetOptions = function () {
+        if (optionsSchema === null) {
+            return;
+        }
+        setOptionsTouched(true);
+        setOptionsData(schemaDefaults(optionsSchema));
+        resetTaskOptions(optionsReference);
+    };
 
     const update = function (patch: Partial<Spec>) {
         onChange({ ...value, ...patch });
@@ -177,12 +210,22 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
         }
         const options = optionsSchema ? optionsToPrompt(optionsSchema, optionsData) : '';
         const runArguments = { title: value.title, content: value.content, notes: value.notes, instructions, options };
+        // The concise bubble shown in the activity: the user-authored parts, minus the backend's boilerplate framing (the
+        // exact prompt is available via the bubble's "Full" toggle).
+        const promptParts = [value.content];
+        if (options !== '') {
+            promptParts.push('', 'Selected options:', options);
+        }
+        if (instructions !== '') {
+            promptParts.push('', 'Instructions:', instructions);
+        }
         // Enqueue and let the activity monitor own the run; await only to log the job's stdout when it eventually
         // finishes (the await does not block the UI - the card has already returned control to the user).
         try {
             const output = await enqueue({
                 kind: value.type === 'task' ? 'run-task' : 'apply-spec',
                 label: value.title,
+                prompt: promptParts.join('\n'),
                 run: function (signal, onEvent) {
                     return runAction.run(runArguments, { signal, onEvent });
                 }
@@ -454,11 +497,16 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                     {hasRunAction &&
                     <div className={styles.applyRow}>
                         {optionsSchema &&
-                        <TaskOptionsForm
-                            schema={optionsSchema}
-                            formData={optionsData}
-                            onChange={setOptionsData}
-                        />}
+                        <div className={styles.optionsBlock}>
+                            <button type="button" className={styles.resetOptions} onClick={handleResetOptions}>
+                                Reset to default options
+                            </button>
+                            <TaskOptionsForm
+                                schema={optionsSchema}
+                                formData={optionsData}
+                                onChange={handleOptionsChange}
+                            />
+                        </div>}
                         <button
                             type="button"
                             className={styles.apply}

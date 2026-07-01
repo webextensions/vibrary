@@ -1,4 +1,5 @@
 import { type ClaudeStreamEvent } from './activityStream.ts';
+import { type AppSettings } from './settings.ts';
 import { countApprovedSpecs, type EntryType, parseVibraryXml } from './vibraryXml.ts';
 
 type ApprovalCount = { approved: number; total: number };
@@ -178,6 +179,13 @@ const applySpecs = function (entries: { title: string; content: string; notes: s
     return streamClaude('/api/apply-batch', { entries }, options);
 };
 
+// Continues a finished activity as a chat by resuming its claude session with a follow-up message, streaming the reply
+// through `options.onEvent`. `sessionId` is the id captured from the original run's stream. Resolves with the reply's
+// final result text.
+const chatContinue = function (body: { message: string; sessionId: string }, options: StreamOptions): Promise<string> {
+    return streamClaude('/api/chat', body, options);
+};
+
 // Runs the backend's headless AI agent to derive a hyphenated title from a spec's content, backing the editor's
 // "Populate" button. Resolves with the slugified title the agent produced.
 const populateTitle = async function (content: string, signal?: AbortSignal): Promise<string> {
@@ -194,6 +202,22 @@ const populateTitle = async function (content: string, signal?: AbortSignal): Pr
 const getApprovalCount = async function (name: string): Promise<ApprovalCount> {
     const entries = parseVibraryXml(await getFile(name));
     return { approved: countApprovedSpecs(entries), total: entries.length };
+};
+
+// Read the per-project UI preferences from `.vibrary/settings.local.json`. A missing/corrupt file comes back as `{}`
+// from the backend, which the caller normalizes against the defaults.
+const getSettings = async function (): Promise<unknown> {
+    const output = await request<{ settings: unknown }>('/api/settings');
+    return output.settings;
+};
+
+// Persist the per-project UI preferences, writing the whole settings object to `.vibrary/settings.local.json`.
+const saveSettings = async function (settings: AppSettings): Promise<void> {
+    await request<Record<string, never>>('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings })
+    });
 };
 
 // Collects every entry title across all vibrary files in the folder, for the "Relates to" option list. Files that
@@ -285,4 +309,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, type ApprovalCount, commitChanges, createFile, deleteFile, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getWorkspace, type GitFileStatus, type GitStatus, listFiles, loadAllSpecTitles, populateTitle, pushChanges, runTask, saveFile, searchFiles, type SearchFileResult, type SearchResult, stagePaths, unstagePaths };
+export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStatus, listFiles, loadAllSpecTitles, populateTitle, pushChanges, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, unstagePaths };

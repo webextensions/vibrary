@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
 
 import { type JobStatus, useActivityQueue, useJobEvents } from '../activityQueue.ts';
@@ -15,6 +15,27 @@ const STATUS_LABEL: Record<JobStatus, string> = {
     success: 'Done',
     error: 'Failed',
     aborted: 'Aborted'
+};
+
+// The initial-prompt bubble shows a concise view by default and the exact prompt sent to claude on demand. The last
+// chosen view is persisted (mirroring RawXmlView's line-wrap idiom) so it becomes the default for the next such bubble.
+const PROMPT_VIEW_KEY = 'vibrary:prompt-view';
+type PromptView = 'summary' | 'full';
+
+const readPromptView = function (): PromptView {
+    try {
+        return window.localStorage.getItem(PROMPT_VIEW_KEY) === 'full' ? 'full' : 'summary';
+    } catch {
+        return 'summary';
+    }
+};
+
+const writePromptView = function (view: PromptView) {
+    try {
+        window.localStorage.setItem(PROMPT_VIEW_KEY, view);
+    } catch {
+        // ignore persistence failures; the toggle still works for this session
+    }
 };
 
 // mm:ss for an elapsed span; the running job ticks live, finished jobs show their final duration.
@@ -73,8 +94,50 @@ const ResultSummary = function ({ item }: { item: Extract<TranscriptItem, { kind
     );
 };
 
+// A user message: the initial prompt or a chat follow-up, as a right-aligned bubble. When the exact prompt is available
+// and differs from the concise text, a Summary/Full toggle switches views (its default follows the persisted choice).
+const UserMessage = function ({ text, fullText }: { text: string; fullText?: string }) {
+    const hasFull = typeof fullText === 'string' && fullText.trim() !== '' && fullText !== text;
+    const [view, setView] = useState<PromptView>(readPromptView);
+    const shown = hasFull && view === 'full' ? fullText : text;
+    const select = function (next: PromptView) {
+        setView(next);
+        writePromptView(next);
+    };
+    return (
+        <div className={styles.userMessage}>
+            {hasFull && (
+                <div className={styles.promptTabs}>
+                    <button type="button" className={cx(styles.promptTab, view === 'summary' && styles.promptTabActive)} onClick={function () { select('summary'); }}>
+                        Summary
+                    </button>
+                    <button type="button" className={cx(styles.promptTab, view === 'full' && styles.promptTabActive)} onClick={function () { select('full'); }}>
+                        Full
+                    </button>
+                </div>
+            )}
+            <div className={styles.userText}>{shown}</div>
+        </div>
+    );
+};
+
+// A chat-style "working" indicator: three bouncing dots shown at the bottom while a reply is streaming or a queued
+// follow-up is waiting, signalling that more output is still coming.
+const TypingIndicator = function () {
+    return (
+        <div className={styles.typing} aria-label="Working...">
+            <span className={styles.typingDot} />
+            <span className={styles.typingDot} />
+            <span className={styles.typingDot} />
+        </div>
+    );
+};
+
 const TranscriptBlock = function ({ item }: { item: TranscriptItem }) {
     switch (item.kind) {
+        case 'user': {
+            return <UserMessage text={item.text} fullText={item.fullText} />;
+        }
         case 'system': {
             const parts = ['Session started'];
             if (item.model) {
@@ -107,11 +170,14 @@ const TranscriptBlock = function ({ item }: { item: TranscriptItem }) {
 // Reads the job's metadata from the queue and its live transcript from useJobEvents (which re-renders only this tab as
 // tokens arrive).
 const ActivityDetail = function ({ jobId }: { jobId: string }) {
-    const { jobs, abortCurrent, retryJob } = useActivityQueue();
+    const { jobs, abortCurrent, retryJob, sendMessage } = useActivityQueue();
     const job = jobs.find(function (candidate) { return candidate.id === jobId; }) ?? null;
     const items = useJobEvents(jobId);
 
+    const [draft, setDraft] = useState<string>('');
     const isRunning = job?.status === 'running';
+    // Active = a reply is streaming, or a follow-up turn is queued behind another run; drives the typing indicator.
+    const isActive = job?.status === 'running' || job?.status === 'queued';
     const [now, setNow] = useState<number>(function () { return Date.now(); });
     useEffect(function () {
         if (!isRunning) {
@@ -120,6 +186,24 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
         const timer = setInterval(function () { setNow(Date.now()); }, 1000);
         return function () { clearInterval(timer); };
     }, [isRunning]);
+
+    // Keep the transcript pinned to the bottom while it is at the bottom (so streaming follows), but leave it alone once
+    // the user scrolls up. items' reference changes on every token, so this effect follows the stream smoothly.
+    const timelineReference = useRef<HTMLDivElement>(null);
+    const stickReference = useRef<boolean>(true);
+    const handleScroll = function () {
+        const element = timelineReference.current;
+        if (element === null) {
+            return;
+        }
+        stickReference.current = element.scrollHeight - element.scrollTop - element.clientHeight < 40;
+    };
+    useEffect(function () {
+        const element = timelineReference.current;
+        if (element !== null && stickReference.current) {
+            element.scrollTop = element.scrollHeight;
+        }
+    }, [items, isActive]);
 
     if (job === null) {
         return (
@@ -132,6 +216,18 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
     const elapsed = job.startedAt === null ?
         null :
         formatDuration((job.status === 'running' ? now : (job.endedAt ?? now)) - job.startedAt);
+
+    // The chat composer shows once a session id has been captured (early in the run), so a follow-up can be typed and
+    // sent even while a reply is still streaming - it queues and auto-sends when the current turn finishes.
+    const canContinue = Boolean(job.sessionId);
+    const handleSend = function () {
+        if (draft.trim() === '') {
+            return;
+        }
+        stickReference.current = true;
+        sendMessage(job.id, draft);
+        setDraft('');
+    };
 
     return (
         <div className={styles.detail}>
@@ -155,7 +251,7 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
                 </div>
             </header>
 
-            <div className={styles.timeline}>
+            <div className={styles.timeline} ref={timelineReference} onScroll={handleScroll}>
                 {items.length === 0 ?
                     (
                         <p className={styles.empty}>{isRunning ? 'Waiting for the agent to start...' : 'No streamed activity for this run.'}</p>
@@ -164,7 +260,30 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
                         return <TranscriptBlock key={item.id} item={item} />;
                     })}
                 {job.error !== null && job.status !== 'aborted' && <p className={styles.error}>{job.error}</p>}
+                {isActive && <TypingIndicator />}
             </div>
+
+            {canContinue && (
+                <div className={styles.composer}>
+                    <textarea
+                        className={styles.composerInput}
+                        value={draft}
+                        placeholder="Continue this activity as a chat..."
+                        rows={2}
+                        onChange={function (event) { setDraft(event.target.value); }}
+                        onKeyDown={function (event) {
+                            if (event.key !== 'Enter' || (!event.metaKey && !event.ctrlKey)) {
+                                return;
+                            }
+                            event.preventDefault();
+                            handleSend();
+                        }}
+                    />
+                    <button type="button" className={styles.action} disabled={draft.trim() === ''} onClick={handleSend}>
+                        Send
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

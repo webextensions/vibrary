@@ -374,6 +374,22 @@ const TypeIcon = function ({ type }: { type: EntryType }) {
     return <Glyph />;
 };
 
+// Gear glyph for the activity monitor's notification-settings popover toggle.
+const SettingsIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="2.25" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <path
+                d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.4 3.4l1.2 1.2M11.4 11.4l1.2 1.2M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                fill="none"
+            />
+        </svg>
+    );
+};
+
 export {
     ActivityIcon,
     AiIcon,
@@ -395,6 +411,7 @@ export {
     RemoveIcon,
     SaveIcon,
     SearchIcon,
+    SettingsIcon,
     SourceControlIcon,
     SpecIcon,
     StopIcon,

@@ -1,4 +1,4 @@
-import { CLAUDE_STREAM_FLAGS, spawnClaudeStreamAsync } from './spawnClaude.js';
+import { CLAUDE_STREAM_FLAGS, emitUserPrompt, spawnClaudeStreamAsync } from './spawnClaude.js';
 
 // Give the headless agent room to read the codebase and edit files; reject rather than hang forever if it stalls.
 const APPLY_TIMEOUT_MS = 10 * 60 * 1000;
@@ -27,9 +27,11 @@ const buildPrompt = function ({ title, content, notes, instructions }) {
 // (claude's stream-json events). Resolves on a clean exit; rejects with a descriptive Error otherwise (missing CLI,
 // non-zero exit, timeout, or abort).
 const applySpecAsync = function ({ cwd, title, content, notes, instructions, signal, onLine }) {
+    const prompt = buildPrompt({ title, content, notes, instructions });
+    emitUserPrompt(onLine, prompt);
     return spawnClaudeStreamAsync({
         cwd,
-        args: ['-p', buildPrompt({ title, content, notes, instructions }), ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
+        args: ['-p', prompt, ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
         timeoutMs: APPLY_TIMEOUT_MS,
         timeoutMessage: 'Applying the spec timed out',
         signal,

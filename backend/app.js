@@ -7,6 +7,7 @@ import express from 'express';
 import { createFilesRouter } from './routes/files.js';
 import { createGitRouter } from './routes/git.js';
 import { createSearchRouter } from './routes/search.js';
+import { createSettingsRouter } from './routes/settings.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -22,6 +23,7 @@ const createApp = async function ({ cwd = process.cwd(), hmr = false } = {}) {
     app.use('/api', createFilesRouter({ cwd }));
     app.use('/api', createGitRouter({ cwd }));
     app.use('/api', createSearchRouter({ cwd }));
+    app.use('/api', createSettingsRouter({ cwd }));
 
     if (hmr) {
         // Dev-only: run Vite in middleware mode so a single server serves both /api and the frontend with HMR. Vite is a

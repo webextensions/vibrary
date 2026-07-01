@@ -21,27 +21,36 @@ type StreamSubEvent =
 // The events api.ts forwards to the reducer. `_exit` is the backend's own terminal line; it never reaches the reducer
 // (api.ts consumes it), but it is part of the wire type.
 type ClaudeStreamEvent =
-| { type: 'system'; subtype?: string; model?: string; tools?: unknown[] } |
+| { type: 'system'; subtype?: string; model?: string; tools?: unknown[]; session_id?: string } |
 { type: 'assistant'; message?: ClaudeMessage } |
 { type: 'user'; message?: ClaudeMessage } |
-{ type: 'result'; subtype?: string; is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number } |
+{ type: 'result'; subtype?: string; is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number; session_id?: string } |
 { type: 'stream_event'; event: StreamSubEvent } |
+{ type: 'user_prompt'; text?: string } |
 { type: '_exit'; code: number; error: string | null } |
 { type: string; [key: string]: unknown };
 
 type TranscriptItem =
 | { kind: 'system'; id: string; model?: string; toolCount?: number } |
+{ kind: 'user'; id: string; text: string; fullText?: string } |
 { kind: 'text'; id: string; text: string } |
 { kind: 'tool_use'; id: string; toolUseId: string; name: string; input: string } |
 { kind: 'tool_result'; id: string; toolUseId: string; content: string; isError: boolean } |
 { kind: 'result'; id: string; isError: boolean; text: string; durationMs?: number; costUsd?: number; numTurns?: number };
 
 // items is what the tab renders; currentMessageId keys the in-flight assistant message's blocks so deltas and the later
-// consolidated message land on the same items.
-type TranscriptState = { items: TranscriptItem[]; currentMessageId: string };
+// consolidated message land on the same items. sessionId is claude's session id captured from the stream, used to resume
+// the conversation when the finished activity is continued as a chat.
+type TranscriptState = { items: TranscriptItem[]; currentMessageId: string; sessionId: string };
 
 const emptyTranscript = function (): TranscriptState {
-    return { items: [], currentMessageId: '' };
+    return { items: [], currentMessageId: '', sessionId: '' };
+};
+
+// Append a user message (the initial prompt, or a chat follow-up) as a right-aligned bubble. Driven imperatively by the
+// queue provider - the user's own turns are not part of claude's event stream.
+const appendUserMessage = function (state: TranscriptState, text: string, id: string): TranscriptState {
+    return { ...state, items: [...state.items, { kind: 'user', id, text }] };
 };
 
 // A tool_result's content is either a string or an array of content blocks; flatten it to readable text.
@@ -168,15 +177,18 @@ const reduceUser = function (state: TranscriptState, message: ClaudeMessage | un
 const reduceTranscript = function (state: TranscriptState, event: ClaudeStreamEvent): TranscriptState {
     switch (event.type) {
         case 'system': {
-            const system = event as { subtype?: string; model?: string; tools?: unknown[] };
+            const system = event as { subtype?: string; model?: string; tools?: unknown[]; session_id?: string };
             if (system.subtype !== undefined && system.subtype !== 'init') {
                 return state;
             }
+            // Capture the session id so a finished activity can be resumed as a chat. A resumed run re-emits init with the
+            // same id, so this is a no-op after the first turn (and the banner guard below skips the duplicate item).
+            const sessionId = typeof system.session_id === 'string' && system.session_id !== '' ? system.session_id : state.sessionId;
             if (state.items.some(function (item) { return item.kind === 'system'; })) {
-                return state;
+                return sessionId === state.sessionId ? state : { ...state, sessionId };
             }
             const toolCount = Array.isArray(system.tools) ? system.tools.length : undefined;
-            return { ...state, items: [...state.items, { kind: 'system', id: 'system', model: system.model, toolCount }] };
+            return { ...state, sessionId, items: [...state.items, { kind: 'system', id: 'system', model: system.model, toolCount }] };
         }
         case 'stream_event': {
             return reduceStreamEvent(state, (event as { event: StreamSubEvent }).event);
@@ -188,17 +200,40 @@ const reduceTranscript = function (state: TranscriptState, event: ClaudeStreamEv
             return reduceUser(state, (event as { message?: ClaudeMessage }).message);
         }
         case 'result': {
-            const summary = event as { is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number };
+            const summary = event as { is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number; session_id?: string };
+            // Key the result per turn (off the turn's message id) so a chat continuation's later result appends as its own
+            // item rather than colliding with the prior turn's on the fixed 'result' key.
             const item: TranscriptItem = {
                 kind: 'result',
-                id: 'result',
+                id: `result:${state.currentMessageId}`,
                 isError: Boolean(summary.is_error),
                 text: typeof summary.result === 'string' ? summary.result : '',
                 durationMs: summary.duration_ms,
                 costUsd: summary.total_cost_usd,
                 numTurns: summary.num_turns
             };
-            return { ...state, items: [...state.items, item] };
+            const sessionId = typeof summary.session_id === 'string' && summary.session_id !== '' ? summary.session_id : state.sessionId;
+            return { ...state, sessionId, items: [...state.items, item] };
+        }
+        case 'user_prompt': {
+            // The backend echoes the exact prompt it sent to claude; fold it into the seeded initial bubble (id 'prompt')
+            // as its "full" view alongside the concise text. Create the bubble if it was not seeded (defensive).
+            const text = typeof (event as { text?: string }).text === 'string' ? (event as { text: string }).text : '';
+            if (text === '') {
+                return state;
+            }
+            const index = state.items.findIndex(function (item) { return item.id === 'prompt'; });
+            if (index === -1) {
+                return { ...state, items: [...state.items, { kind: 'user', id: 'prompt', text }] };
+            }
+            const existing = state.items[index];
+            if (existing.kind !== 'user' || existing.fullText === text) {
+                return state;
+            }
+            const items = state.items.map(function (item, position) {
+                return position === index ? { ...item, fullText: text } : item;
+            });
+            return { ...state, items };
         }
         default: {
             return state;
@@ -206,4 +241,4 @@ const reduceTranscript = function (state: TranscriptState, event: ClaudeStreamEv
     }
 };
 
-export { type ClaudeStreamEvent, emptyTranscript, reduceTranscript, type TranscriptItem, type TranscriptState };
+export { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, type TranscriptItem, type TranscriptState };

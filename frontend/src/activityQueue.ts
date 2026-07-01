@@ -13,10 +13,12 @@ type JobStatus = 'queued' | 'running' | 'success' | 'error' | 'aborted';
 // `onEvent` (the queue folds these into the job's transcript). Non-streaming jobs (title) simply ignore onEvent.
 type JobRun = (signal: AbortSignal, onEvent: (event: ClaudeStreamEvent) => void) => Promise<string>;
 
-// What a caller hands to enqueue: the kind drives the row's icon/label, `label` is the human title shown.
+// What a caller hands to enqueue: the kind drives the row's icon/label, `label` is the human title shown. `prompt` is
+// the concise human-readable request seeded as the activity's first user bubble (omitted for kinds with nothing to show).
 type JobSpec = {
     kind: JobKind;
     label: string;
+    prompt?: string;
     run: JobRun
 };
 
@@ -30,6 +32,9 @@ type Job = {
     endedAt: number | null;
     output: string | null;
     error: string | null;
+    // Claude's session id, captured from the run's stream (early, at the init event). Present enables continuing the
+    // activity as a chat (via sendMessage); null when the run ended before emitting an init event.
+    sessionId: string | null;
     run: JobRun
 };
 
@@ -45,6 +50,10 @@ type ActivityQueue = {
     removeJob: (id: string) => void;
     moveJob: (id: string, direction: 'up' | 'down') => void;
     retryJob: (id: string) => void;
+    // Send a chat message to an activity that resumes its claude session, showing the message immediately and appending
+    // the reply to the existing transcript. If a reply is already streaming, the message is queued and auto-sent as the
+    // next turn. A no-op if the job has no session id yet or the message is empty.
+    sendMessage: (id: string, message: string) => void;
     clearFinished: () => void;
     // Per-job streamed transcript, kept off the `jobs` array so high-frequency token updates only re-render the open
     // detail tab (via useJobEvents) rather than every queue consumer.

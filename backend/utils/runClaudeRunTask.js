@@ -1,6 +1,6 @@
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { CLAUDE_STREAM_FLAGS, spawnClaudeStreamAsync } from './spawnClaude.js';
+import { CLAUDE_STREAM_FLAGS, emitUserPrompt, spawnClaudeStreamAsync } from './spawnClaude.js';
 
 // Give the headless agent room to read the codebase and edit files - and, when the Ralph loop is on, to iterate across
 // many passes; reject rather than hang forever if it stalls.
@@ -63,10 +63,12 @@ const buildPrompt = function ({ title, content, notes, options, instructions, is
 // CLI, non-zero exit, timeout, or abort).
 const runTaskAsync = async function ({ cwd, title, content, notes, options, instructions, signal, onLine }) {
     const isRalphLoopEnabled = isRalphLoopSelected(options);
+    const prompt = buildPrompt({ title, content, notes, options, instructions, isRalphLoopEnabled });
+    emitUserPrompt(onLine, prompt);
     try {
         return await spawnClaudeStreamAsync({
             cwd,
-            args: ['-p', buildPrompt({ title, content, notes, options, instructions, isRalphLoopEnabled }), ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
+            args: ['-p', prompt, ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
             timeoutMs: RUN_TASK_TIMEOUT_MS,
             timeoutMessage: 'Running the task timed out',
             signal,

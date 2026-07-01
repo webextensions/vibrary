@@ -1,8 +1,9 @@
 import cx from 'classnames';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Job, type JobKind, type JobStatus, useActivityQueue } from '../activityQueue.ts';
-import { AiIcon, ChevronIcon, EditIcon, ListIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SpecIcon, StopIcon, TaskIcon } from './Icons.tsx';
+import { useSettings } from '../settingsContext.ts';
+import { AiIcon, ChevronIcon, EditIcon, ListIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, SpecIcon, StopIcon, TaskIcon } from './Icons.tsx';
 
 import styles from './ActivityMonitor.module.css';
 
@@ -96,6 +97,65 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry 
     );
 };
 
+// Gear button + popover letting the user choose which activity kinds pop a top-level start notification. The choices
+// live in the per-project settings; the toast itself is fired by ActivityNotifier. Closes on an outside click.
+const NotificationSettingsMenu = function () {
+    const { isKindEnabled, setKindEnabled } = useSettings();
+    const [open, setOpen] = useState(false);
+    const wrapReference = useRef<HTMLDivElement>(null);
+
+    useEffect(function () {
+        if (!open) {
+            return undefined;
+        }
+        const handlePointerDown = function (event: MouseEvent) {
+            if (wrapReference.current !== null && !wrapReference.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handlePointerDown);
+        return function () {
+            document.removeEventListener('mousedown', handlePointerDown);
+        };
+    }, [open]);
+
+    return (
+        <div className={styles.settingsWrap} ref={wrapReference}>
+            <button
+                type="button"
+                className={styles.control}
+                aria-expanded={open}
+                onClick={function () {
+                    setOpen(function (previous) {
+                        return !previous;
+                    });
+                }}
+            >
+                <SettingsIcon />
+                Settings
+            </button>
+            {open &&
+            <div className={styles.settingsPanel}>
+                <p className={styles.settingsHeading}>Notify when an activity starts</p>
+                {(Object.keys(KIND_META) as JobKind[]).map(function (kind) {
+                    return (
+                        <label key={kind} className={styles.settingsRow}>
+                            <input
+                                type="checkbox"
+                                checked={isKindEnabled(kind)}
+                                onChange={function (event) {
+                                    setKindEnabled(kind, event.target.checked);
+                                }}
+                            />
+                            {KIND_META[kind].label}
+                        </label>
+                    );
+                })}
+            </div>}
+        </div>
+    );
+};
+
 // The "Activity monitor" body: a queue-wide control row over the list of jobs (running first as they sit mid-list,
 // queued after, finished history above). Reads everything from the shared activity queue.
 const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: string, title: string) => void }) {
@@ -148,6 +208,7 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
                     <RemoveIcon />
                     Clear
                 </button>
+                <NotificationSettingsMenu />
             </div>
 
             {paused && running && <p className={styles.note}>Paused - will stop after the current job.</p>}
@@ -178,4 +239,4 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
     );
 };
 
-export { ActivityMonitor };
+export { ActivityMonitor, KIND_META };

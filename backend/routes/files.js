@@ -8,6 +8,7 @@ import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibr
 import { applySpecAsync } from '../utils/runClaudeApply.js';
 import { applySpecsAsync } from '../utils/runClaudeApplyBatch.js';
 import { generateSpecsAsync } from '../utils/runClaudeGenerate.js';
+import { runChatAsync } from '../utils/runClaudeChat.js';
 import { runTaskAsync } from '../utils/runClaudeRunTask.js';
 import { generateTitleAsync } from '../utils/runClaudeTitle.js';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
@@ -282,6 +283,22 @@ const createFilesRouter = function ({ cwd }) {
                 signal,
                 onLine
             });
+        });
+    });
+
+    // Continue a finished activity as a chat: resume its claude session with a follow-up message. Not file-name scoped;
+    // the message and the session id captured from the original run's stream are sent in the body.
+    router.post('/chat', function (request, response) {
+        const { message, sessionId } = request.body || {};
+        if (typeof message !== 'string' || message.trim() === '') {
+            return sendErrorResponse(response, 400, 'Expected a non-empty "message"');
+        }
+        if (typeof sessionId !== 'string' || sessionId.trim() === '') {
+            return sendErrorResponse(response, 400, 'Expected a "sessionId"');
+        }
+
+        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
+            return runChatAsync({ cwd, message, sessionId, signal, onLine });
         });
     });
 

@@ -340,9 +340,14 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
             return { title: spec.title, content: spec.content, notes: spec.notes };
         });
         const count = entries.length;
+        const promptParts = [`Apply ${count} ${count === 1 ? 'spec' : 'specs'}:`];
+        for (const spec of selectedSpecs) {
+            promptParts.push(`- ${spec.title}`);
+        }
         const promise = enqueue({
             kind: 'apply-batch',
             label: `${count} ${count === 1 ? 'spec' : 'specs'}`,
+            prompt: promptParts.join('\n'),
             run: function (signal, onEvent) {
                 return applySpecs(entries, { signal, onEvent });
             }

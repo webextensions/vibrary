@@ -111,9 +111,110 @@
     color: #656d76;
 }
 
+/* A user message (initial prompt or chat follow-up): a right-aligned bubble, WhatsApp-style. */
+.user-message {
+    align-self: flex-end;
+    max-width: 80%;
+    padding: 8px 12px;
+    border: 1px solid #b6e3c4;
+    border-radius: 10px;
+    background: #dcf8e6;
+}
+
+.user-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+}
+
+/* Summary / Full toggle inside the initial-prompt bubble. */
+.prompt-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.prompt-tab {
+    padding: 1px 8px;
+    border: 1px solid #b6e3c4;
+    border-radius: 999px;
+    background: #fff;
+    color: #1f2328;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.prompt-tab-active {
+    background: #1f883d;
+    border-color: #1f883d;
+    color: #fff;
+}
+
+/* Follow-up chat composer, pinned under the scrolling timeline once the activity has finished. */
+.composer {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #d0d7de;
+}
+
+.composer-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.composer .action:disabled {
+    color: #8c959f;
+    cursor: not-allowed;
+}
+
 .system {
     font-size: 12px;
     color: #656d76;
+}
+
+/* "Working" indicator: three dots bouncing in sequence while a reply streams or a follow-up turn is queued. */
+.typing {
+    display: flex;
+    align-self: flex-start;
+    gap: 4px;
+    padding: 4px 2px;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #656d76;
+    animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+    0%, 80%, 100% {
+        opacity: 0.3;
+        transform: translateY(0);
+    }
+
+    40% {
+        opacity: 1;
+        transform: translateY(-3px);
+    }
 }
 
 /* Container for streamdown-rendered markdown. streamdown styles itself via Tailwind utilities which this project does

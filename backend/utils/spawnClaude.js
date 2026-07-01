@@ -129,4 +129,11 @@ const spawnClaudeStreamAsync = async function ({ cwd, args, timeoutMs, timeoutMe
     return stdout;
 };
 
-export { CLAUDE_STREAM_FLAGS, spawnClaudeAsync, spawnClaudeStreamAsync };
+// Echo the exact prompt we are about to hand claude as a synthetic stream line, so the frontend can show it as the
+// activity's initial user message (its "full" view). Shaped like claude's own stream-json events; the frontend reducer
+// folds a `user_prompt` event into the seeded bubble.
+const emitUserPrompt = function (onLine, prompt) {
+    onLine(JSON.stringify({ type: 'user_prompt', text: prompt }));
+};
+
+export { CLAUDE_STREAM_FLAGS, emitUserPrompt, spawnClaudeAsync, spawnClaudeStreamAsync };

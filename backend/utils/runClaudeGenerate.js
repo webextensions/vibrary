@@ -1,4 +1,4 @@
-import { CLAUDE_STREAM_FLAGS, spawnClaudeStreamAsync } from './spawnClaude.js';
+import { CLAUDE_STREAM_FLAGS, emitUserPrompt, spawnClaudeStreamAsync } from './spawnClaude.js';
 
 // Give the headless agent room to read the codebase and write the file; reject rather than hang forever if it stalls.
 const GENERATE_TIMEOUT_MS = 10 * 60 * 1000;
@@ -35,9 +35,11 @@ const buildPrompt = function (name, type, count) {
 // line through `onLine` (claude's stream-json events). Resolves on a clean exit; rejects with a descriptive Error
 // otherwise (missing CLI, non-zero exit, timeout, or abort).
 const generateSpecsAsync = function ({ cwd, name, type, count, signal, onLine }) {
+    const prompt = buildPrompt(name, type, count);
+    emitUserPrompt(onLine, prompt);
     return spawnClaudeStreamAsync({
         cwd,
-        args: ['-p', buildPrompt(name, type, count), ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
+        args: ['-p', prompt, ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
         timeoutMs: GENERATE_TIMEOUT_MS,
         timeoutMessage: 'Spec generation timed out',
         signal,

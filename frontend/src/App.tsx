@@ -300,6 +300,7 @@ const App = function () {
         const claudeOutput = await enqueue({
             kind: 'generate',
             label: `${count} ${type}`,
+            prompt: `Generate ${count} ${type} ${count === 1 ? 'entry' : 'entries'} in ${path}`,
             run: function (signal, onEvent) {
                 return generateSpecs(path, type, count, { signal, onEvent });
             }

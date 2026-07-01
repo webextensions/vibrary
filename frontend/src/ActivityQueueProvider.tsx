@@ -1,7 +1,8 @@
 import { type ReactNode, useRef, useState } from 'react';
 
+import { chatContinue } from './api.ts';
 import { type ActivityQueue, ActivityQueueContext, type Job, type JobSpec, type JobStatus } from './activityQueue.ts';
-import { type ClaudeStreamEvent, emptyTranscript, reduceTranscript, type TranscriptItem, type TranscriptState } from './activityStream.ts';
+import { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, type TranscriptItem, type TranscriptState } from './activityStream.ts';
 
 // In-memory job queue for every "claude -p" action triggered from the UI (run task, apply spec, apply a batch,
 // generate, derive a title). The queue runs strictly one job at a time: an empty queue starts immediately, otherwise a
@@ -36,6 +37,9 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
     // high-frequency token updates re-render only the open detail tab - not every queue consumer.
     const transcriptsReference = useRef(new Map<string, TranscriptState>());
     const eventListenersReference = useRef(new Map<string, Set<() => void>>());
+    // Chat messages a user sent while a reply was still streaming, per job id: drained one turn at a time as each run
+    // finishes, so follow-ups auto-send in order without ever running two claude processes at once.
+    const pendingReference = useRef(new Map<string, string[]>());
 
     const updateJobs = function (updater: (previous: Job[]) => Job[]) {
         const next = updater(jobsReference.current);
@@ -45,6 +49,15 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
 
     // Fold one streamed claude event into a job's transcript, notifying that job's subscribers only when the rendered
     // items actually changed (the reducer returns the same items reference for no-op events like message_start).
+    const notifyEvents = function (jobId: string) {
+        const listeners = eventListenersReference.current.get(jobId);
+        if (listeners) {
+            for (const listener of listeners) {
+                listener();
+            }
+        }
+    };
+
     const appendEvent = function (jobId: string, event: ClaudeStreamEvent) {
         const previous = transcriptsReference.current.get(jobId) ?? emptyTranscript();
         const next = reduceTranscript(previous, event);
@@ -52,14 +65,25 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             return;
         }
         transcriptsReference.current.set(jobId, next);
-        if (next.items !== previous.items) {
-            const listeners = eventListenersReference.current.get(jobId);
-            if (listeners) {
-                for (const listener of listeners) {
-                    listener();
-                }
-            }
+        // Mirror the session id onto the job as soon as it is captured (the init event, early in the run) so the chat
+        // composer can appear while the run is still streaming. Fires once, when it first becomes known.
+        if (next.sessionId !== previous.sessionId && next.sessionId !== '') {
+            updateJobs(function (jobs) {
+                return jobs.map(function (candidate) {
+                    return candidate.id === jobId && candidate.sessionId !== next.sessionId ? { ...candidate, sessionId: next.sessionId } : candidate;
+                });
+            });
         }
+        if (next.items !== previous.items) {
+            notifyEvents(jobId);
+        }
+    };
+
+    // Append a user message (the seeded initial prompt or a chat follow-up) to a job's transcript and notify its tab.
+    const pushUserMessage = function (jobId: string, text: string, id: string) {
+        const previous = transcriptsReference.current.get(jobId) ?? emptyTranscript();
+        transcriptsReference.current.set(jobId, appendUserMessage(previous, text, id));
+        notifyEvents(jobId);
     };
 
     const getEvents = function (jobId: string): TranscriptItem[] {
@@ -83,6 +107,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
 
     const clearEvents = function (jobId: string) {
         transcriptsReference.current.delete(jobId);
+        pendingReference.current.delete(jobId);
         const listeners = eventListenersReference.current.get(jobId);
         if (listeners) {
             for (const listener of listeners) {
@@ -102,6 +127,36 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         } else {
             settler.reject(value);
         }
+    };
+
+    // Install the next queued chat turn for an activity by re-running the same job with a run thunk that resumes its
+    // claude session, so the reply appends to the existing transcript (appendEvent folds onto the stored TranscriptState).
+    // The message is dequeued at run time so stacked follow-ups drain in order. No-op while the job is still running or
+    // queued - it gets armed again from the run's finally when the current turn finishes. A fresh no-op settler is
+    // registered since the original enqueue's promise was already consumed.
+    const armNextTurn = function (jobId: string) {
+        const pending = pendingReference.current.get(jobId);
+        if (!pending || pending.length === 0) {
+            return;
+        }
+        const target = jobsReference.current.find(function (candidate) {
+            return candidate.id === jobId;
+        });
+        if (!target || target.sessionId === null || target.status === 'running' || target.status === 'queued') {
+            return;
+        }
+        const sessionId = target.sessionId;
+        const run: Job['run'] = function (signal, onEvent) {
+            const message = pendingReference.current.get(jobId)?.shift() ?? '';
+            return chatContinue({ message, sessionId }, { signal, onEvent });
+        };
+        settlersReference.current.set(jobId, { resolve() {}, reject() {} });
+        updateJobs(function (previous) {
+            return previous.map(function (candidate) {
+                return candidate.id === jobId ? { ...candidate, status: 'queued', run, endedAt: null, error: null } : candidate;
+            });
+        });
+        pump();
     };
 
     // Start the next queued job when the queue is idle and not paused: claim the running slot, mark it running, run its
@@ -146,6 +201,8 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
                 finish({ status: controller.signal.aborted ? 'aborted' : 'error', error: errorMessage(error) });
             } finally {
                 controllerReference.current = null;
+                // Auto-send any chat message the user queued while this run was streaming, then pump the global queue.
+                armNextTurn(job.id);
                 pump();
             }
         };
@@ -163,11 +220,17 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             endedAt: null,
             output: null,
             error: null,
+            sessionId: null,
             run: spec.run
         };
         const promise = new Promise<string>(function (resolve, reject) {
             settlersReference.current.set(job.id, { resolve, reject });
         });
+        // Seed the activity's first user bubble from the concise prompt so it shows immediately; the backend later echoes
+        // the exact prompt, which folds into this same bubble as its "full" view.
+        if (spec.prompt !== undefined && spec.prompt !== '') {
+            pushUserMessage(job.id, spec.prompt, 'prompt');
+        }
         updateJobs(function (previous) {
             return [...previous, job];
         });
@@ -246,6 +309,26 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         }
     };
 
+    // Send a chat message to an activity: show it immediately, then send it now (if idle) or queue it to auto-send after
+    // the current reply finishes. Requires a captured session id to resume; ignores empty messages.
+    const sendMessage = function (id: string, message: string) {
+        const text = message.trim();
+        if (text === '') {
+            return;
+        }
+        const target = jobsReference.current.find(function (candidate) {
+            return candidate.id === id;
+        });
+        if (!target || target.sessionId === null) {
+            return;
+        }
+        pushUserMessage(id, text, `user:${crypto.randomUUID()}`);
+        const pending = pendingReference.current.get(id) ?? [];
+        pending.push(text);
+        pendingReference.current.set(id, pending);
+        armNextTurn(id);
+    };
+
     const clearFinished = function () {
         const finished = new Set<JobStatus>(['success', 'error', 'aborted']);
         const removed = jobsReference.current.filter(function (candidate) {
@@ -273,6 +356,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         removeJob,
         moveJob,
         retryJob,
+        sendMessage,
         clearFinished,
         subscribeEvents,
         getEvents
