@@ -23,6 +23,8 @@ const scopeToFiles = function (configs, files) {
     });
 };
 
+// ESLint flat config is loaded by tooling that requires a default export.
+// eslint-disable-next-line import-x/no-default-export
 export default [
     {
         ignores: [
@@ -53,30 +55,6 @@ export default [
         ],
         rules: {
             '@eslint-react/naming-convention-ref-name': 'off'
-        }
-    },
-
-    {
-        // react-refresh's "only-export-components" is about component-module HMR; it does not apply to the Vite config
-        // or the plain helper modules, which intentionally export non-component values
-        files: [
-            'frontend/src/api.ts',
-            'frontend/src/vibraryXml.ts',
-            'frontend/vite.config.ts'
-        ],
-        rules: {
-            'react-refresh/only-export-components': 'off'
-        }
-    },
-
-    {
-        // ESLint flat config and Vite config files are loaded by tooling that requires a default export
-        files: [
-            'eslint.config.js',
-            'frontend/vite.config.ts'
-        ],
-        rules: {
-            'import-x/no-default-export': 'off'
         }
     }
 ];

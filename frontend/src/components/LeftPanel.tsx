@@ -57,6 +57,9 @@ const useViewportWidth = function (): number {
         const handleResize = function () {
             setWidth(window.innerWidth);
         };
+        // `unicorn/prefer-observer-apis` wants ResizeObserver, but that observes an element's size, not the
+        // window/`innerWidth`, so it cannot replace viewport tracking here (this mirrors useMediaQuery).
+        // eslint-disable-next-line unicorn/prefer-observer-apis
         window.addEventListener('resize', handleResize);
         return function () {
             window.removeEventListener('resize', handleResize);
