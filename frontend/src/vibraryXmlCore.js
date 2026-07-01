@@ -18,7 +18,7 @@ const ENTRY_TYPE_BY_FAMILY = {
 // Derive a default entry type from a file's basename prefix (reviews-foo.xml -> 'review'). Defaults to 'spec'.
 const entryTypeFromName = function (name) {
     const base = String(name).split('/').at(-1) ?? '';
-    const family = base.split(/[-.]/)[0];
+    const family = base.split(/[-.]/, 1)[0];
     return ENTRY_TYPE_BY_FAMILY[family] ?? 'spec';
 };
 
@@ -78,10 +78,15 @@ const toAgent = function (value) {
 // crypto.randomUUID above, is unavailable over plain HTTP on a LAN address (the phone case), while Node's
 // crypto.createHash is not in the browser. cyrb53 is deterministic and identical in the browser and under node, so the
 // app, scripts, and migration all agree. Rendered as zero-padded hex (~13 chars).
+// cyrb53's mixing step is inherently bitwise, and charCodeAt (not codePointAt) is load-bearing: switching to
+// codePointAt would change the hash for any content containing astral characters (surrogate pairs), silently
+// invalidating every previously-stored <contentHash>/<approved> value for such content. Disabled for this function
+// only, not project-wide.
+/* eslint-disable no-bitwise, @stylistic/no-mixed-operators, unicorn/prefer-code-point */
 const hashContent = function (spec) {
     const text = toText(spec.content);
-    let h1 = 0xdeadbeef;
-    let h2 = 0x41c6ce57;
+    let h1 = 0xDEADBEEF;
+    let h2 = 0x41C6CE57;
     for (let index = 0; index < text.length; index += 1) {
         const code = text.charCodeAt(index);
         h1 = Math.imul(h1 ^ code, 2654435761);
@@ -94,6 +99,7 @@ const hashContent = function (spec) {
     const value = 4294967296 * (2097151 & h2) + (h1 >>> 0);
     return value.toString(16).padStart(13, '0');
 };
+/* eslint-enable no-bitwise, @stylistic/no-mixed-operators, unicorn/prefer-code-point */
 
 // crypto.randomUUID is only exposed in secure contexts (https or localhost); when the UI is opened over plain HTTP on a
 // LAN address (for example from a phone), it is undefined. These ids are client-only React keys that are never
@@ -201,18 +207,18 @@ const serializeVibraryXml = function (entries) {
                 entry: entries.map(function (spec) {
                     return {
                         '@_type': toEntryType(spec.type),
-                        title: spec.title,
-                        createdBy: spec.createdBy,
-                        approved: spec.approved,
-                        content: spec.content,
-                        contentHash: spec.contentHash,
-                        relatesTo: { ref: spec.relatesTo },
-                        notes: spec.notes,
-                        formSchemaRef: spec.formSchemaRef,
-                        labels: { label: spec.labels },
-                        created: spec.created,
-                        updated: spec.updated,
-                        updatedBy: spec.updatedBy
+                        'title': spec.title,
+                        'createdBy': spec.createdBy,
+                        'approved': spec.approved,
+                        'content': spec.content,
+                        'contentHash': spec.contentHash,
+                        'relatesTo': { ref: spec.relatesTo },
+                        'notes': spec.notes,
+                        'formSchemaRef': spec.formSchemaRef,
+                        'labels': { label: spec.labels },
+                        'created': spec.created,
+                        'updated': spec.updated,
+                        'updatedBy': spec.updatedBy
                     };
                 })
             }

@@ -43,7 +43,7 @@ export default [
     },
 
     ...scopeToFiles(ironplateReactTypeScript, [
-        'frontend/**/*.{ts,tsx}'
+        'frontend/**/*.{js,ts,tsx}'
     ]),
 
     {

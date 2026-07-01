@@ -7,6 +7,7 @@ import { approvalState, countApprovedSpecs, hashContent, parseVibraryXml, serial
 // call by design (ids are never serialized), so two parses of the same document never agree on it.
 const withoutId = function (entries) {
     return entries.map(function (entry) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured only to drop it from `rest`
         const { id, ...rest } = entry;
         return rest;
     });
