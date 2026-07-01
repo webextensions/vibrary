@@ -7,11 +7,18 @@ const createSearchRouter = function ({ cwd }) {
     const router = Router();
 
     // Full-text search across the included vibrary files (the same set the Explorer lists). An empty query returns an
-    // empty result set rather than an error, so the panel can clear its results without special-casing.
+    // empty result set rather than an error, so the panel can clear its results without special-casing. An optional
+    // comma-separated "files" param narrows the search to just those file names.
     router.get('/search', async function (request, response) {
         const query = typeof request.query.q === 'string' ? request.query.q : '';
+        const filesParameter = request.query.files;
+        const files = typeof filesParameter === 'string' && filesParameter !== '' ?
+            filesParameter.split(',').filter(function (name) {
+                return name !== '';
+            }) :
+            [];
         try {
-            return sendSuccessResponse(response, await searchVibrary(cwd, query));
+            return sendSuccessResponse(response, await searchVibrary(cwd, query, { files }));
         } catch (error) {
             console.error('Search failed:', error);
             return sendErrorResponse(response, 500, 'Search failed');

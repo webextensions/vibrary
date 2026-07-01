@@ -1,9 +1,13 @@
 import { type ReactNode, useEffect, useState } from 'react';
+import type { MultiValue } from 'react-select';
+import Select from 'react-select';
 
-import { searchFiles, type SearchFileResult } from '../api.ts';
+import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
 import { SearchIcon } from './Icons.tsx';
 
 import styles from './SearchPanel.module.css';
+
+type Option = { value: string; label: string };
 
 // Wait for the user to pause typing before hitting the backend, so each keystroke does not fire a request.
 const DEBOUNCE_MS = 250;
@@ -45,6 +49,31 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
     // The query the current `results` belong to, so an empty/too-short query clears the "no matches" message correctly.
     const [searchedQuery, setSearchedQuery] = useState('');
 
+    // Every file the Explorer would list, for the "narrow to files" multi-select; loaded once. An empty selection
+    // searches everywhere, matching how the editor's own status/type filters treat an empty selection.
+    const [fileOptions, setFileOptions] = useState<Option[]>([]);
+    const [fileFilter, setFileFilter] = useState<Option[]>([]);
+
+    useEffect(function () {
+        let isCancelled = false;
+        void (async function () {
+            try {
+                const { files } = await listFiles();
+                if (!isCancelled) {
+                    setFileOptions(files.map(function (name) {
+                        return { value: name, label: name };
+                    }));
+                }
+            } catch {
+                // The filter is a convenience; leave it empty (unfiltered search still works) rather than surfacing
+                // a listing failure here - the explorer's own load already reports that.
+            }
+        })();
+        return function () {
+            isCancelled = true;
+        };
+    }, []);
+
     useEffect(function () {
         const trimmed = query.trim();
         let isCancelled = false;
@@ -63,7 +92,9 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             }
             setSearching(true);
             try {
-                const output = await searchFiles(trimmed);
+                const output = await searchFiles(trimmed, fileFilter.map(function (option) {
+                    return option.value;
+                }));
                 if (isCancelled) {
                     return;
                 }
@@ -85,7 +116,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             isCancelled = true;
             clearTimeout(timer);
         };
-    }, [query]);
+    }, [query, fileFilter]);
 
     const totalMatches = results.reduce(function (sum, file) {
         return sum + file.matches.length;
@@ -106,6 +137,19 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                     }}
                 />
             </div>
+
+            {fileOptions.length > 0 &&
+            <Select<Option, true>
+                classNamePrefix="rs"
+                isMulti
+                placeholder="Narrow to files..."
+                aria-label="Narrow search to files"
+                options={fileOptions}
+                value={fileFilter}
+                onChange={function (options: MultiValue<Option>) {
+                    setFileFilter([...options]);
+                }}
+            />}
 
             {error !== null && <p className={styles.message}>{error}</p>}
 

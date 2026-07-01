@@ -292,9 +292,11 @@ type SearchFileResult = { path: string; matches: SearchMatch[] };
 type SearchResult = { results: SearchFileResult[]; truncated: boolean };
 
 // Full-text search across the included vibrary files (the same set the Explorer lists). The backend caps the result
-// set and flags `truncated` when it does.
-const searchFiles = function (query: string): Promise<SearchResult> {
-    return request<SearchResult>(`/api/search?q=${encodeURIComponent(query)}`);
+// set and flags `truncated` when it does. An optional `files` list narrows the search to just those file names; an
+// empty/omitted list searches everywhere.
+const searchFiles = function (query: string, files: string[] = []): Promise<SearchResult> {
+    const filesParameter = files.length > 0 ? `&files=${encodeURIComponent(files.join(','))}` : '';
+    return request<SearchResult>(`/api/search?q=${encodeURIComponent(query)}${filesParameter}`);
 };
 
 // Current branch and changed files. Rejects with "Not a git repository" when the served folder is not a git repo.

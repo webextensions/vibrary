@@ -29,12 +29,20 @@ const collectMatchesInFile = function (content, needle, limit) {
 // Case-insensitive substring search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary
 // files), so Search and Explorer always agree on scope. Returns per-file line matches; a file with no match is skipped
 // without reading its body twice. `truncated` flags that a cap was hit so the UI can say results are incomplete.
-const searchVibrary = async function (cwd, query) {
+// `options.files`, when non-empty, narrows the scope to just those file names (an empty/absent list imposes no
+// constraint - "search everywhere" - matching how the editor's own status/type filters treat an empty selection).
+const searchVibrary = async function (cwd, query, options = {}) {
     if (typeof query !== 'string' || query.trim() === '') {
         return { results: [], truncated: false };
     }
     const needle = query.toLowerCase();
-    const names = await listVibraryFiles(cwd);
+    const allNames = await listVibraryFiles(cwd);
+    const fileScope = Array.isArray(options.files) && options.files.length > 0 ? new Set(options.files) : null;
+    const names = fileScope === null ?
+        allNames :
+        allNames.filter(function (name) {
+            return fileScope.has(name);
+        });
     const results = [];
     let total = 0;
     let isTruncated = false;
