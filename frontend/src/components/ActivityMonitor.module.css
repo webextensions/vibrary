@@ -53,7 +53,10 @@
 .settings-panel {
     position: absolute;
     top: calc(100% + 4px);
-    right: 0;
+    /* Anchored to the wrap's own left edge, not right: 0 - the Settings button is not pinned to its row's right edge
+       (Pause/Abort/Clear come before it, and the row wraps on a narrow sidebar), so right: 0 could place the panel's
+       left edge to the left of the sidebar entirely, rendering it under the navigation rail and unclickable. */
+    left: 0;
     z-index: 10;
     display: flex;
     flex-direction: column;
