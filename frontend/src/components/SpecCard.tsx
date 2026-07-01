@@ -14,7 +14,7 @@ import { useSettings } from '../settingsContext.ts';
 import { AGENTS, hashContent, type Spec } from '../vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
-import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, RemoveIcon, TypeIcon } from './Icons.tsx';
+import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, PlusIcon, RemoveIcon, TypeIcon } from './Icons.tsx';
 import { optionsToPrompt, schemaDefaults } from './taskOptions.ts';
 
 import formStyles from './forms.module.css';
@@ -42,6 +42,7 @@ type SpecCardProperties = {
     onChange: (next: Spec) => void;
     onToggleMode: () => void;
     onRemove: () => void;
+    onDuplicate: () => void;
     selected: boolean;
     onToggleSelect: () => void
 };
@@ -100,7 +101,7 @@ const Chips = function ({ items }: { items: string[] }) {
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onChange, onToggleMode, onRemove, selected, onToggleSelect }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueue();
     const { loaded: settingsLoaded, getTaskOptions, setTaskOptions, resetTaskOptions } = useSettings();
@@ -362,6 +363,9 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                     </button>
                     <button type="button" className={styles.edit} onClick={onToggleMode}>
                         <EditIcon /><span className={styles.actionText}>{isEditing ? 'Done' : 'Edit'}</span>
+                    </button>
+                    <button type="button" className={styles.duplicate} title="Duplicate this entry" onClick={onDuplicate}>
+                        <PlusIcon /><span className={styles.actionText}>Duplicate</span>
                     </button>
                     <button
                         type="button"

@@ -260,6 +260,35 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
         }));
     };
 
+    // Clone an existing entry as a starting point for a similar one: same type/content/notes/labels/relatesTo, but a
+    // fresh id and timestamps, an unapproved state (a copy has not itself been signed off), and "-copy" appended to a
+    // non-empty title so it does not collide with the source's. Inserted right after the source, opened in edit mode,
+    // scrolled into view and focused - same finishing touches as addSpec.
+    const duplicateAt = function (index: number) {
+        const source = specs[index];
+        const now = nowTimestamp();
+        const duplicate: Spec = {
+            ...source,
+            id: crypto.randomUUID(),
+            title: source.title === '' ? '' : `${source.title}-copy`,
+            approved: '',
+            created: now,
+            updated: now,
+            updatedBy: 'Human'
+        };
+        onChange([...specs.slice(0, index + 1), duplicate, ...specs.slice(index + 1)]);
+        setEditingIds(function (previous) {
+            return new Set(previous).add(duplicate.id);
+        });
+        requestAnimationFrame(function () {
+            const textarea = document.getElementById(`spec-${duplicate.id}-content`);
+            if (textarea instanceof HTMLTextAreaElement) {
+                textarea.closest('fieldset')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                textarea.focus({ preventScroll: true });
+            }
+        });
+    };
+
     const addSpec = function () {
         const spec = emptySpec();
         onChange([...specs, spec]);
@@ -482,6 +511,9 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
                             }}
                             onRemove={function () {
                                 removeAt(index);
+                            }}
+                            onDuplicate={function () {
+                                duplicateAt(index);
                             }}
                             selected={selectedIds.has(spec.id)}
                             onToggleSelect={function () {
