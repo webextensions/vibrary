@@ -243,6 +243,47 @@ const createFilesRouter = function ({ cwd }) {
         }
     });
 
+    // Duplicate a vibrary file: copy the source's on-disk content to a new name, leaving the source untouched. Both
+    // names must satisfy the naming convention and the include rules, mirroring rename. Refuses to overwrite, like
+    // rename: the target's absence is checked via the create-only 'wx' write flag.
+    router.post('/files/:name/duplicate', async function (request, response) {
+        const { name } = request.params;
+        const { newName } = request.body || {};
+        if (!isValidVibraryName(name)) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (!isValidVibraryName(newName)) {
+            return sendErrorResponse(response, 400, 'Invalid new file name');
+        }
+        const source = resolveWithinCwd(name);
+        const target = resolveWithinCwd(newName);
+        if (source === null || target === null) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (!(await isVibraryNameIncluded(cwd, name))) {
+            return sendErrorResponse(response, 404, 'File not found');
+        }
+        if (!(await isVibraryNameIncluded(cwd, newName))) {
+            return sendErrorResponse(response, 400, 'New file name is not included by .vibraryinclude');
+        }
+
+        try {
+            const content = await readFile(source, 'utf8');
+            await mkdir(path.dirname(target), { recursive: true });
+            await writeFile(target, content, { encoding: 'utf8', flag: 'wx' });
+            return sendSuccessResponse(response, { name: newName });
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                return sendErrorResponse(response, 404, 'File not found');
+            }
+            if (error.code === 'EEXIST') {
+                return sendErrorResponse(response, 409, 'A file with the new name already exists');
+            }
+            console.error(`Failed to duplicate ${name} to ${newName}:`, error);
+            return sendErrorResponse(response, 500, 'Unable to duplicate file');
+        }
+    });
+
     // Delete a specs file from the explorer view's "More" menu. The frontend confirms with the user first; folders have
     // no on-disk entity (they are derived from file paths), so the frontend deletes a folder by deleting each file in it.
     router.delete('/files/:name', async function (request, response) {

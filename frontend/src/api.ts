@@ -163,6 +163,16 @@ const renameFile = async function (name: string, newName: string): Promise<void>
     });
 };
 
+// Duplicate a specs file under a new name (a copy - the source is untouched). The server refuses to overwrite an
+// existing target; the caller refreshes the file list and opens the copy once this resolves.
+const duplicateFile = async function (name: string, newName: string): Promise<void> {
+    await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newName })
+    });
+};
+
 // Runs the backend's headless AI agent to append `count` new specs to the file, streaming its activity through
 // `options.onEvent`. Resolves with the run's final result text once the file has been updated on disk; the caller
 // reloads it to pick up the additions.
@@ -367,4 +377,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, discardPaths, type FileListing, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadAllSpecTitles, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, unstagePaths };
+export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadAllSpecTitles, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, unstagePaths };

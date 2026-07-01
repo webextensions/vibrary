@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useActivityQueue } from './activityQueue.ts';
-import { createFile, deleteFile, generateSpecs, getWorkspace, listFiles, loadAllSpecTitles, renameFile, saveFile } from './api.ts';
+import { createFile, deleteFile, duplicateFile, generateSpecs, getWorkspace, listFiles, loadAllSpecTitles, renameFile, saveFile } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
@@ -312,6 +312,31 @@ const App = function () {
         }
     }, [tabs, closeTab, openOrFocus]);
 
+    // The explorer "More" menu's Duplicate action: copy a file's on-disk content under a new name, leaving the source
+    // untouched, then open the copy. Files only - folders have no single on-disk entity to copy (unlike rename/delete,
+    // which recurse over every file beneath a folder).
+    const handleDuplicate = useCallback(async function (node: TreeNode) {
+        const entered = await promptDialog({
+            message: `Duplicate "${node.path}" as:`,
+            confirmLabel: 'Duplicate',
+            initialValue: node.path
+        });
+        if (entered === null || entered === node.path) {
+            return;
+        }
+        try {
+            await duplicateFile(node.path, entered);
+            const listing = await listFiles();
+            setFiles(listing.files);
+            setHasVibraryInclude(listing.hasVibraryInclude);
+            setAllTitles(await loadAllSpecTitles());
+            setLoadError(null);
+            openOrFocus(entered);
+        } catch (error) {
+            setLoadError((error as Error).message);
+        }
+    }, [openOrFocus]);
+
     // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
     // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
     // server validates the vibrary naming convention, mirroring handleAddFile.
@@ -503,6 +528,7 @@ const App = function () {
                 onAddFile={handleAddFile}
                 onDelete={handleDelete}
                 onRename={handleRename}
+                onDuplicate={handleDuplicate}
                 onNewFile={handleNewFile}
                 onSelectTab={setActive}
                 onCloseTab={handleCloseTab}

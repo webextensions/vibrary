@@ -21,6 +21,7 @@ type SidebarProperties = {
     onAddFile: () => void;
     onDelete: (node: TreeNode) => void;
     onRename: (node: TreeNode) => void;
+    onDuplicate: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void;
     onSelectTab: (path: string) => void;
     onCloseTab: (path: string) => void
@@ -81,12 +82,14 @@ type RowMoreProperties = {
     onToggleMenu: (path: string) => void;
     onDelete: (node: TreeNode) => void;
     onRename: (node: TreeNode) => void;
+    onDuplicate: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void
 };
 
-// The per-row "More" kebab button and its dropdown. Files get "Rename..." and "Delete"; folders also get "New File...".
-// The menu closes itself before running an action so the action's own dialog opens over a clean tree.
-const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onRename, onNewFile }: RowMoreProperties) {
+// The per-row "More" kebab button and its dropdown. Files get "Rename...", "Duplicate..." and "Delete"; folders also
+// get "New File..." (duplicating a folder is not offered - it has no single on-disk entity to copy). The menu closes
+// itself before running an action so the action's own dialog opens over a clean tree.
+const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onRename, onDuplicate, onNewFile }: RowMoreProperties) {
     return (
         <div className={styles.rowMore}>
             <button
@@ -131,6 +134,20 @@ const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onRename, onNe
                         <EditIcon />
                         Rename...
                     </button>
+                    {node.kind === 'file' && (
+                        <button
+                            type="button"
+                            role="menuitem"
+                            onClick={function (clickEvent) {
+                                clickEvent.stopPropagation();
+                                onToggleMenu(node.path);
+                                onDuplicate(node);
+                            }}
+                        >
+                            <PlusIcon />
+                            Duplicate...
+                        </button>
+                    )}
                     <button
                         type="button"
                         role="menuitem"
@@ -162,12 +179,13 @@ type TreeRowsProperties = {
     onToggleMenu: (path: string) => void;
     onDelete: (node: TreeNode) => void;
     onRename: (node: TreeNode) => void;
+    onDuplicate: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void
 };
 
 // Renders one level of the file tree as flat sibling <li>s; folders recurse when open. Indentation comes from each
 // row's paddingLeft rather than nested <ul>s, so the existing list styling stays intact.
-const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, countForFile, onOpen, onToggle, onToggleMenu, onDelete, onRename, onNewFile }: TreeRowsProperties) {
+const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, countForFile, onOpen, onToggle, onToggleMenu, onDelete, onRename, onDuplicate, onNewFile }: TreeRowsProperties) {
     return nodes.map(function (node) {
         const indent = { paddingLeft: `${depth * 14}px` };
         const more = (
@@ -177,6 +195,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
                 onToggleMenu={onToggleMenu}
                 onDelete={onDelete}
                 onRename={onRename}
+                onDuplicate={onDuplicate}
                 onNewFile={onNewFile}
             />
         );
@@ -230,6 +249,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
                             onToggleMenu={onToggleMenu}
                             onDelete={onDelete}
                             onRename={onRename}
+                            onDuplicate={onDuplicate}
                             onNewFile={onNewFile}
                         />
                     </ul>
@@ -239,7 +259,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
     });
 };
 
-const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
+const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onDuplicate, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -372,6 +392,7 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
                                 onToggleMenu={handleToggleMenu}
                                 onDelete={onDelete}
                                 onRename={onRename}
+                                onDuplicate={onDuplicate}
                                 onNewFile={onNewFile}
                             />
                         </ul>
