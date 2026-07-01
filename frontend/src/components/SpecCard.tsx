@@ -1,6 +1,6 @@
 import type { RJSFSchema } from '@rjsf/utils';
 import cx from 'classnames';
-import { type ReactNode, useMemo, useState } from 'react';
+import { lazy, type ReactNode, Suspense, useMemo, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -16,10 +16,16 @@ import { AGENTS, hashContent, type Spec } from '../vibraryXml.ts';
 import { ApprovedBy } from './ApprovedBy.tsx';
 import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, RemoveIcon, TypeIcon } from './Icons.tsx';
 import { optionsToPrompt, schemaDefaults } from './taskOptions.ts';
-import { TaskOptionsForm } from './TaskOptionsForm.tsx';
 
 import formStyles from './forms.module.css';
 import styles from './SpecCard.module.css';
+
+// Load the options form on demand: rjsf plus its ajv validator is a sizeable chunk that is only needed once a task
+// card with an options schema is expanded. lazy() wants a default export, so wrap the module's named export.
+const TaskOptionsForm = lazy(async function () {
+    const { TaskOptionsForm: component } = await import('./TaskOptionsForm.tsx');
+    return { default: component };
+});
 
 type Option = { value: string; label: string };
 
@@ -171,7 +177,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                 update({ title });
             }
         } catch (error) {
-            console.error(error);
+            console.error(`[vibrary] failed to derive title for "${value.title || value.id}":`, error);
         } finally {
             setPopulating(false);
         }
@@ -230,9 +236,9 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                     return runAction.run(runArguments, { signal, onEvent });
                 }
             });
-            console.log(output);
+            console.log(`[vibrary] ${runAction.label} output for "${value.title}":\n${output}`);
         } catch (error) {
-            console.error(error);
+            console.error(`[vibrary] ${runAction.label} failed for "${value.title}":`, error);
         }
     };
 
@@ -501,11 +507,15 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                             <button type="button" className={styles.resetOptions} onClick={handleResetOptions}>
                                 Reset to default options
                             </button>
-                            <TaskOptionsForm
-                                schema={optionsSchema}
-                                formData={optionsData}
-                                onChange={handleOptionsChange}
-                            />
+                            {/* The fallback stays empty: the chunk loads once, near-instantly from the local
+                              * server, so a spinner would only flash. */}
+                            <Suspense fallback={null}>
+                                <TaskOptionsForm
+                                    schema={optionsSchema}
+                                    formData={optionsData}
+                                    onChange={handleOptionsChange}
+                                />
+                            </Suspense>
                         </div>}
                         <button
                             type="button"

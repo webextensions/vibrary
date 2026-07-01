@@ -36,7 +36,8 @@ const createSettingsRouter = function ({ cwd }) {
             await mkdir(path.dirname(settingsPath), { recursive: true });
             await writeFile(settingsPath, `${JSON.stringify(settings, null, 4)}\n`, 'utf8');
             return sendSuccessResponse(response, {});
-        } catch {
+        } catch (error) {
+            console.error('Failed to save settings:', error);
             return sendErrorResponse(response, 500, 'Unable to save settings');
         }
     });

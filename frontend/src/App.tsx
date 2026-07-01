@@ -1,11 +1,9 @@
 import cx from 'classnames';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useActivityQueue } from './activityQueue.ts';
 import { createFile, deleteFile, generateSpecs, getWorkspace, listFiles, loadAllSpecTitles, saveFile } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
-import { ActivityDetail } from './components/ActivityDetail.tsx';
-import { RawXmlView } from './components/RawXmlView.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
 import { TabBar } from './components/TabBar.tsx';
@@ -19,6 +17,20 @@ import { useFileCounts } from './useFileCounts.ts';
 import { useOpenTabs } from './useOpenTabs.ts';
 
 import styles from './App.module.css';
+
+// Load the Raw tab's syntax highlighter on demand: prism/refractor is a sizeable chunk that most sessions (which stay
+// on the Structured tab) never need. lazy() wants a default export, so wrap the module's named export.
+const RawXmlView = lazy(async function () {
+    const { RawXmlView: component } = await import('./components/RawXmlView.tsx');
+    return { default: component };
+});
+
+// Same on-demand treatment for the activity-detail pane, whose markdown renderer (streamdown and its remark/rehype
+// stack) only matters once an activity tab is opened.
+const ActivityDetail = lazy(async function () {
+    const { ActivityDetail: component } = await import('./components/ActivityDetail.tsx');
+    return { default: component };
+});
 
 // Persist the desktop collapse choice so it survives reloads. Defaults to expanded when nothing is stored.
 const SIDEBAR_STORAGE_KEY = 'vibrary:sidebar-collapsed';
@@ -419,7 +431,10 @@ const App = function () {
 
                 {activeTab === null && <p className={styles.placeholder}>Select a file to edit.</p>}
 
-                {activeTab !== null && activeTab.kind === 'activity' && <ActivityDetail jobId={activeTab.jobId ?? ''} />}
+                {activeTab !== null && activeTab.kind === 'activity' &&
+                <Suspense fallback={null}>
+                    <ActivityDetail jobId={activeTab.jobId ?? ''} />
+                </Suspense>}
 
                 {activeTab !== null && activeTab.kind === 'file' &&
                 (activeTab.loading ?
@@ -521,7 +536,11 @@ const App = function () {
                                     />
                                 ) :
                                 (
-                                    <RawXmlView xml={rawXml} />
+                                    // The fallback stays empty: the chunk loads once, near-instantly from the local
+                                    // server, so a spinner would only flash.
+                                    <Suspense fallback={null}>
+                                        <RawXmlView xml={rawXml} />
+                                    </Suspense>
                                 )}
                         </>
                     ))}

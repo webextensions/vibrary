@@ -12,7 +12,8 @@ const createSearchRouter = function ({ cwd }) {
         const query = typeof request.query.q === 'string' ? request.query.q : '';
         try {
             return sendSuccessResponse(response, await searchVibrary(cwd, query));
-        } catch {
+        } catch (error) {
+            console.error('Search failed:', error);
             return sendErrorResponse(response, 500, 'Search failed');
         }
     });

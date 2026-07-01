@@ -30,7 +30,7 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
                     setSettings(normalized);
                 }
             } catch (error) {
-                console.error(error);
+                console.error('[vibrary] failed to load settings; using defaults:', error);
             } finally {
                 if (!isCancelled) {
                     setLoaded(true);
@@ -60,7 +60,7 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
         saveTimerReference.current = setTimeout(function () {
             saveTimerReference.current = null;
             void saveSettings(next).catch(function (error) {
-                console.error(error);
+                console.error('[vibrary] failed to save settings:', error);
             });
         }, SAVE_DEBOUNCE_MS);
     };

@@ -23,7 +23,8 @@ const createFilesRouter = function ({ cwd }) {
         try {
             const files = await listVibraryFiles(cwd);
             return sendSuccessResponse(response, { files });
-        } catch {
+        } catch (error) {
+            console.error('Failed to list vibrary files:', error);
             return sendErrorResponse(response, 500, 'Unable to list files');
         }
     });
@@ -185,7 +186,14 @@ const createFilesRouter = function ({ cwd }) {
         try {
             await writeFile(target, content, 'utf8');
             return sendSuccessResponse(response, { name });
-        } catch {
+        } catch (error) {
+            console.error(`Failed to save ${name}:`, error);
+            if (['EACCES', 'EROFS', 'EPERM'].includes(error.code)) {
+                return sendErrorResponse(response, 500, 'Unable to save file: permission denied');
+            }
+            if (error.code === 'ENOSPC') {
+                return sendErrorResponse(response, 500, 'Unable to save file: no space left on device');
+            }
             return sendErrorResponse(response, 500, 'Unable to save file');
         }
     });

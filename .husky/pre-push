@@ -1,7 +1,10 @@
 #!/bin/bash
 
+set -e # Fail the push when any check fails, not just the last one
+
 cd "$(dirname "$0")" # Change directory to the folder containing this file
 cd ../               # Change directory to project's root folder
 
 node --run lint
+node --run typecheck
 node --run build

@@ -1,16 +1,12 @@
 <root>
-    <metadata>
-        <type>tasks</type>
-    </metadata>
     <entries>
         <entry type="task">
             <title>update-npm-packages</title>
             <createdBy>AI</createdBy>
             <approved></approved>
             <content>Update all the npm packages listed in package.json to their latest compatible versions, then verify the app still builds and the existing checks pass.</content>
-            <contentHash></contentHash>
-            <relatesTo>
-            </relatesTo>
+            <contentHash>134b3754dd89d7</contentHash>
+            <relatesTo></relatesTo>
             <notes></notes>
             <formSchemaRef>tasks.xml.schemas.json#update-npm-packages-options</formSchemaRef>
             <labels>
@@ -25,13 +21,14 @@
             <title>add-test-suite-for-vibrary-xml</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The "test" script in package.json is still the placeholder `echo "Warning: no test specified"` and the repo ships no test files. Add a real test suite for the framework-free core in frontend/src/vibraryXmlCore.js: parseVibraryXml, serializeVibraryXml, the cyrb53-based hashContent, approvalState, and countApprovedSpecs. Cover a parse -> serialize -> parse round-trip for idempotency, malformed-XML rejection, empty files, and entries missing optional fields. fast-xml-parser is already a devDependency and can back the runner; wire the chosen runner into the "test" script so `npm test` exercises it.</content>
-            <contentHash></contentHash>
+            <content>The &quot;test&quot; script in package.json is still the placeholder `echo &quot;Warning: no test specified&quot;` and the repo ships no test files. Add a real test suite for the framework-free core in frontend/src/vibraryXmlCore.js: parseVibraryXml, serializeVibraryXml, the cyrb53-based hashContent, approvalState, and countApprovedSpecs. Cover a parse -&gt; serialize -&gt; parse round-trip for idempotency, malformed-XML rejection, empty files, and entries missing optional fields. fast-xml-parser is already a devDependency and can back the runner; wire the chosen runner into the &quot;test&quot; script so `npm test` exercises it.</content>
+            <contentHash>1265d460039010</contentHash>
             <relatesTo>
                 <ref>update-npm-packages</ref>
                 <ref>extract-shared-claude-spawn-helper</ref>
             </relatesTo>
             <notes></notes>
+            <formSchemaRef></formSchemaRef>
             <labels>
                 <label>testing</label>
                 <label>quality</label>
@@ -44,12 +41,13 @@
             <title>extract-shared-claude-spawn-helper</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>backend/utils holds five near-identical headless-agent spawners (runClaudeRunTask.js, runClaudeGenerate.js, runClaudeTitle.js, runClaudeApply.js, runClaudeApplyBatch.js). Each redefines its own *_TIMEOUT_MS constant and repeats the same spawn('claude', ...) wiring: stdout/stderr accumulation, an 'error' handler mapping ENOENT to "Claude CLI not found on PATH", and a 'close' handler that rejects on SIGTERM timeout and otherwise falls back to `Claude exited with code ${code}`. Extract one shared helper parameterized by args, cwd, timeout, and a result-mapping callback so each caller keeps only its prompt building and output handling. While there, reconcile the policy inconsistency that runClaudeTitle.js omits --dangerously-skip-permissions while the run-task and generate spawners pass it.</content>
-            <contentHash></contentHash>
+            <content>backend/utils holds five near-identical headless-agent spawners (runClaudeRunTask.js, runClaudeGenerate.js, runClaudeTitle.js, runClaudeApply.js, runClaudeApplyBatch.js). Each redefines its own *_TIMEOUT_MS constant and repeats the same spawn(&apos;claude&apos;, ...) wiring: stdout/stderr accumulation, an &apos;error&apos; handler mapping ENOENT to &quot;Claude CLI not found on PATH&quot;, and a &apos;close&apos; handler that rejects on SIGTERM timeout and otherwise falls back to `Claude exited with code ${code}`. Extract one shared helper parameterized by args, cwd, timeout, and a result-mapping callback so each caller keeps only its prompt building and output handling. While there, reconcile the policy inconsistency that runClaudeTitle.js omits --dangerously-skip-permissions while the run-task and generate spawners pass it.</content>
+            <contentHash>ccc2cfb76ce02</contentHash>
             <relatesTo>
                 <ref>add-test-suite-for-vibrary-xml</ref>
             </relatesTo>
             <notes></notes>
+            <formSchemaRef></formSchemaRef>
             <labels>
                 <label>refactor</label>
                 <label>backend</label>
@@ -61,9 +59,9 @@
         <entry type="task">
             <title>timeboxed-improvement-ralph-loop</title>
             <createdBy>AI</createdBy>
-            <approved></approved>
-            <content>Run a timeboxed continuous-improvement sweep over this repo: for the number of minutes given in the "Time budget (minutes)" option, drive a Ralph loop where each iteration picks exactly one small, verifiable improvement, implements it, and confirms the app still builds and existing checks pass before starting the next. Rotate across whichever of these has the most impact right now: tightening code and logic (dead code, duplicated branches, unclear naming, missed edge cases, sloppy error handling); polishing UI and UX (layout rough edges, empty/loading/error states, feedback after user actions, keyboard access and focus handling); aligning behavior and features with what a user would reasonably expect and intend from each control or flow; modularising and structuring code (splitting oversized files, extracting shared helpers, clarifying module boundaries); refactoring toward the repo's own established conventions instead of introducing new styles; adopting current best practices for the stack in use; updating dependencies when the "Allow dependency updates" option is yes; adding tests where changed or fragile behavior is unexercised; keeping docs, comments, and README claims truthful to the code; improving log and error messages so failures are diagnosable; and general cleanup of leftovers, inconsistencies, and half-finished edges. Prefer many small safe wins over one large risky change, skip anything that cannot be implemented and verified within the remaining budget, and stop cleanly when time runs out, ending with a short summary of what was improved and a list of follow-ups worth their own task entries.</content>
-            <contentHash></contentHash>
+            <approved>b1b85074a3c26</approved>
+            <content>Run a timeboxed continuous-improvement sweep over this repo: for the number of minutes given in the &quot;Time budget (minutes)&quot; option, drive a Ralph loop where each iteration picks exactly one small, verifiable improvement, implements it, and confirms the app still builds and existing checks pass before starting the next. Rotate across whichever of these has the most impact right now: tightening code and logic (dead code, duplicated branches, unclear naming, missed edge cases, sloppy error handling); polishing UI and UX (layout rough edges, empty/loading/error states, feedback after user actions, keyboard access and focus handling); aligning behavior and features with what a user would reasonably expect and intend from each control or flow; modularising and structuring code (splitting oversized files, extracting shared helpers, clarifying module boundaries); refactoring toward the repo&apos;s own established conventions instead of introducing new styles; adopting current best practices for the stack in use; updating dependencies when the &quot;Allow dependency updates&quot; option is yes; adding tests where changed or fragile behavior is unexercised; keeping docs, comments, and README claims truthful to the code; improving log and error messages so failures are diagnosable; and general cleanup of leftovers, inconsistencies, and half-finished edges. Prefer many small safe wins over one large risky change, skip anything that cannot be implemented and verified within the remaining budget, and stop cleanly when time runs out, ending with a short summary of what was improved and a list of follow-ups worth their own task entries.</content>
+            <contentHash>b1b85074a3c26</contentHash>
             <relatesTo>
                 <ref>update-npm-packages</ref>
             </relatesTo>
@@ -74,18 +72,18 @@
                 <label>quality</label>
             </labels>
             <created>2026-07-02T00:00:00.000Z</created>
-            <updated>2026-07-02T00:00:00.000Z</updated>
-            <updatedBy>AI</updatedBy>
+            <updated>2026-07-01T21:33:27.681Z</updated>
+            <updatedBy>Human</updatedBy>
         </entry>
         <entry type="task">
             <title>surface-empty-listing-hint-for-missing-vibraryinclude</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>listVibraryFiles in backend/utils/vibraryFiles.js treats a missing .vibraryinclude as an empty "ignore" matcher, so inclusion is opt-in: when the file is absent (or its patterns match nothing) the listing returns empty with no explanation, which reads as "no vibrary files found" even when files exist on disk. Surface a clear empty-state hint in the UI (and/or in the listing API response) that distinguishes "no .vibraryinclude present" from "present but no patterns match", and point the user at how to add gitignore-style include patterns (with "!" to re-exclude).</content>
-            <contentHash></contentHash>
-            <relatesTo>
-            </relatesTo>
+            <content>listVibraryFiles in backend/utils/vibraryFiles.js treats a missing .vibraryinclude as an empty &quot;ignore&quot; matcher, so inclusion is opt-in: when the file is absent (or its patterns match nothing) the listing returns empty with no explanation, which reads as &quot;no vibrary files found&quot; even when files exist on disk. Surface a clear empty-state hint in the UI (and/or in the listing API response) that distinguishes &quot;no .vibraryinclude present&quot; from &quot;present but no patterns match&quot;, and point the user at how to add gitignore-style include patterns (with &quot;!&quot; to re-exclude).</content>
+            <contentHash>aa679c922e6d0</contentHash>
+            <relatesTo></relatesTo>
             <notes></notes>
+            <formSchemaRef></formSchemaRef>
             <labels>
                 <label>frontend</label>
                 <label>ux</label>

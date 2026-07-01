@@ -344,9 +344,10 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
         for (const spec of selectedSpecs) {
             promptParts.push(`- ${spec.title}`);
         }
+        const label = `${count} ${count === 1 ? 'spec' : 'specs'}`;
         const promise = enqueue({
             kind: 'apply-batch',
-            label: `${count} ${count === 1 ? 'spec' : 'specs'}`,
+            label,
             prompt: promptParts.join('\n'),
             run: function (signal, onEvent) {
                 return applySpecs(entries, { signal, onEvent });
@@ -356,9 +357,9 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
         // await only logs the job's stdout once it finishes.
         setActionsOpen(false);
         try {
-            console.log(await promise);
+            console.log(`[vibrary] apply output for ${label}:\n${await promise}`);
         } catch (error) {
-            console.error(error);
+            console.error(`[vibrary] apply failed for ${label}:`, error);
         }
     };
 

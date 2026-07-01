@@ -1,8 +1,18 @@
 import { createRequire } from 'node:module';
 
-import { Command } from 'commander';
+import { Command, InvalidArgumentError } from 'commander';
 
 import { startServer } from './server.js';
+
+// Reject bad --port values up front: `Number()` alone would turn them into NaN, which get-port treats as "no
+// preference" and answers with a random free port instead of an error.
+const parsePort = function (value) {
+    const port = Number(value);
+    if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
+        throw new InvalidArgumentError('Port must be an integer between 1 and 65535.');
+    }
+    return port;
+};
 
 const require = createRequire(import.meta.url);
 const package_ = require('../package.json');
@@ -18,11 +28,11 @@ const buildProgram = function () {
     program
         .command('server')
         .description('Start the vibrary web server for the current folder')
-        .option('-p, --port <number>', 'preferred port (advances to the next free one if busy)', '3000')
+        .option('-p, --port <number>', 'preferred port (advances to the next free one if busy)', parsePort, 3000)
         .option('--no-open', 'do not open the browser automatically')
         .action(async function (options) {
             await startServer({
-                port: Number(options.port),
+                port: options.port,
                 open: options.open
             });
         });

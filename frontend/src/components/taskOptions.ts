@@ -17,14 +17,19 @@ const schemaDefaults = function (schema: RJSFSchema): FormData {
 
 // Turn the selected values into a readable directive block for the agent prompt, one line per property keyed by its
 // human-facing `title` (falling back to the property name). Booleans render as yes/no; anything else prints its value.
-// Returns '' when the schema has no properties, so the caller can omit the block entirely.
+// A value the user cleared (undefined) falls back to the property's schema default, and its line is dropped entirely
+// when there is no default either, so the block never contains "undefined". Returns '' when nothing renders, so the
+// caller can omit the block entirely.
 const optionsToPrompt = function (schema: RJSFSchema, formData: FormData): string {
     const properties = (schema.properties ?? {}) as Record<string, RJSFSchema>;
-    const lines = Object.entries(properties).map(function ([key, property]) {
+    const lines = Object.entries(properties).flatMap(function ([key, property]) {
         const label = typeof property.title === 'string' ? property.title : key;
-        const value = formData[key];
+        const value = formData[key] ?? property.default;
+        if (value === undefined) {
+            return [];
+        }
         const rendered = typeof value === 'boolean' ? (value ? 'yes' : 'no') : String(value);
-        return `- ${label}: ${rendered}`;
+        return [`- ${label}: ${rendered}`];
     });
     return lines.join('\n');
 };

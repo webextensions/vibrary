@@ -10,13 +10,18 @@ const startServer = async function ({ port = 3000, open: shouldOpen = true, cwd 
     const resolvedPort = await getPort({ port: portNumbers(port, 65535) });
 
     return new Promise(function (resolve) {
-        const server = app.listen(resolvedPort, function () {
+        const server = app.listen(resolvedPort, async function () {
             const url = `http://localhost:${resolvedPort}/`;
 
             console.log(`vibrary-server running at ${url} (serving ${cwd})`);
 
             if (shouldOpen) {
-                open(url);
+                // The server is already up; a failed browser launch (e.g. headless environment) should not crash it.
+                try {
+                    await open(url);
+                } catch {
+                    console.error(`Could not open the browser automatically; visit ${url} yourself.`);
+                }
             }
 
             resolve({ server, port: resolvedPort, url });
