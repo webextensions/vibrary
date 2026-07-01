@@ -374,8 +374,8 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
                     (
                         <p className={styles.empty}>
                             {hasVibraryInclude ?
-                                'No reviews / specs / tasks files match the patterns in .vibraryinclude.' :
-                                'No .vibraryinclude file found. Add one with gitignore-style patterns (e.g. "specs*.xml") to choose which reviews / specs / tasks files to show; prefix a pattern with "!" to re-exclude.'}
+                                'No reviews / specs / tasks / ideas files match the patterns in .vibraryinclude.' :
+                                'No .vibraryinclude file found. Add one with gitignore-style patterns (e.g. "specs*.xml") to choose which reviews / specs / tasks / ideas files to show; prefix a pattern with "!" to re-exclude.'}
                         </p>
                     ) :
                     (

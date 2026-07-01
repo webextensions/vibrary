@@ -213,11 +213,11 @@ const App = function () {
 
     // The sidebar's add button: prompt for a name, create the empty file on the server, then refresh the list and open
     // it. The name must match the vibrary naming convention (<family>.xml or <family>-<name>.xml, where family is
-    // reviews/specs/tasks); the server validates and surfaces any problem (bad name, already exists) as the
+    // reviews/specs/tasks/ideas); the server validates and surfaces any problem (bad name, already exists) as the
     // load-error banner.
     const handleAddFile = useCallback(async function () {
         const name = await promptDialog({
-            message: 'New file name (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml):',
+            message: 'New file name (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):',
             placeholder: 'specs-<name>.xml',
             confirmLabel: 'Create'
         });
@@ -342,7 +342,7 @@ const App = function () {
     // server validates the vibrary naming convention, mirroring handleAddFile.
     const handleNewFile = useCallback(async function (folderPath: string) {
         const name = await promptDialog({
-            message: `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml):`,
+            message: `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):`,
             placeholder: 'specs-<name>.xml',
             confirmLabel: 'Create'
         });

@@ -1,7 +1,7 @@
 # Vibrary documentation
 
 Vibrary is a small, globally-installable web app for browsing and editing vibrary files - `reviews`, `specs`,
-and `tasks` XML files (`<family>.xml` / `<family>-*.xml`) in a folder. Run `vibrary-server` (or
+`tasks`, and `ideas` XML files (`<family>.xml` / `<family>-*.xml`) in a folder. Run `vibrary-server` (or
 `vibrary server`) in a folder, and it opens a browser UI listing those files; selecting one opens it in an editor.
 
 - [vibrary-file-format.md](vibrary-file-format.md) - the XML schema for a vibrary file and what each field means.

@@ -1,7 +1,7 @@
 {
     "name": "vibrary",
     "version": "1.0.0",
-    "description": "Browse and edit vibrary (reviews / specs / tasks) XML files in the current folder through a small web UI",
+    "description": "Browse and edit vibrary (reviews / specs / tasks / ideas) XML files in the current folder through a small web UI",
     "type": "module",
     "bin": {
         "vibrary": "./bin/vibrary.js",

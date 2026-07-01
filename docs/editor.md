@@ -28,9 +28,10 @@ Each entry is shown as a card with these controls:
   after a save.
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
-entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks - defaulting to the
+entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks / ideas - defaulting to the
 open file's name family) and how many; a headless agent then appends that many entries of the chosen type to the file.
-**Remove** on a card deletes that entry.
+**Duplicate** on a card clones it (a fresh entry with the same content, notes, labels and relations, but its own id,
+timestamps and an unapproved state) as a starting point for a similar one. **Remove** on a card deletes that entry.
 
 ## Raw tab
 
