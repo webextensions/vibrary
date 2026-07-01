@@ -88,7 +88,7 @@
             <relatesTo>
                 <ref>pure-esm-and-node-version-requirements</ref>
             </relatesTo>
-            <notes>.gitattributes binds the vibrary families (reviews/specs/tasks, as &lt;family&gt;.xml / &lt;family&gt;-*.xml) to the vibrary-canon diff driver.</notes>
+            <notes>.gitattributes binds the vibrary families (reviews/specs/tasks/ideas, as &lt;family&gt;.xml / &lt;family&gt;-*.xml) to the vibrary-canon diff driver.</notes>
             <labels>
                 <label>tech-stack</label>
                 <label>git</label>

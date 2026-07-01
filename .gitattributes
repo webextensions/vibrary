@@ -4,3 +4,5 @@ specs.xml       diff=vibrary-canon
 specs-*.xml     diff=vibrary-canon
 tasks.xml       diff=vibrary-canon
 tasks-*.xml     diff=vibrary-canon
+ideas.xml       diff=vibrary-canon
+ideas-*.xml     diff=vibrary-canon
