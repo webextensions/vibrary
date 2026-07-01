@@ -254,12 +254,14 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         controllerReference.current?.abort();
     };
 
-    // Drop a not-yet-started job and reject its promise so any awaiting caller does not hang.
+    // Drop a job from the queue or from finished history (never the currently running one, which must be aborted
+    // first). Rejects its promise so an awaiting caller does not hang; a no-op for an already-settled finished job
+    // since settle() guards on the settler still being present.
     const removeJob = function (id: string) {
         const target = jobsReference.current.find(function (candidate) {
             return candidate.id === id;
         });
-        if (!target || target.status !== 'queued') {
+        if (!target || target.status === 'running') {
             return;
         }
         settle(id, 'reject', new Error('Removed from queue'));

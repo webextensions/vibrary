@@ -92,6 +92,11 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry 
                         <RefreshIcon />
                     </button>
                 )}
+                {job.status !== 'queued' && job.status !== 'running' && (
+                    <button type="button" className={styles.rowButton} aria-label="Remove" title="Remove" onClick={function () { onRemove(job.id); }}>
+                        <RemoveIcon />
+                    </button>
+                )}
             </div>
         </li>
     );
