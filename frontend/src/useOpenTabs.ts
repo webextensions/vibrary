@@ -29,7 +29,13 @@ type TabState = {
 };
 
 // tabs and the active path are kept in one state object so closing the active tab can pick its replacement atomically.
-type TabsState = { tabs: TabState[]; activePath: string | null };
+// closedPaths is a LIFO of recently-closed file tabs' paths (activity tabs are not tracked - reopening a finished job's
+// tab has nothing to fetch, and the job itself already lives in the Activity monitor), kept in the same object so a
+// close and its history entry commit together.
+type TabsState = { tabs: TabState[]; activePath: string | null; closedPaths: string[] };
+
+// Caps how many recently-closed paths are remembered, so a long session's history does not grow unbounded.
+const CLOSED_TABS_LIMIT = 20;
 
 const newTab = function (path: string): TabState {
     return {
@@ -70,7 +76,7 @@ const newActivityTab = function (jobId: string, title: string): TabState {
 // Owns the set of open tabs and which one is active. Opening focuses an already-open tab or creates a new one; a new
 // tab's content is fetched by the effect below. Editing/saving/reloading flow through patchTab from App.
 const useOpenTabs = function () {
-    const [state, setState] = useState<TabsState>({ tabs: [], activePath: null });
+    const [state, setState] = useState<TabsState>({ tabs: [], activePath: null, closedPaths: [] });
     // Paths whose initial content has been requested, so the load effect fetches each new tab exactly once. An entry is
     // dropped when its tab closes, letting a reopened file fetch fresh.
     const requestedPathsReference = useRef<Set<string>>(new Set());
@@ -101,7 +107,7 @@ const useOpenTabs = function () {
             if (previous.tabs.some(function (tab) { return tab.path === path; })) {
                 return { ...previous, activePath: path };
             }
-            return { tabs: [...previous.tabs, newTab(path)], activePath: path };
+            return { ...previous, tabs: [...previous.tabs, newTab(path)], activePath: path };
         });
     }, []);
 
@@ -113,7 +119,7 @@ const useOpenTabs = function () {
             if (previous.tabs.some(function (tab) { return tab.path === path; })) {
                 return { ...previous, activePath: path };
             }
-            return { tabs: [...previous.tabs, newActivityTab(jobId, title)], activePath: path };
+            return { ...previous, tabs: [...previous.tabs, newActivityTab(jobId, title)], activePath: path };
         });
     }, []);
 
@@ -133,13 +139,36 @@ const useOpenTabs = function () {
                 const leftNeighbor = previous.tabs.slice(0, index).findLast(function (tab) { return !closing.has(tab.path); });
                 activePath = (rightNeighbor ?? leftNeighbor)?.path ?? null;
             }
-            return { tabs, activePath };
+            const closedFilePaths = previous.tabs
+                .filter(function (tab) { return closing.has(tab.path) && tab.kind === 'file'; })
+                .map(function (tab) { return tab.path; });
+            const closedPaths = closedFilePaths.length === 0 ?
+                previous.closedPaths :
+                [...previous.closedPaths, ...closedFilePaths].slice(-CLOSED_TABS_LIMIT);
+            return { tabs, activePath, closedPaths };
         });
     }, []);
 
     const closeTab = useCallback(function (path: string) {
         closeTabs([path]);
     }, [closeTabs]);
+
+    // Reopen the most recently closed file tab, popping stale entries (already reopened some other way, e.g. clicked
+    // again in the explorer) as it goes. A no-op with nothing to reopen.
+    const reopenClosedTab = useCallback(function () {
+        setState(function (previous) {
+            const openPaths = new Set(previous.tabs.map(function (tab) { return tab.path; }));
+            const closedPaths = [...previous.closedPaths];
+            let path = closedPaths.pop();
+            while (path !== undefined && openPaths.has(path)) {
+                path = closedPaths.pop();
+            }
+            if (path === undefined) {
+                return { ...previous, closedPaths };
+            }
+            return { tabs: [...previous.tabs, newTab(path)], activePath: path, closedPaths };
+        });
+    }, []);
 
     // Fetch each newly-created tab's content once. A fetch that finishes after its tab was closed is dropped via the
     // every()-guard before patching, so a stale response never resurrects a closed tab.
@@ -201,10 +230,12 @@ const useOpenTabs = function () {
         activePath: state.activePath,
         activeTab,
         anyDirty,
+        closedTabCount: state.closedPaths.length,
         openOrFocus,
         openActivity,
         closeTab,
         closeTabs,
+        reopenClosedTab,
         setActive,
         setInnerTab,
         patchTab

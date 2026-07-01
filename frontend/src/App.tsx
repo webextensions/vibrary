@@ -73,7 +73,7 @@ const App = function () {
     // entry. Cleared to null once consumed isn't necessary - the editor only acts when it matches the active tab.
     const [searchTarget, setSearchTarget] = useState<{ path: string; query: string } | null>(null);
 
-    const { tabs, activePath, activeTab, anyDirty, openOrFocus, openActivity, closeTab, closeTabs, setActive, setInnerTab, patchTab } =
+    const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab } =
         useOpenTabs();
     const { enqueue } = useActivityQueue();
 
@@ -555,6 +555,16 @@ const App = function () {
                         onCloseOthers={handleCloseOthers}
                         onCloseAll={handleCloseAll}
                     />}
+                    <button
+                        type="button"
+                        className={styles.reopenClosed}
+                        aria-label="Reopen last closed tab"
+                        title={closedTabCount === 0 ? 'No recently closed tabs' : 'Reopen last closed tab'}
+                        onClick={reopenClosedTab}
+                        disabled={closedTabCount === 0}
+                    >
+                        <RefreshIcon />
+                    </button>
                 </header>
 
                 {loadError !== null && <p className={cx(styles.err, styles.parseError)}>{loadError}</p>}
