@@ -3,7 +3,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { type JobKind } from './activityQueue.ts';
 import { getSettings, saveSettings } from './api.ts';
 import { type FormData } from './components/taskOptions.ts';
-import { type AppSettings, normalizeSettings } from './settings.ts';
+import { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings } from './settings.ts';
 import { SettingsContext } from './settingsContext.ts';
 
 // Holds the per-project settings (activity-start notification toggles, remembered task options) loaded once from
@@ -73,6 +73,11 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
         setKindEnabled: function (kind: JobKind, isEnabled: boolean): void {
             persist(function (previous) {
                 return { ...previous, notifications: { ...previous.notifications, [kind]: isEnabled } };
+            });
+        },
+        resetNotifications: function (): void {
+            persist(function (previous) {
+                return { ...previous, notifications: { ...DEFAULT_NOTIFICATIONS } };
             });
         },
         getTaskOptions: function (reference: string): FormData | null {

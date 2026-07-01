@@ -12,6 +12,8 @@ type SettingsStore = {
     loaded: boolean;
     isKindEnabled: (kind: JobKind) => boolean;
     setKindEnabled: (kind: JobKind, isEnabled: boolean) => void;
+    // Restore every notification toggle to its DEFAULT_NOTIFICATIONS value, mirroring resetTaskOptions below.
+    resetNotifications: () => void;
     // Remembered options for a task's options form, keyed by its formSchemaRef; null when nothing is stored yet.
     getTaskOptions: (reference: string) => FormData | null;
     setTaskOptions: (reference: string, formData: FormData) => void;

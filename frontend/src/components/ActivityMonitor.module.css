@@ -82,6 +82,23 @@
     cursor: pointer;
 }
 
+.settings-reset {
+    align-self: flex-start;
+    margin-top: 4px;
+    padding: 2px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #0969da;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+}
+
+.settings-reset:hover {
+    background: #f3f4f6;
+}
+
 .note {
     margin: 0;
     font-size: 12px;

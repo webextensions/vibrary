@@ -105,7 +105,7 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry 
 // Gear button + popover letting the user choose which activity kinds pop a top-level start notification. The choices
 // live in the per-project settings; the toast itself is fired by ActivityNotifier. Closes on an outside click.
 const NotificationSettingsMenu = function () {
-    const { isKindEnabled, setKindEnabled } = useSettings();
+    const { isKindEnabled, setKindEnabled, resetNotifications } = useSettings();
     const [open, setOpen] = useState(false);
     const wrapReference = useRef<HTMLDivElement>(null);
 
@@ -156,6 +156,9 @@ const NotificationSettingsMenu = function () {
                         </label>
                     );
                 })}
+                <button type="button" className={styles.settingsReset} onClick={resetNotifications}>
+                    Reset to defaults
+                </button>
             </div>}
         </div>
     );
