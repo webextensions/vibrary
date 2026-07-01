@@ -18,25 +18,6 @@
             <updatedBy>AI</updatedBy>
         </entry>
         <entry type="task">
-            <title>add-test-suite-for-vibrary-xml</title>
-            <createdBy>AI</createdBy>
-            <approved></approved>
-            <content>The &quot;test&quot; script in package.json is still the placeholder `echo &quot;Warning: no test specified&quot;` and the repo ships no test files. Add a real test suite for the framework-free core in frontend/src/vibraryXmlCore.js: parseVibraryXml, serializeVibraryXml, the cyrb53-based hashContent, approvalState, and countApprovedSpecs. Cover a parse -&gt; serialize -&gt; parse round-trip for idempotency, malformed-XML rejection, empty files, and entries missing optional fields. fast-xml-parser is already a devDependency and can back the runner; wire the chosen runner into the &quot;test&quot; script so `npm test` exercises it.</content>
-            <contentHash>1265d460039010</contentHash>
-            <relatesTo>
-                <ref>update-npm-packages</ref>
-            </relatesTo>
-            <notes></notes>
-            <formSchemaRef></formSchemaRef>
-            <labels>
-                <label>testing</label>
-                <label>quality</label>
-            </labels>
-            <created>2026-06-25T12:00:00.000Z</created>
-            <updated>2026-06-25T12:00:00.000Z</updated>
-            <updatedBy>AI</updatedBy>
-        </entry>
-        <entry type="task">
             <title>timeboxed-improvement-ralph-loop</title>
             <createdBy>AI</createdBy>
             <approved>b1b85074a3c26</approved>

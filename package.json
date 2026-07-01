@@ -28,7 +28,7 @@
         "start:build:do-not-watch": "node scripts/start-build.js",
         "start:build:watch": "node scripts/start-build.js --watch",
         "start:server": "node --watch scripts/start-server.js",
-        "test": "echo \"Warning: no test specified\"",
+        "test": "node --test frontend/src/**/*.test.js",
         "typecheck": "tsc --noEmit -p frontend"
     },
     "repository": {
