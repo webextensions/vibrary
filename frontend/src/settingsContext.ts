@@ -18,7 +18,12 @@ type SettingsStore = {
     getTaskOptions: (reference: string) => FormData | null;
     setTaskOptions: (reference: string, formData: FormData) => void;
     // Drop the stored options for a task so it falls back to the schema defaults again.
-    resetTaskOptions: (reference: string) => void
+    resetTaskOptions: (reference: string) => void;
+    // Whether any task has remembered options at all, so a "reset all" entry point can hide/disable itself when
+    // there is nothing to reset.
+    hasStoredTaskOptions: boolean;
+    // Drop every task's remembered options in one call, mirroring resetNotifications above.
+    resetAllTaskOptions: () => void
 };
 
 const SettingsContext = createContext<SettingsStore | null>(null);

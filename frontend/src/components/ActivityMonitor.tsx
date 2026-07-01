@@ -102,10 +102,11 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry 
     );
 };
 
-// Gear button + popover letting the user choose which activity kinds pop a top-level start notification. The choices
-// live in the per-project settings; the toast itself is fired by ActivityNotifier. Closes on an outside click.
+// Gear button + popover for the per-project settings: which activity kinds pop a top-level start notification (the
+// toast itself is fired by ActivityNotifier), plus a bulk reset for every task's remembered run options. Closes on an
+// outside click.
 const NotificationSettingsMenu = function () {
-    const { isKindEnabled, setKindEnabled, resetNotifications } = useSettings();
+    const { isKindEnabled, setKindEnabled, resetNotifications, hasStoredTaskOptions, resetAllTaskOptions } = useSettings();
     const [open, setOpen] = useState(false);
     const wrapReference = useRef<HTMLDivElement>(null);
 
@@ -158,6 +159,17 @@ const NotificationSettingsMenu = function () {
                 })}
                 <button type="button" className={styles.settingsReset} onClick={resetNotifications}>
                     Reset to defaults
+                </button>
+
+                <p className={cx(styles.settingsHeading, styles.settingsSectionHeading)}>Task run options</p>
+                <button
+                    type="button"
+                    className={styles.settingsReset}
+                    onClick={resetAllTaskOptions}
+                    disabled={!hasStoredTaskOptions}
+                    title={hasStoredTaskOptions ? 'Forget every task\'s remembered run options' : 'No task has remembered options yet'}
+                >
+                    Reset all task options
                 </button>
             </div>}
         </div>

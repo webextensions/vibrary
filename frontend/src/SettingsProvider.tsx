@@ -94,6 +94,12 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
                 delete nextTaskOptions[reference];
                 return { ...previous, taskOptions: nextTaskOptions };
             });
+        },
+        hasStoredTaskOptions: Object.keys(settings.taskOptions).length > 0,
+        resetAllTaskOptions: function (): void {
+            persist(function (previous) {
+                return { ...previous, taskOptions: {} };
+            });
         }
     };
 

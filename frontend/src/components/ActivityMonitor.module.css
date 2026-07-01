@@ -102,6 +102,20 @@
     background: #f3f4f6;
 }
 
+.settings-reset:disabled {
+    color: #656d76;
+    cursor: default;
+    opacity: 0.6;
+}
+
+/* Second settings group in the same popover (task run options, beneath notifications): a rule and extra top space
+   so the two groups read as distinct rather than one long list. */
+.settings-section-heading {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #d8dee4;
+}
+
 .note {
     margin: 0;
     font-size: 12px;
