@@ -1,35 +1,4 @@
 {
-    "update-npm-packages-options": {
-        "$id": "update-npm-packages-options",
-        "type": "object",
-        "properties": {
-            "updateDependencies": {
-                "type": "boolean",
-                "title": "Update dependencies",
-                "default": true
-            },
-            "updateDevDependencies": {
-                "type": "boolean",
-                "title": "Update devDependencies",
-                "default": true
-            },
-            "thoroughAnalysis": {
-                "type": "boolean",
-                "title": "Thorough analysis (research upgrade/migration guides online)",
-                "default": true
-            },
-            "ignorePinnedPackages": {
-                "type": "boolean",
-                "title": "Ignore upgrading packages pinned with \"=\" in their semver",
-                "default": true
-            },
-            "useRalphLoop": {
-                "type": "boolean",
-                "title": "Use Ralph loop (iterate until the task is verifiably complete)",
-                "default": true
-            }
-        }
-    },
     "timeboxed-improvement-ralph-loop-options": {
         "$id": "timeboxed-improvement-ralph-loop-options",
         "type": "object",
