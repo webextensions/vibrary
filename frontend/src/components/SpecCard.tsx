@@ -258,12 +258,12 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
     const isHumanApproved = humanHash !== '';
     const isHumanStale = isHumanApproved && humanHash !== currentHash;
 
-    // Three-way action on the human approval. Mirrors the "Approved" Yes/No control as a one-click action.
-    // - stale: reapprove against the current content (no confirm - it only re-affirms a sign-off).
-    // - approved and current: remove the approval, confirmed first since it undoes a deliberate sign-off.
-    // - not approved: approve, storing the current content hash.
-    const toggleApprove = async function () {
-        if (isHumanApproved && !isHumanStale) {
+    // Set the human approval, confirming first whenever the change clears an existing approval (stale or current) -
+    // removing a deliberate sign-off should never happen silently. Approving (or clearing when there was nothing to
+    // clear) applies immediately. Shared by both approval controls - the header button and the "Approved" Yes/No
+    // radio - so neither can drift into skipping the confirm the other enforces.
+    const handleApprovedByChange = async function (next: string) {
+        if (value.approved !== '' && next === '') {
             const confirmed = await confirmDialog(
                 'Remove your approval from this spec?',
                 'Remove approval'
@@ -271,7 +271,17 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
             if (!confirmed) {
                 return;
             }
-            update({ approved: '' });
+        }
+        update({ approved: next });
+    };
+
+    // Three-way action on the human approval, as a one-click header button mirroring the "Approved" Yes/No control.
+    // - stale: reapprove against the current content (no confirm - it only re-affirms a sign-off).
+    // - approved and current: remove the approval, via the same confirm-guarded path as the radio.
+    // - not approved: approve, storing the current content hash.
+    const toggleApprove = async function () {
+        if (isHumanApproved && !isHumanStale) {
+            await handleApprovedByChange('');
             return;
         }
         update({ approved: currentHash });
@@ -487,7 +497,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                             contentHash={currentHash}
                             isEditing={isEditing}
                             onChange={function (next) {
-                                update({ approved: next });
+                                void handleApprovedByChange(next);
                             }}
                         />
                     </Row>

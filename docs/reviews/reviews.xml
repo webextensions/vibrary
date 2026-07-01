@@ -45,7 +45,7 @@
             <title>backend-imports-the-frontend-xml-core</title>
             <createdBy>AI</createdBy>
             <approved></approved>
-            <content>The Express backend imports ENTRY_TYPES directly from frontend/src/vibraryXmlCore.js to validate the generate route's "type" field, so the list of entry kinds (review/spec/task) has a single source of truth shared across both tiers rather than being duplicated. This works because vibraryXmlCore.js is plain ESM with no DOM or React dependency - the same module is consumed by the browser editor and by Node on the server.</content>
+            <content>The Express backend imports ENTRY_TYPES directly from frontend/src/vibraryXmlCore.js to validate the generate route's "type" field, so the list of entry kinds (review/spec/task/idea) has a single source of truth shared across both tiers rather than being duplicated. This works because vibraryXmlCore.js is plain ESM with no DOM or React dependency - the same module is consumed by the browser editor and by Node on the server.</content>
             <contentHash></contentHash>
             <relatesTo>
                 <ref>file-name-validation-blocks-path-traversal</ref>
