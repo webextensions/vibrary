@@ -53,6 +53,13 @@ const appendUserMessage = function (state: TranscriptState, text: string, id: st
     return { ...state, items: [...state.items, { kind: 'user', id, text }] };
 };
 
+// Drop one item by id (used to retract a queued chat follow-up before it is sent). Pure, like the rest of this file:
+// returns the same state when the id is not present, so the caller can skip notifying subscribers.
+const removeItem = function (state: TranscriptState, itemId: string): TranscriptState {
+    const items = state.items.filter(function (item) { return item.id !== itemId; });
+    return items.length === state.items.length ? state : { ...state, items };
+};
+
 // A tool_result's content is either a string or an array of content blocks; flatten it to readable text.
 const stringifyToolResult = function (content: unknown): string {
     if (typeof content === 'string') {
@@ -241,4 +248,4 @@ const reduceTranscript = function (state: TranscriptState, event: ClaudeStreamEv
     }
 };
 
-export { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, type TranscriptItem, type TranscriptState };
+export { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, removeItem, type TranscriptItem, type TranscriptState };

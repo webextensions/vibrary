@@ -96,7 +96,12 @@ const ResultSummary = function ({ item }: { item: Extract<TranscriptItem, { kind
 
 // A user message: the initial prompt or a chat follow-up, as a right-aligned bubble. When the exact prompt is available
 // and differs from the concise text, a Summary/Full toggle switches views (its default follows the persisted choice).
-const UserMessage = function ({ text, fullText }: { text: string; fullText?: string }) {
+// A follow-up still waiting behind an earlier turn (isPending) shows a "Queued" tag and a Cancel button to retract it
+// before it is actually sent - once a run picks it up it is no longer pending and this affordance disappears.
+const UserMessage = function (
+    { text, fullText, isPending, onCancel }:
+    { text: string; fullText?: string; isPending: boolean; onCancel: () => void }
+) {
     const hasFull = typeof fullText === 'string' && fullText.trim() !== '' && fullText !== text;
     const [view, setView] = useState<PromptView>(readPromptView);
     const shown = hasFull && view === 'full' ? fullText : text;
@@ -117,6 +122,14 @@ const UserMessage = function ({ text, fullText }: { text: string; fullText?: str
                 </div>
             )}
             <div className={styles.userText}>{shown}</div>
+            {isPending && (
+                <div className={styles.pendingRow}>
+                    <span className={styles.pendingTag}>Queued</span>
+                    <button type="button" className={styles.pendingCancel} onClick={onCancel}>
+                        Cancel
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
@@ -133,10 +146,10 @@ const TypingIndicator = function () {
     );
 };
 
-const TranscriptBlock = function ({ item }: { item: TranscriptItem }) {
+const TranscriptBlock = function ({ item, isPending, onCancel }: { item: TranscriptItem; isPending: boolean; onCancel: () => void }) {
     switch (item.kind) {
         case 'user': {
-            return <UserMessage text={item.text} fullText={item.fullText} />;
+            return <UserMessage text={item.text} fullText={item.fullText} isPending={isPending} onCancel={onCancel} />;
         }
         case 'system': {
             const parts = ['Session started'];
@@ -170,7 +183,7 @@ const TranscriptBlock = function ({ item }: { item: TranscriptItem }) {
 // Reads the job's metadata from the queue and its live transcript from useJobEvents (which re-renders only this tab as
 // tokens arrive).
 const ActivityDetail = function ({ jobId }: { jobId: string }) {
-    const { jobs, abortCurrent, retryJob, sendMessage } = useActivityQueue();
+    const { jobs, abortCurrent, retryJob, sendMessage, cancelPendingMessage, isMessagePending } = useActivityQueue();
     const job = jobs.find(function (candidate) { return candidate.id === jobId; }) ?? null;
     const items = useJobEvents(jobId);
 
@@ -257,7 +270,14 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
                         <p className={styles.empty}>{isRunning ? 'Waiting for the agent to start...' : 'No streamed activity for this run.'}</p>
                     ) :
                     items.map(function (item) {
-                        return <TranscriptBlock key={item.id} item={item} />;
+                        return (
+                            <TranscriptBlock
+                                key={item.id}
+                                item={item}
+                                isPending={item.kind === 'user' && isMessagePending(job.id, item.id)}
+                                onCancel={function () { cancelPendingMessage(job.id, item.id); }}
+                            />
+                        );
                     })}
                 {job.error !== null && job.status !== 'aborted' && <p className={styles.error}>{job.error}</p>}
                 {isActive && <TypingIndicator />}

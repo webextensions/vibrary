@@ -2,7 +2,7 @@ import { type ReactNode, useRef, useState } from 'react';
 
 import { chatContinue } from './api.ts';
 import { type ActivityQueue, ActivityQueueContext, type Job, type JobSpec, type JobStatus } from './activityQueue.ts';
-import { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, type TranscriptItem, type TranscriptState } from './activityStream.ts';
+import { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, removeItem, type TranscriptItem, type TranscriptState } from './activityStream.ts';
 
 // In-memory job queue for every "claude -p" action triggered from the UI (run task, apply spec, apply a batch,
 // generate, derive a title). The queue runs strictly one job at a time: an empty queue starts immediately, otherwise a
@@ -38,8 +38,10 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
     const transcriptsReference = useRef(new Map<string, TranscriptState>());
     const eventListenersReference = useRef(new Map<string, Set<() => void>>());
     // Chat messages a user sent while a reply was still streaming, per job id: drained one turn at a time as each run
-    // finishes, so follow-ups auto-send in order without ever running two claude processes at once.
-    const pendingReference = useRef(new Map<string, string[]>());
+    // finishes, so follow-ups auto-send in order without ever running two claude processes at once. Each entry's `id`
+    // matches its optimistic transcript bubble's item id, so a still-queued one can be found and retracted (both from
+    // here and from the transcript) via cancelPendingMessage before it is actually sent.
+    const pendingReference = useRef(new Map<string, { id: string; text: string }[]>());
 
     const updateJobs = function (updater: (previous: Job[]) => Job[]) {
         const next = updater(jobsReference.current);
@@ -147,7 +149,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         }
         const sessionId = target.sessionId;
         const run: Job['run'] = function (signal, onEvent) {
-            const message = pendingReference.current.get(jobId)?.shift() ?? '';
+            const message = pendingReference.current.get(jobId)?.shift()?.text ?? '';
             return chatContinue({ message, sessionId }, { signal, onEvent });
         };
         settlersReference.current.set(jobId, { resolve() {}, reject() {} });
@@ -324,11 +326,38 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         if (!target || target.sessionId === null) {
             return;
         }
-        pushUserMessage(id, text, `user:${crypto.randomUUID()}`);
+        const messageId = `user:${crypto.randomUUID()}`;
+        pushUserMessage(id, text, messageId);
         const pending = pendingReference.current.get(id) ?? [];
-        pending.push(text);
+        pending.push({ id: messageId, text });
         pendingReference.current.set(id, pending);
         armNextTurn(id);
+    };
+
+    // Retract a chat follow-up that is still waiting behind an earlier turn (armNextTurn/pump only ever shift a
+    // pending entry out at the moment they actually start sending it, synchronously within the same call stack as the
+    // job's status flips to 'queued'/'running' - so by the time this can run again, a message that has already gone
+    // out is no longer in `pending` and this is correctly a no-op for it). Drops both the queued send and its
+    // optimistic bubble; leaves everything alone if the message was not found (already sent, or a stale id).
+    const cancelPendingMessage = function (jobId: string, messageId: string) {
+        const pending = pendingReference.current.get(jobId);
+        const index = pending?.findIndex(function (entry) { return entry.id === messageId; }) ?? -1;
+        if (pending === undefined || index === -1) {
+            return;
+        }
+        pending.splice(index, 1);
+        const previous = transcriptsReference.current.get(jobId) ?? emptyTranscript();
+        const next = removeItem(previous, messageId);
+        if (next !== previous) {
+            transcriptsReference.current.set(jobId, next);
+            notifyEvents(jobId);
+        }
+    };
+
+    // Whether a chat message is still queued behind an earlier turn (as opposed to already sent/streaming), so the
+    // detail view can offer a cancel affordance only on messages that are genuinely still cancelable.
+    const isMessagePending = function (jobId: string, messageId: string): boolean {
+        return (pendingReference.current.get(jobId) ?? []).some(function (entry) { return entry.id === messageId; });
     };
 
     const clearFinished = function () {
@@ -359,6 +388,8 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         moveJob,
         retryJob,
         sendMessage,
+        cancelPendingMessage,
+        isMessagePending,
         clearFinished,
         subscribeEvents,
         getEvents

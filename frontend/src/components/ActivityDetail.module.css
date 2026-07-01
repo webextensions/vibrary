@@ -151,6 +151,39 @@
     color: #fff;
 }
 
+/* Shown on a chat follow-up still waiting behind an earlier turn, offering a way to retract it before it sends. */
+.pending-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.pending-tag {
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #fff8c5;
+    color: #9a6700;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.pending-cancel {
+    padding: 1px 8px;
+    border: 1px solid #b6e3c4;
+    border-radius: 999px;
+    background: #fff;
+    color: #cf222e;
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+}
+
+.pending-cancel:hover {
+    background: #ffebe9;
+}
+
 /* Follow-up chat composer, pinned under the scrolling timeline once the activity has finished. */
 .composer {
     display: flex;

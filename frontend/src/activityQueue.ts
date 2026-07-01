@@ -54,6 +54,11 @@ type ActivityQueue = {
     // the reply to the existing transcript. If a reply is already streaming, the message is queued and auto-sent as the
     // next turn. A no-op if the job has no session id yet or the message is empty.
     sendMessage: (id: string, message: string) => void;
+    // Retract a chat follow-up that is still queued behind an earlier turn, dropping both the pending send and its
+    // optimistic transcript bubble. A no-op once the message has actually started sending.
+    cancelPendingMessage: (jobId: string, messageId: string) => void;
+    // Whether a given transcript item id is a chat message still waiting to be sent (as opposed to already sent).
+    isMessagePending: (jobId: string, messageId: string) => boolean;
     clearFinished: () => void;
     // Per-job streamed transcript, kept off the `jobs` array so high-frequency token updates only re-render the open
     // detail tab (via useJobEvents) rather than every queue consumer.
