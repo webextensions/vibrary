@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useActivityQueue } from './activityQueue.ts';
-import { createFile, deleteFile, generateSpecs, getWorkspace, listFiles, loadAllSpecTitles, saveFile } from './api.ts';
+import { createFile, deleteFile, generateSpecs, getWorkspace, listFiles, loadAllSpecTitles, renameFile, saveFile } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
@@ -70,7 +70,7 @@ const App = function () {
     // entry. Cleared to null once consumed isn't necessary - the editor only acts when it matches the active tab.
     const [searchTarget, setSearchTarget] = useState<{ path: string; query: string } | null>(null);
 
-    const { tabs, activePath, activeTab, anyDirty, openOrFocus, openActivity, closeTab, setActive, setInnerTab, patchTab } =
+    const { tabs, activePath, activeTab, anyDirty, openOrFocus, openActivity, closeTab, closeTabs, setActive, setInnerTab, patchTab } =
         useOpenTabs();
     const { enqueue } = useActivityQueue();
 
@@ -158,6 +158,46 @@ const App = function () {
         }
     }, []);
 
+    // Close tabs from the tab bar or the Open Editors list, confirming first when any of them has unsaved edits -
+    // closing is how those edits get discarded, so it should never happen silently. Delete/rename close tabs via
+    // closeTab directly, since they run their own confirmations.
+    const requestCloseTabs = useCallback(async function (paths: string[]) {
+        const closingSet = new Set(paths);
+        const dirtyCount = tabs.filter(function (tab) {
+            return closingSet.has(tab.path) && tab.dirty;
+        }).length;
+        if (dirtyCount > 0) {
+            const confirmed = await confirmDialog(
+                dirtyCount === 1 ?
+                    'Close a file with unsaved changes? Its edits will be lost.' :
+                    `Close ${dirtyCount} files with unsaved changes? Their edits will be lost.`,
+                'Close'
+            );
+            if (!confirmed) {
+                return;
+            }
+        }
+        closeTabs(paths);
+    }, [tabs, closeTabs]);
+
+    const handleCloseTab = useCallback(function (path: string) {
+        void requestCloseTabs([path]);
+    }, [requestCloseTabs]);
+
+    const handleCloseOthers = useCallback(function (path: string) {
+        void requestCloseTabs(tabs.filter(function (tab) {
+            return tab.path !== path;
+        }).map(function (tab) {
+            return tab.path;
+        }));
+    }, [tabs, requestCloseTabs]);
+
+    const handleCloseAll = useCallback(function () {
+        void requestCloseTabs(tabs.map(function (tab) {
+            return tab.path;
+        }));
+    }, [tabs, requestCloseTabs]);
+
     // Open a file from the sidebar: focus its tab if already open, otherwise create one and fetch its content, then
     // close the mobile drawer (the desktop collapse is left untouched).
     const handleOpen = useCallback(function (name: string) {
@@ -213,6 +253,52 @@ const App = function () {
             setLoadError((error as Error).message);
         }
     }, [closeTab]);
+
+    // The explorer "More" menu's Rename action. A file renames (or moves - the new name may point into another folder)
+    // just itself; a folder renames every file beneath it, since folders have no on-disk entity of their own. Open tabs
+    // are keyed by path, so affected tabs are closed and the file reopened under its new name - which drops unsaved
+    // edits, hence the extra confirmation when any affected tab is dirty.
+    const handleRename = useCallback(async function (node: TreeNode) {
+        const isFolder = node.kind === 'folder';
+        const entered = await promptDialog({
+            message: isFolder ? `Rename folder "${node.path}" to:` : `Rename "${node.path}" to:`,
+            confirmLabel: 'Rename',
+            initialValue: node.path
+        });
+        if (entered === null || entered === node.path) {
+            return;
+        }
+        const renames = isFolder ?
+            collectFilePaths(node).map(function (path) {
+                return { from: path, to: `${entered}${path.slice(node.path.length)}` };
+            }) :
+            [{ from: node.path, to: entered }];
+        const anyDirtyAffected = renames.some(function ({ from }) {
+            return tabs.some(function (tab) {
+                return tab.path === from && tab.dirty;
+            });
+        });
+        if (anyDirtyAffected) {
+            const confirmed = await confirmDialog('Renaming reopens the file from disk, so its unsaved changes will be lost. Continue?', 'Rename');
+            if (!confirmed) {
+                return;
+            }
+        }
+        try {
+            for (const { from, to } of renames) {
+                await renameFile(from, to);
+                closeTab(from);
+            }
+            setFiles(await listFiles());
+            setAllTitles(await loadAllSpecTitles());
+            setLoadError(null);
+            if (!isFolder) {
+                openOrFocus(entered);
+            }
+        } catch (error) {
+            setLoadError((error as Error).message);
+        }
+    }, [tabs, closeTab, openOrFocus]);
 
     // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
     // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
@@ -401,9 +487,10 @@ const App = function () {
                 onRefresh={handleRefresh}
                 onAddFile={handleAddFile}
                 onDelete={handleDelete}
+                onRename={handleRename}
                 onNewFile={handleNewFile}
                 onSelectTab={setActive}
-                onCloseTab={closeTab}
+                onCloseTab={handleCloseTab}
                 onOpenActivity={openActivity}
                 onOpenMatch={handleOpenMatch}
             />
@@ -423,7 +510,9 @@ const App = function () {
                         tabs={openTabInfos}
                         activePath={activePath}
                         onSelect={setActive}
-                        onClose={closeTab}
+                        onClose={handleCloseTab}
+                        onCloseOthers={handleCloseOthers}
+                        onCloseAll={handleCloseAll}
                     />}
                 </header>
 

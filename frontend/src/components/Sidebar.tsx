@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AccordionSection } from './AccordionSection.tsx';
-import { ChevronIcon, CloseIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
+import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { buildFileTree, type TreeNode } from '../fileTree.ts';
 import { type FileCount } from '../useFileCounts.ts';
@@ -19,6 +19,7 @@ type SidebarProperties = {
     onRefresh: () => void;
     onAddFile: () => void;
     onDelete: (node: TreeNode) => void;
+    onRename: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void;
     onSelectTab: (path: string) => void;
     onCloseTab: (path: string) => void
@@ -78,12 +79,13 @@ type RowMoreProperties = {
     isOpen: boolean;
     onToggleMenu: (path: string) => void;
     onDelete: (node: TreeNode) => void;
+    onRename: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void
 };
 
-// The per-row "More" kebab button and its dropdown. Files get "Delete"; folders also get "New File...". The menu closes
-// itself before running an action so the action's own dialog opens over a clean tree.
-const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onNewFile }: RowMoreProperties) {
+// The per-row "More" kebab button and its dropdown. Files get "Rename..." and "Delete"; folders also get "New File...".
+// The menu closes itself before running an action so the action's own dialog opens over a clean tree.
+const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onRename, onNewFile }: RowMoreProperties) {
     return (
         <div className={styles.rowMore}>
             <button
@@ -119,6 +121,18 @@ const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onNewFile }: R
                     <button
                         type="button"
                         role="menuitem"
+                        onClick={function (clickEvent) {
+                            clickEvent.stopPropagation();
+                            onToggleMenu(node.path);
+                            onRename(node);
+                        }}
+                    >
+                        <EditIcon />
+                        Rename...
+                    </button>
+                    <button
+                        type="button"
+                        role="menuitem"
                         className={styles.menuDanger}
                         onClick={function (clickEvent) {
                             clickEvent.stopPropagation();
@@ -146,12 +160,13 @@ type TreeRowsProperties = {
     onToggle: (path: string) => void;
     onToggleMenu: (path: string) => void;
     onDelete: (node: TreeNode) => void;
+    onRename: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void
 };
 
 // Renders one level of the file tree as flat sibling <li>s; folders recurse when open. Indentation comes from each
 // row's paddingLeft rather than nested <ul>s, so the existing list styling stays intact.
-const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, countForFile, onOpen, onToggle, onToggleMenu, onDelete, onNewFile }: TreeRowsProperties) {
+const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, countForFile, onOpen, onToggle, onToggleMenu, onDelete, onRename, onNewFile }: TreeRowsProperties) {
     return nodes.map(function (node) {
         const indent = { paddingLeft: `${depth * 14}px` };
         const more = (
@@ -160,6 +175,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
                 isOpen={openMenuPath === node.path}
                 onToggleMenu={onToggleMenu}
                 onDelete={onDelete}
+                onRename={onRename}
                 onNewFile={onNewFile}
             />
         );
@@ -212,6 +228,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
                             onToggle={onToggle}
                             onToggleMenu={onToggleMenu}
                             onDelete={onDelete}
+                            onRename={onRename}
                             onNewFile={onNewFile}
                         />
                     </ul>
@@ -221,7 +238,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
     });
 };
 
-const Sidebar = function ({ files, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
+const Sidebar = function ({ files, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -349,6 +366,7 @@ const Sidebar = function ({ files, selected, refreshing, countForFile, openTabs,
                                 onToggle={handleToggle}
                                 onToggleMenu={handleToggleMenu}
                                 onDelete={onDelete}
+                                onRename={onRename}
                                 onNewFile={onNewFile}
                             />
                         </ul>

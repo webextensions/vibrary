@@ -11,6 +11,8 @@
 }
 
 .tab-strip .tab {
+    /* The positioning context for the right-click context menu. */
+    position: relative;
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
@@ -83,6 +85,48 @@
 .tab-close:hover {
     background: #f3f4f6;
     color: #1f2328;
+}
+
+/* Right-click context menu on a tab (Close / Close Others / Close All), styled like the Explorer's kebab dropdown. */
+.tab-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 5;
+    min-width: 150px;
+    margin-top: 2px;
+    padding: 4px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tab-menu button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: #1f2328;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.tab-menu button:hover {
+    background: #f3f4f6;
+}
+
+.tab-menu button:disabled {
+    color: #656d76;
+    cursor: default;
+    opacity: 0.6;
 }
 
 .tab-switcher {

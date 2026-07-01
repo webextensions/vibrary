@@ -4,9 +4,12 @@ import styles from './promptDialog.module.css';
 
 // A single-line text prompt, built on helpmate's alert-only `alertDialog` the same way `confirmDialog` is: we hand it
 // our own label + input + Cancel/Confirm buttons and resolve with the trimmed text, or null when the user cancels,
-// submits nothing, or dismisses via the backdrop.
+// submits nothing, or dismisses via the backdrop. With `allowEmpty`, an empty submit resolves with '' instead, so
+// null unambiguously means "cancelled" for prompts whose value is optional (e.g. a stash message). `initialValue`
+// prefills and selects the input for edit-in-place prompts like rename.
 const promptDialog = function (
-    { message, placeholder, confirmLabel }: { message: string; placeholder?: string; confirmLabel: string }
+    { message, placeholder, confirmLabel, allowEmpty, initialValue }:
+    { message: string; placeholder?: string; confirmLabel: string; allowEmpty?: boolean; initialValue?: string }
 ): Promise<string | null> {
     return new Promise(function (resolve) {
         const container = document.createElement('div');
@@ -20,6 +23,9 @@ const promptDialog = function (
         input.className = styles.promptInput;
         if (placeholder !== undefined) {
             input.placeholder = placeholder;
+        }
+        if (initialValue !== undefined) {
+            input.value = initialValue;
         }
 
         const actions = document.createElement('div');
@@ -53,7 +59,11 @@ const promptDialog = function (
 
         const submit = function () {
             const trimmed = input.value.trim();
-            finish(trimmed === '' ? null : trimmed);
+            if (trimmed === '' && !allowEmpty) {
+                finish(null);
+                return;
+            }
+            finish(trimmed);
         };
 
         cancelButton.addEventListener('click', function () {
@@ -76,6 +86,10 @@ const promptDialog = function (
         });
 
         input.focus();
+        // Pre-select a prefilled value so typing replaces it outright, the way in-place rename fields behave.
+        if (initialValue !== undefined) {
+            input.select();
+        }
     });
 };
 

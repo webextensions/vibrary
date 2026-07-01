@@ -117,22 +117,29 @@ const useOpenTabs = function () {
         });
     }, []);
 
-    const closeTab = useCallback(function (path: string) {
+    // Close several tabs at once (single close, Close Others, Close All). When the active tab is among those closed,
+    // the nearest surviving tab - first to its right, else to its left - becomes active, matching single-close behavior.
+    const closeTabs = useCallback(function (paths: string[]) {
         setState(function (previous) {
-            const index = previous.tabs.findIndex(function (tab) { return tab.path === path; });
-            if (index === -1) {
+            const closing = new Set(paths);
+            const tabs = previous.tabs.filter(function (tab) { return !closing.has(tab.path); });
+            if (tabs.length === previous.tabs.length) {
                 return previous;
             }
-            const tabs = previous.tabs.filter(function (tab) { return tab.path !== path; });
             let activePath = previous.activePath;
-            if (activePath === path) {
-                // Closing the active tab activates its right neighbor, else its left, else nothing remains open.
-                const neighbor = previous.tabs[index + 1] ?? previous.tabs[index - 1] ?? null;
-                activePath = neighbor === null ? null : neighbor.path;
+            if (activePath !== null && closing.has(activePath)) {
+                const index = previous.tabs.findIndex(function (tab) { return tab.path === activePath; });
+                const rightNeighbor = previous.tabs.slice(index + 1).find(function (tab) { return !closing.has(tab.path); });
+                const leftNeighbor = previous.tabs.slice(0, index).findLast(function (tab) { return !closing.has(tab.path); });
+                activePath = (rightNeighbor ?? leftNeighbor)?.path ?? null;
             }
             return { tabs, activePath };
         });
     }, []);
+
+    const closeTab = useCallback(function (path: string) {
+        closeTabs([path]);
+    }, [closeTabs]);
 
     // Fetch each newly-created tab's content once. A fetch that finishes after its tab was closed is dropped via the
     // every()-guard before patching, so a stale response never resurrects a closed tab.
@@ -197,6 +204,7 @@ const useOpenTabs = function () {
         openOrFocus,
         openActivity,
         closeTab,
+        closeTabs,
         setActive,
         setInnerTab,
         patchTab

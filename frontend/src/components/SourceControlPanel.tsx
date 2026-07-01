@@ -1,17 +1,21 @@
 import cx from 'classnames';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { commitChanges, generateCommitMessage, getGitStatus, type GitFileStatus, type GitStatus, pushChanges, stagePaths, unstagePaths } from '../api.ts';
+import { commitChanges, discardPaths, generateCommitMessage, getGitStatus, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listStashes, pullChanges, pushChanges, stagePaths, stashAction, stashChanges, unstagePaths } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
+import { promptDialog } from '../promptDialog.ts';
 import { AccordionSection } from './AccordionSection.tsx';
-import { AiIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
+import { AiIcon, DiscardIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
 
 import styles from './SourceControlPanel.module.css';
 
-// A single changed-file row: the status letter, the path (basename emphasized via title), and a stage or unstage button.
+// One hover-revealed button on a changed-file row (stage, unstage, discard, ...), like VS Code's SCM list.
+type FileAction = { label: string; Icon: () => ReactNode; onAction: () => void };
+
+// A single changed-file row: the status letter, the path (basename emphasized via title), and its action buttons.
 const FileRow = function (
-    { file, statusChar, actionLabel, ActionIcon, onAction, disabled }:
-    { file: GitFileStatus; statusChar: string; actionLabel: string; ActionIcon: () => ReactNode; onAction: () => void; disabled: boolean }
+    { file, statusChar, actions, disabled }:
+    { file: GitFileStatus; statusChar: string; actions: FileAction[]; disabled: boolean }
 ) {
     // Split into a muted directory (which truncates) and the basename (always fully shown), like VS Code's SCM list.
     const lastSlash = file.path.lastIndexOf('/');
@@ -24,25 +28,32 @@ const FileRow = function (
                 {directory !== '' && <span className={styles.fileDir}>{directory}</span>}
                 <span className={styles.fileBase}>{basename}</span>
             </span>
-            <button
-                type="button"
-                className={styles.rowAction}
-                aria-label={`${actionLabel} ${file.path}`}
-                title={actionLabel}
-                onClick={onAction}
-                disabled={disabled}
-            >
-                <ActionIcon />
-            </button>
+            {actions.map(function ({ label, Icon, onAction }) {
+                return (
+                    <button
+                        key={label}
+                        type="button"
+                        className={styles.rowAction}
+                        aria-label={`${label} ${file.path}`}
+                        title={label}
+                        onClick={onAction}
+                        disabled={disabled}
+                    >
+                        <Icon />
+                    </button>
+                );
+            })}
         </li>
     );
 };
 
-// The Source Control view: current branch, changed files grouped into Staged / Changes / Untracked, and a commit box
-// with a "Generate with Claude" drafting button plus Commit and Push. Loads fresh each time the view is shown (it is
-// only mounted while active), and refreshes its status after every mutating action.
+// The Source Control view: current branch, changed files grouped into Staged / Changes / Untracked (each with per-file
+// and per-group stage / unstage / discard actions), a stash section (save, apply, pop, drop), and a commit box with a
+// "Generate with Claude" drafting button plus Commit, Push and Pull. Loads fresh each time the view is shown (it is
+// only mounted while active), and refreshes after every mutating action.
 const SourceControlPanel = function () {
     const [status, setStatus] = useState<GitStatus | null>(null);
+    const [stashes, setStashes] = useState<GitStash[]>([]);
     // A load failure - most importantly "Not a git repository" - shown as the panel's empty state.
     const [loadError, setLoadError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -50,13 +61,17 @@ const SourceControlPanel = function () {
     const [summary, setSummary] = useState('');
     const [body, setBody] = useState('');
 
-    // The two collapsible sections, open by default like the Explorer's accordions.
+    // The collapsible sections; Status and Commit open by default like the Explorer's accordions, Stashes closed since
+    // it is a secondary view.
     const [statusOpen, setStatusOpen] = useState(true);
+    const [stashesOpen, setStashesOpen] = useState(false);
     const [commitOpen, setCommitOpen] = useState(true);
 
     const [generating, setGenerating] = useState(false);
     const [committing, setCommitting] = useState(false);
     const [pushing, setPushing] = useState(false);
+    const [pulling, setPulling] = useState(false);
+    const [stashing, setStashing] = useState(false);
     // Errors and notices from an action (stage, commit, push, generate), shown above the commit box.
     const [actionError, setActionError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -64,10 +79,13 @@ const SourceControlPanel = function () {
     const refresh = useCallback(async function () {
         setLoading(true);
         try {
-            setStatus(await getGitStatus());
+            const [nextStatus, nextStashes] = await Promise.all([getGitStatus(), listStashes()]);
+            setStatus(nextStatus);
+            setStashes(nextStashes);
             setLoadError(null);
         } catch (error) {
             setStatus(null);
+            setStashes([]);
             setLoadError((error as Error).message);
         } finally {
             setLoading(false);
@@ -80,14 +98,16 @@ const SourceControlPanel = function () {
         let isActive = true;
         const load = async function () {
             try {
-                const next = await getGitStatus();
+                const [nextStatus, nextStashes] = await Promise.all([getGitStatus(), listStashes()]);
                 if (isActive) {
-                    setStatus(next);
+                    setStatus(nextStatus);
+                    setStashes(nextStashes);
                     setLoadError(null);
                 }
             } catch (error) {
                 if (isActive) {
                     setStatus(null);
+                    setStashes([]);
                     setLoadError((error as Error).message);
                 }
             } finally {
@@ -141,10 +161,10 @@ const SourceControlPanel = function () {
         );
     }
 
-    const busy = generating || committing || pushing;
+    const busy = generating || committing || pushing || pulling || stashing;
 
-    // Run an action that returns refreshed status, surfacing any failure as the action error. Used by stage/unstage so a
-    // single round trip both mutates and re-renders.
+    // Run an action that returns refreshed status, surfacing any failure as the action error. Used by
+    // stage/unstage/discard so a single round trip both mutates and re-renders.
     const runStatusAction = async function (action: () => Promise<GitStatus>) {
         setActionError(null);
         setNotice(null);
@@ -153,6 +173,31 @@ const SourceControlPanel = function () {
         } catch (error) {
             setActionError((error as Error).message);
         }
+    };
+
+    // Same, for stash mutations, which answer with both the refreshed status and the refreshed stash list.
+    const runStashAction = async function (action: () => Promise<GitStashResult>) {
+        setActionError(null);
+        setNotice(null);
+        try {
+            const result = await action();
+            setStatus(result.status);
+            setStashes(result.stashes);
+        } catch (error) {
+            setActionError((error as Error).message);
+        }
+    };
+
+    // Discard is destructive (a tracked file loses its edits, an untracked file is deleted), so every discard action
+    // confirms first with a message matching what will actually happen.
+    const confirmAndDiscard = async function (paths: string[], message: string) {
+        const confirmed = await confirmDialog(message, 'Discard');
+        if (!confirmed) {
+            return;
+        }
+        await runStatusAction(function () {
+            return discardPaths(paths);
+        });
     };
 
     const handleGenerate = async function () {
@@ -190,7 +235,13 @@ const SourceControlPanel = function () {
     };
 
     const handlePush = async function () {
-        const confirmed = await confirmDialog(`Push ${status?.current || 'the current branch'} to its remote?`, 'Push');
+        // A branch without an upstream gets published (push -u) by the backend; say so in the confirmation.
+        const hasUpstream = status === null || status.tracking !== null;
+        const branchName = status?.current || 'the current branch';
+        const confirmed = await confirmDialog(
+            hasUpstream ? `Push ${branchName} to its remote?` : `${branchName} has no upstream branch yet. Publish it to the remote?`,
+            hasUpstream ? 'Push' : 'Publish'
+        );
         if (!confirmed) {
             return;
         }
@@ -207,13 +258,89 @@ const SourceControlPanel = function () {
         }
     };
 
+    const handlePull = async function () {
+        setPulling(true);
+        setActionError(null);
+        setNotice(null);
+        try {
+            setStatus(await pullChanges());
+            setNotice('Pulled.');
+        } catch (error) {
+            setActionError((error as Error).message);
+        } finally {
+            setPulling(false);
+        }
+    };
+
+    // Stash everything currently shown in Status (staged + unstaged + untracked) under an optional message. The prompt
+    // allows an empty submit (git's default "WIP on ..." message); null means the user cancelled.
+    const handleStashSave = async function () {
+        const message = await promptDialog({
+            message: 'Stash all current changes. Optional message:',
+            placeholder: 'Leave empty for git\'s default message',
+            confirmLabel: 'Stash',
+            allowEmpty: true
+        });
+        if (message === null) {
+            return;
+        }
+        setStashing(true);
+        try {
+            await runStashAction(function () {
+                return stashChanges(message === '' ? undefined : message);
+            });
+        } finally {
+            setStashing(false);
+        }
+    };
+
+    const handleStashApply = function (stash: GitStash) {
+        void runStashAction(function () {
+            return stashAction('apply', stash.index);
+        });
+    };
+
+    const handleStashPop = function (stash: GitStash) {
+        void runStashAction(function () {
+            return stashAction('pop', stash.index);
+        });
+    };
+
+    // Dropping deletes the stashed changes for good, so it confirms first; apply/pop keep them recoverable.
+    const handleStashDrop = async function (stash: GitStash) {
+        const confirmed = await confirmDialog(`Drop stash@{${stash.index}} ("${stash.message}")? Its changes will be lost.`, 'Drop');
+        if (!confirmed) {
+            return;
+        }
+        await runStashAction(function () {
+            return stashAction('drop', stash.index);
+        });
+    };
+
     const totalChanged = staged.length + changes.length + untracked.length;
 
     return (
         <div className={styles.sourceControl}>
             <div className={styles.header}>
                 <span className={styles.title}>Source Control</span>
-                {status !== null && status.current && <span className={styles.branch} title={`Branch ${status.current}`}>{status.current}</span>}
+                {status !== null && status.current && (
+                    <span
+                        className={styles.branch}
+                        title={status.tracking === null ? `Branch ${status.current} (no upstream - Push will publish it)` : `Branch ${status.current}, tracking ${status.tracking}`}
+                    >
+                        {status.current}
+                    </span>
+                )}
+                {status !== null && (status.ahead > 0 || status.behind > 0) && (
+                    <span
+                        className={styles.syncState}
+                        title={`${status.ahead} commit${status.ahead === 1 ? '' : 's'} ahead, ${status.behind} behind ${status.tracking ?? 'upstream'}`}
+                    >
+                        {status.ahead > 0 && `↑${status.ahead}`}
+                        {status.ahead > 0 && status.behind > 0 && ' '}
+                        {status.behind > 0 && `↓${status.behind}`}
+                    </span>
+                )}
             </div>
 
             <AccordionSection
@@ -233,7 +360,25 @@ const SourceControlPanel = function () {
 
                 {staged.length > 0 &&
                 <section className={styles.group}>
-                    <p className={styles.groupTitle}>Staged ({staged.length})</p>
+                    <div className={styles.groupHeader}>
+                        <p className={styles.groupTitle}>Staged ({staged.length})</p>
+                        <button
+                            type="button"
+                            className={styles.groupAction}
+                            aria-label="Unstage all staged files"
+                            title="Unstage all"
+                            disabled={busy}
+                            onClick={function () {
+                                void runStatusAction(function () {
+                                    return unstagePaths(staged.map(function (file) {
+                                        return file.path;
+                                    }));
+                                });
+                            }}
+                        >
+                            <RemoveIcon />
+                        </button>
+                    </div>
                     <ul className={styles.fileList}>
                         {staged.map(function (file) {
                             return (
@@ -241,14 +386,16 @@ const SourceControlPanel = function () {
                                     key={file.path}
                                     file={file}
                                     statusChar={file.index}
-                                    actionLabel="Unstage"
-                                    ActionIcon={RemoveIcon}
                                     disabled={busy}
-                                    onAction={function () {
-                                        void runStatusAction(function () {
-                                            return unstagePaths([file.path]);
-                                        });
-                                    }}
+                                    actions={[{
+                                        label: 'Unstage',
+                                        Icon: RemoveIcon,
+                                        onAction: function () {
+                                            void runStatusAction(function () {
+                                                return unstagePaths([file.path]);
+                                            });
+                                        }
+                                    }]}
                                 />
                             );
                         })}
@@ -257,7 +404,42 @@ const SourceControlPanel = function () {
 
                 {changes.length > 0 &&
                 <section className={styles.group}>
-                    <p className={styles.groupTitle}>Changes ({changes.length})</p>
+                    <div className={styles.groupHeader}>
+                        <p className={styles.groupTitle}>Changes ({changes.length})</p>
+                        <button
+                            type="button"
+                            className={styles.groupAction}
+                            aria-label="Discard all changes"
+                            title="Discard all changes"
+                            disabled={busy}
+                            onClick={function () {
+                                void confirmAndDiscard(
+                                    changes.map(function (file) {
+                                        return file.path;
+                                    }),
+                                    `Discard changes in ${changes.length} file${changes.length === 1 ? '' : 's'}? This cannot be undone.`
+                                );
+                            }}
+                        >
+                            <DiscardIcon />
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.groupAction}
+                            aria-label="Stage all changes"
+                            title="Stage all"
+                            disabled={busy}
+                            onClick={function () {
+                                void runStatusAction(function () {
+                                    return stagePaths(changes.map(function (file) {
+                                        return file.path;
+                                    }));
+                                });
+                            }}
+                        >
+                            <PlusIcon />
+                        </button>
+                    </div>
                     <ul className={styles.fileList}>
                         {changes.map(function (file) {
                             return (
@@ -265,14 +447,25 @@ const SourceControlPanel = function () {
                                     key={file.path}
                                     file={file}
                                     statusChar={file.working_dir}
-                                    actionLabel="Stage"
-                                    ActionIcon={PlusIcon}
                                     disabled={busy}
-                                    onAction={function () {
-                                        void runStatusAction(function () {
-                                            return stagePaths([file.path]);
-                                        });
-                                    }}
+                                    actions={[
+                                        {
+                                            label: 'Discard changes',
+                                            Icon: DiscardIcon,
+                                            onAction: function () {
+                                                void confirmAndDiscard([file.path], `Discard changes in "${file.path}"? This cannot be undone.`);
+                                            }
+                                        },
+                                        {
+                                            label: 'Stage',
+                                            Icon: PlusIcon,
+                                            onAction: function () {
+                                                void runStatusAction(function () {
+                                                    return stagePaths([file.path]);
+                                                });
+                                            }
+                                        }
+                                    ]}
                                 />
                             );
                         })}
@@ -281,7 +474,42 @@ const SourceControlPanel = function () {
 
                 {untracked.length > 0 &&
                 <section className={styles.group}>
-                    <p className={styles.groupTitle}>Untracked ({untracked.length})</p>
+                    <div className={styles.groupHeader}>
+                        <p className={styles.groupTitle}>Untracked ({untracked.length})</p>
+                        <button
+                            type="button"
+                            className={styles.groupAction}
+                            aria-label="Delete all untracked files"
+                            title="Delete all untracked files"
+                            disabled={busy}
+                            onClick={function () {
+                                void confirmAndDiscard(
+                                    untracked.map(function (file) {
+                                        return file.path;
+                                    }),
+                                    `Delete ${untracked.length} untracked file${untracked.length === 1 ? '' : 's'}? This cannot be undone.`
+                                );
+                            }}
+                        >
+                            <RemoveIcon />
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.groupAction}
+                            aria-label="Stage all untracked files"
+                            title="Stage all"
+                            disabled={busy}
+                            onClick={function () {
+                                void runStatusAction(function () {
+                                    return stagePaths(untracked.map(function (file) {
+                                        return file.path;
+                                    }));
+                                });
+                            }}
+                        >
+                            <PlusIcon />
+                        </button>
+                    </div>
                     <ul className={styles.fileList}>
                         {untracked.map(function (file) {
                             return (
@@ -289,19 +517,101 @@ const SourceControlPanel = function () {
                                     key={file.path}
                                     file={file}
                                     statusChar="?"
-                                    actionLabel="Stage"
-                                    ActionIcon={PlusIcon}
                                     disabled={busy}
-                                    onAction={function () {
-                                        void runStatusAction(function () {
-                                            return stagePaths([file.path]);
-                                        });
-                                    }}
+                                    actions={[
+                                        {
+                                            label: 'Delete',
+                                            Icon: RemoveIcon,
+                                            onAction: function () {
+                                                void confirmAndDiscard([file.path], `Delete untracked file "${file.path}"? This cannot be undone.`);
+                                            }
+                                        },
+                                        {
+                                            label: 'Stage',
+                                            Icon: PlusIcon,
+                                            onAction: function () {
+                                                void runStatusAction(function () {
+                                                    return stagePaths([file.path]);
+                                                });
+                                            }
+                                        }
+                                    ]}
                                 />
                             );
                         })}
                     </ul>
                 </section>}
+            </AccordionSection>
+
+            <AccordionSection
+                title="Stashes"
+                expanded={stashesOpen}
+                onToggle={function () {
+                    setStashesOpen(!stashesOpen);
+                }}
+                badge={stashes.length > 0 ? <span className={styles.statusCount}>{stashes.length}</span> : undefined}
+                actions={
+                    <button
+                        type="button"
+                        className={styles.iconButton}
+                        aria-label="Stash all current changes"
+                        title={totalChanged === 0 ? 'No changes to stash' : 'Stash all current changes'}
+                        onClick={handleStashSave}
+                        disabled={busy || totalChanged === 0}
+                    >
+                        {stashing ? <span className={styles.spinner} role="status" aria-label="Stashing" /> : <PlusIcon />}
+                    </button>
+                }
+            >
+                {stashes.length === 0 && <p className={styles.message}>No stashes.</p>}
+                {stashes.length > 0 &&
+                <ul className={styles.fileList}>
+                    {stashes.map(function (stash) {
+                        return (
+                            <li key={stash.index} className={styles.stashRow}>
+                                <span className={styles.stashIndex}>{stash.index}</span>
+                                <span className={styles.stashMessage} title={`stash@{${stash.index}} - ${stash.message} (${new Date(stash.date).toLocaleString()})`}>
+                                    {stash.message}
+                                </span>
+                                <span className={styles.stashActions}>
+                                    <button
+                                        type="button"
+                                        className={styles.stashAction}
+                                        title="Apply this stash, keeping it in the list"
+                                        disabled={busy}
+                                        onClick={function () {
+                                            handleStashApply(stash);
+                                        }}
+                                    >
+                                        Apply
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.stashAction}
+                                        title="Apply this stash and remove it from the list"
+                                        disabled={busy}
+                                        onClick={function () {
+                                            handleStashPop(stash);
+                                        }}
+                                    >
+                                        Pop
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={styles.stashAction}
+                                        title="Delete this stash"
+                                        disabled={busy}
+                                        onClick={function () {
+                                            void handleStashDrop(stash);
+                                        }}
+                                    >
+                                        Drop
+                                    </button>
+                                </span>
+                            </li>
+                        );
+                    })}
+                </ul>}
             </AccordionSection>
 
             <AccordionSection
@@ -360,6 +670,14 @@ const SourceControlPanel = function () {
                             disabled={busy}
                         >
                             {pushing ? <span className={styles.spinner} role="status" aria-label="Pushing" /> : 'Push'}
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={handlePull}
+                            disabled={busy}
+                        >
+                            {pulling ? <span className={styles.spinner} role="status" aria-label="Pulling" /> : 'Pull'}
                         </button>
                     </div>
                     {actionError !== null && <p className={styles.error}>{actionError}</p>}

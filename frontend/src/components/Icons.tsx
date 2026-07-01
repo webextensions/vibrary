@@ -221,6 +221,29 @@ const RemoveIcon = function () {
     );
 };
 
+// Curved "undo" arrow for the discard-changes controls in the Source Control panel.
+const DiscardIcon = function () {
+    return (
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+            <path
+                d="M3 6.5h6a3.5 3.5 0 0 1 0 7H6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                fill="none"
+            />
+            <path
+                d="M5.5 4L3 6.5 5.5 9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+            />
+        </svg>
+    );
+};
+
 // Vertical three-dot "kebab" glyph for the per-row "More options" menu in the file tree.
 const MoreIcon = function () {
     return (
@@ -398,6 +421,7 @@ export {
     ClickIcon,
     CloseIcon,
     CodeIcon,
+    DiscardIcon,
     EditIcon,
     ExplorerIcon,
     FilterIcon,

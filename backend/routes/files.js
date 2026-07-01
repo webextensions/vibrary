@@ -1,4 +1,4 @@
-import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -195,6 +195,51 @@ const createFilesRouter = function ({ cwd }) {
                 return sendErrorResponse(response, 500, 'Unable to save file: no space left on device');
             }
             return sendErrorResponse(response, 500, 'Unable to save file');
+        }
+    });
+
+    // Rename (or move - the new name may live in another folder) a vibrary file. Both names must satisfy the naming
+    // convention and the include rules, so a rename can never take a file outside the app's editable surface. Refuses
+    // to overwrite: fs.rename would silently replace an existing target, so its absence is checked first (the small
+    // check-then-rename race is acceptable for a single-user local server).
+    router.post('/files/:name/rename', async function (request, response) {
+        const { name } = request.params;
+        const { newName } = request.body || {};
+        if (!isValidVibraryName(name)) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (!isValidVibraryName(newName)) {
+            return sendErrorResponse(response, 400, 'Invalid new file name');
+        }
+        const source = resolveWithinCwd(name);
+        const target = resolveWithinCwd(newName);
+        if (source === null || target === null) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (!(await isVibraryNameIncluded(cwd, name))) {
+            return sendErrorResponse(response, 404, 'File not found');
+        }
+        if (!(await isVibraryNameIncluded(cwd, newName))) {
+            return sendErrorResponse(response, 400, 'New file name is not included by .vibraryinclude');
+        }
+
+        try {
+            await access(target);
+            return sendErrorResponse(response, 409, 'A file with the new name already exists');
+        } catch {
+            // Target does not exist - good, the rename can proceed.
+        }
+
+        try {
+            await mkdir(path.dirname(target), { recursive: true });
+            await rename(source, target);
+            return sendSuccessResponse(response, { name: newName });
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                return sendErrorResponse(response, 404, 'File not found');
+            }
+            console.error(`Failed to rename ${name} to ${newName}:`, error);
+            return sendErrorResponse(response, 500, 'Unable to rename file');
         }
     });
 

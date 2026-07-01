@@ -1,4 +1,5 @@
 import cx from 'classnames';
+import { useEffect, useState } from 'react';
 
 import { CloseIcon } from './Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
@@ -13,11 +14,30 @@ type TabBarProperties = {
     tabs: TabInfo[];
     activePath: string;
     onSelect: (path: string) => void;
-    onClose: (path: string) => void
+    onClose: (path: string) => void;
+    onCloseOthers: (path: string) => void;
+    onCloseAll: () => void
 };
 
-const TabBar = function ({ tabs, activePath, onSelect, onClose }: TabBarProperties) {
+const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, onCloseAll }: TabBarProperties) {
     const isMobile = useMediaQuery(MOBILE_QUERY);
+    // Which tab's context menu is open (by path), or null when none - opened by right-clicking a tab. Mirrors the
+    // Explorer's one-open-menu-at-a-time kebab.
+    const [menuPath, setMenuPath] = useState<string | null>(null);
+
+    // Close the open context menu on any click outside it; the menu's own buttons close it themselves before acting.
+    useEffect(function () {
+        if (menuPath === null) {
+            return undefined;
+        }
+        const handleDocumentClick = function () {
+            setMenuPath(null);
+        };
+        document.addEventListener('click', handleDocumentClick);
+        return function () {
+            document.removeEventListener('click', handleDocumentClick);
+        };
+    }, [menuPath]);
 
     if (isMobile) {
         return (
@@ -56,7 +76,14 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose }: TabBarProperti
         <div className={styles.tabStrip} role="tablist">
             {tabs.map(function (tab) {
                 return (
-                    <div key={tab.path} className={cx(styles.tab, tab.path === activePath && styles.active)}>
+                    <div
+                        key={tab.path}
+                        className={cx(styles.tab, tab.path === activePath && styles.active)}
+                        onContextMenu={function (contextMenuEvent) {
+                            contextMenuEvent.preventDefault();
+                            setMenuPath(tab.path);
+                        }}
+                    >
                         <button
                             type="button"
                             className={styles.tabLabel}
@@ -65,6 +92,12 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose }: TabBarProperti
                             title={tab.label ?? tab.path}
                             onClick={function () {
                                 onSelect(tab.path);
+                            }}
+                            onAuxClick={function (auxClickEvent) {
+                                // Middle-click closes the tab, like browser and editor tab strips.
+                                if (auxClickEvent.button === 1) {
+                                    onClose(tab.path);
+                                }
                             }}
                         >
                             {tab.dirty && <span className={styles.tabDot} aria-hidden="true" />}
@@ -82,6 +115,44 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose }: TabBarProperti
                         >
                             <CloseIcon />
                         </button>
+                        {menuPath === tab.path && (
+                            <div className={styles.tabMenu} role="menu">
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={function (clickEvent) {
+                                        clickEvent.stopPropagation();
+                                        setMenuPath(null);
+                                        onClose(tab.path);
+                                    }}
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    disabled={tabs.length === 1}
+                                    onClick={function (clickEvent) {
+                                        clickEvent.stopPropagation();
+                                        setMenuPath(null);
+                                        onCloseOthers(tab.path);
+                                    }}
+                                >
+                                    Close Others
+                                </button>
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={function (clickEvent) {
+                                        clickEvent.stopPropagation();
+                                        setMenuPath(null);
+                                        onCloseAll();
+                                    }}
+                                >
+                                    Close All
+                                </button>
+                            </div>
+                        )}
                     </div>
                 );
             })}

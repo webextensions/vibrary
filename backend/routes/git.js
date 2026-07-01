@@ -3,7 +3,7 @@ import path from 'node:path';
 import { Router } from 'express';
 
 import { generateCommitMessageAsync } from '../utils/runClaudeCommitMessage.js';
-import { commitAsync, diffAsync, isGitRepoAsync, pushAsync, stageAsync, statusAsync, unstageAsync } from '../utils/runGit.js';
+import { commitAsync, diffAsync, discardAsync, isGitRepoAsync, pullAsync, pushAsync, removeUntrackedAsync, stageAsync, stashApplyAsync, stashDropAsync, stashListAsync, stashPopAsync, stashSaveAsync, statusAsync, unstageAsync } from '../utils/runGit.js';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
 
 const createGitRouter = function ({ cwd }) {
@@ -127,6 +127,106 @@ const createGitRouter = function ({ cwd }) {
             return sendErrorResponse(response, 500, error.message);
         }
     });
+
+    // Pull can change the working tree, so answer with the refreshed status (like stage/unstage) rather than pull's
+    // own summary - the panel re-renders from it in one round trip.
+    router.post('/git/pull', async function (request, response) {
+        try {
+            if (!(await requireRepo(response))) {
+                return undefined;
+            }
+            await pullAsync(cwd);
+            return sendSuccessResponse(response, await statusAsync(cwd));
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    // Discard working-tree changes for the given paths: tracked files are restored from the index/HEAD, untracked
+    // files are deleted. Splitting by the current status here (rather than trusting the client's grouping) keeps the
+    // destructive branch - deletion - tied to what git itself reports as untracked.
+    router.post('/git/discard', async function (request, response) {
+        const paths = validatePaths((request.body || {}).paths);
+        if (paths === null) {
+            return sendErrorResponse(response, 400, 'Expected a non-empty "paths" array');
+        }
+        try {
+            if (!(await requireRepo(response))) {
+                return undefined;
+            }
+            const status = await statusAsync(cwd);
+            const untrackedPaths = new Set(status.files.filter(function (file) {
+                return file.index === '?' && file.working_dir === '?';
+            }).map(function (file) {
+                return file.path;
+            }));
+            const untracked = paths.filter(function (entry) {
+                return untrackedPaths.has(entry);
+            });
+            const tracked = paths.filter(function (entry) {
+                return !untrackedPaths.has(entry);
+            });
+            if (tracked.length > 0) {
+                await discardAsync(cwd, tracked);
+            }
+            if (untracked.length > 0) {
+                await removeUntrackedAsync(cwd, untracked);
+            }
+            return sendSuccessResponse(response, await statusAsync(cwd));
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    router.get('/git/stashes', async function (request, response) {
+        try {
+            if (!(await requireRepo(response))) {
+                return undefined;
+            }
+            return sendSuccessResponse(response, await stashListAsync(cwd));
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    // Stash the current changes (staged + unstaged + untracked) under an optional message. Answers with both the
+    // refreshed status and the refreshed stash list, since the action changes both.
+    router.post('/git/stash', async function (request, response) {
+        const { message } = request.body || {};
+        if (message !== undefined && typeof message !== 'string') {
+            return sendErrorResponse(response, 400, 'Expected "message" to be a string');
+        }
+        try {
+            if (!(await requireRepo(response))) {
+                return undefined;
+            }
+            await stashSaveAsync(cwd, message);
+            return sendSuccessResponse(response, { status: await statusAsync(cwd), stashes: await stashListAsync(cwd) });
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    // Apply / pop / drop a stash by its stash@{N} position. All three take { index } and answer with the refreshed
+    // status + stash list, since each changes at least one of the two.
+    const stashActions = { apply: stashApplyAsync, pop: stashPopAsync, drop: stashDropAsync };
+    for (const [action, runAction] of Object.entries(stashActions)) {
+        router.post(`/git/stash/${action}`, async function (request, response) {
+            const { index } = request.body || {};
+            if (!Number.isSafeInteger(index) || index < 0) {
+                return sendErrorResponse(response, 400, 'Expected "index" to be a non-negative integer');
+            }
+            try {
+                if (!(await requireRepo(response))) {
+                    return undefined;
+                }
+                await runAction(cwd, index);
+                return sendSuccessResponse(response, { status: await statusAsync(cwd), stashes: await stashListAsync(cwd) });
+            } catch (error) {
+                return sendErrorResponse(response, 500, error.message);
+            }
+        });
+    }
 
     // Draft a commit message from the staged diff via a headless "claude -p" run. Refuses when nothing is staged, since
     // there is no diff to summarize.

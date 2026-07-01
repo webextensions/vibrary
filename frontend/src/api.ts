@@ -150,6 +150,16 @@ const deleteFile = async function (name: string): Promise<void> {
     await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}`, { method: 'DELETE' });
 };
 
+// Rename (or move - the new name may live in another folder) a specs file. The server refuses to overwrite an
+// existing target; the caller refreshes the file list and reopens the file under its new name once this resolves.
+const renameFile = async function (name: string, newName: string): Promise<void> {
+    await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newName })
+    });
+};
+
 // Runs the backend's headless AI agent to append `count` new specs to the file, streaming its activity through
 // `options.onEvent`. Resolves with the run's final result text once the file has been updated on disk; the caller
 // reloads it to pick up the additions.
@@ -253,7 +263,15 @@ type GitFileStatus = {
     working_dir: string
 };
 
-type GitStatus = { current: string | null; files: GitFileStatus[] };
+// `tracking` is the upstream branch (null when none is set - Push then publishes the branch), and ahead/behind count
+// commits relative to it.
+type GitStatus = { current: string | null; tracking: string | null; ahead: number; behind: number; files: GitFileStatus[] };
+
+// One stash entry; `index` is its stash@{N} position, which apply/pop/drop take.
+type GitStash = { index: number; message: string; date: string };
+
+// Status plus stash list, returned by every stash mutation since each changes at least one of the two.
+type GitStashResult = { status: GitStatus; stashes: GitStash[] };
 
 // One line match inside a file; `line` is 1-based and `text` is the trimmed, length-capped line.
 type SearchMatch = { line: number; text: string };
@@ -303,10 +321,47 @@ const pushChanges = async function (): Promise<void> {
     await request<{ output: unknown }>('/api/git/push', { method: 'POST' });
 };
 
+// Pull the current branch, resolving with the refreshed status (a pull can change the working tree).
+const pullChanges = function (): Promise<GitStatus> {
+    return request<GitStatus>('/api/git/pull', { method: 'POST' });
+};
+
+// Discard working-tree changes: tracked paths are restored from the index/HEAD, untracked paths are deleted.
+// Destructive - callers confirm with the user first.
+const discardPaths = function (paths: string[]): Promise<GitStatus> {
+    return request<GitStatus>('/api/git/discard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths })
+    });
+};
+
+const listStashes = function (): Promise<GitStash[]> {
+    return request<GitStash[]>('/api/git/stashes');
+};
+
+// Stash all current changes (staged + unstaged + untracked) under an optional message.
+const stashChanges = function (message?: string): Promise<GitStashResult> {
+    return request<GitStashResult>('/api/git/stash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message === undefined ? {} : { message })
+    });
+};
+
+// Apply / pop / drop a stash by its stash@{N} position.
+const stashAction = function (action: 'apply' | 'pop' | 'drop', index: number): Promise<GitStashResult> {
+    return request<GitStashResult>(`/api/git/stash/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index })
+    });
+};
+
 // Draft a commit summary + extended body from the staged diff via the backend's headless agent (buffered, like
 // populateTitle). Rejects when nothing is staged.
 const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary: string; body: string }> {
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStatus, listFiles, loadAllSpecTitles, populateTitle, pushChanges, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, unstagePaths };
+export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, discardPaths, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadAllSpecTitles, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, unstagePaths };

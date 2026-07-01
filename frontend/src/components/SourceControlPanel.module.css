@@ -31,6 +31,14 @@
     white-space: nowrap;
 }
 
+/* Ahead/behind commit counts relative to the upstream, beside the branch chip. */
+.sync-state {
+    flex-shrink: 0;
+    color: #656d76;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
 .icon-button {
     display: inline-flex;
     align-items: center;
@@ -164,11 +172,49 @@
     gap: 4px;
 }
 
+/* Group title beside its bulk actions (stage all / unstage all / discard all). */
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .group-title {
+    flex: 1;
+    min-width: 0;
     margin: 0;
     color: #656d76;
     font-size: 12px;
     font-weight: 600;
+}
+
+/* Bulk action on a whole group; smaller and quieter than the header icon buttons. */
+.group-action {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: #656d76;
+    cursor: pointer;
+}
+
+.group-action svg {
+    width: 14px;
+    height: 14px;
+}
+
+.group-action:hover {
+    background: #eaeef2;
+    color: #1f2328;
+}
+
+.group-action:disabled {
+    cursor: default;
+    opacity: 0.4;
 }
 
 .file-list {
@@ -262,6 +308,63 @@
     .row-action {
         opacity: 1;
     }
+}
+
+/* One stash entry: its stash@{N} position, the message, and Apply / Pop / Drop. */
+.stash-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 6px;
+}
+
+.stash-row:hover {
+    background: #f3f4f6;
+}
+
+/* The stash@{N} position, which apply/pop/drop act on. */
+.stash-index {
+    flex-shrink: 0;
+    min-width: 14px;
+    color: #656d76;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    text-align: center;
+}
+
+.stash-message {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stash-actions {
+    flex-shrink: 0;
+    display: inline-flex;
+    gap: 4px;
+}
+
+.stash-action {
+    padding: 2px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.stash-action:hover {
+    background: #f3f4f6;
+}
+
+.stash-action:disabled {
+    cursor: default;
+    opacity: 0.6;
 }
 
 /* Small spinner for the in-flight commit/generate/push buttons, matching the editor toolbar's spinner. */

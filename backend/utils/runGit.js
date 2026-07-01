@@ -48,8 +48,69 @@ const commitAsync = function (cwd, { summary, body }) {
     return gitFor(cwd).commit(messages);
 };
 
-const pushAsync = function (cwd) {
-    return gitFor(cwd).push();
+// Push the current branch. A branch with no upstream would make a bare `git push` fail with "no upstream branch", so
+// that case publishes the branch instead (push -u to the first remote), matching what a UI user expects Push to do.
+const pushAsync = async function (cwd) {
+    const git = gitFor(cwd);
+    const status = await git.status();
+    if (status.tracking === null && status.current !== null) {
+        const remotes = await git.getRemotes();
+        if (remotes.length === 0) {
+            throw new Error('No remote is configured to push to');
+        }
+        // Via raw (like unstageAsync) because unicorn/no-return-array-push mistakes push-with-arguments for Array#push.
+        return git.raw(['push', '--set-upstream', remotes[0].name, status.current]);
+    }
+    return git.push();
 };
 
-export { commitAsync, diffAsync, isGitRepoAsync, pushAsync, stageAsync, statusAsync, unstageAsync };
+const pullAsync = function (cwd) {
+    return gitFor(cwd).pull();
+};
+
+// Restore the given tracked paths' worktree content from the index/HEAD - the working-tree counterpart of unstage.
+// Destructive for the caller's edits, so the UI confirms before calling this.
+const discardAsync = function (cwd, paths) {
+    return gitFor(cwd).raw(['restore', '--', ...paths]);
+};
+
+// Delete the given untracked paths. "Discard" on an untracked file means removing it, which `git restore` cannot do.
+// "-f" is required because git refuses to clean without it (clean.requireForce defaults to true).
+const removeUntrackedAsync = function (cwd, paths) {
+    return gitFor(cwd).raw(['clean', '-f', '--', ...paths]);
+};
+
+// Stash everything the Status panel shows - staged, unstaged and untracked - under an optional message. Untracked
+// files are included because the panel presents them as part of the working set, so "stash" hiding them matches what
+// the user sees.
+const stashSaveAsync = function (cwd, message) {
+    const stashArguments = ['push', '--include-untracked'];
+    if (typeof message === 'string' && message.trim() !== '') {
+        stashArguments.push('-m', message.trim());
+    }
+    return gitFor(cwd).stash(stashArguments);
+};
+
+// The stash list as [{ index, message, date }], where `index` is the stash@{N} position used by apply/pop/drop.
+const stashListAsync = async function (cwd) {
+    const list = await gitFor(cwd).stashList();
+    return list.all.map(function (entry, index) {
+        return { index, message: entry.message, date: entry.date };
+    });
+};
+
+// Apply / pop / drop by stash@{N} position. `index` is validated as a non-negative integer by the route before it is
+// interpolated here.
+const stashApplyAsync = function (cwd, index) {
+    return gitFor(cwd).stash(['apply', `stash@{${index}}`]);
+};
+
+const stashPopAsync = function (cwd, index) {
+    return gitFor(cwd).stash(['pop', `stash@{${index}}`]);
+};
+
+const stashDropAsync = function (cwd, index) {
+    return gitFor(cwd).stash(['drop', `stash@{${index}}`]);
+};
+
+export { commitAsync, diffAsync, discardAsync, isGitRepoAsync, pullAsync, pushAsync, removeUntrackedAsync, stageAsync, stashApplyAsync, stashDropAsync, stashListAsync, stashPopAsync, stashSaveAsync, statusAsync, unstageAsync };
