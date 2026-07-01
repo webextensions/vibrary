@@ -59,6 +59,25 @@
             <updatedBy>AI</updatedBy>
         </entry>
         <entry type="task">
+            <title>timeboxed-improvement-ralph-loop</title>
+            <createdBy>AI</createdBy>
+            <approved></approved>
+            <content>Run a timeboxed continuous-improvement sweep over this repo: for the number of minutes given in the "Time budget (minutes)" option, drive a Ralph loop where each iteration picks exactly one small, verifiable improvement, implements it, and confirms the app still builds and existing checks pass before starting the next. Rotate across whichever of these has the most impact right now: tightening code and logic (dead code, duplicated branches, unclear naming, missed edge cases, sloppy error handling); polishing UI and UX (layout rough edges, empty/loading/error states, feedback after user actions, keyboard access and focus handling); aligning behavior and features with what a user would reasonably expect and intend from each control or flow; modularising and structuring code (splitting oversized files, extracting shared helpers, clarifying module boundaries); refactoring toward the repo's own established conventions instead of introducing new styles; adopting current best practices for the stack in use; updating dependencies when the "Allow dependency updates" option is yes; adding tests where changed or fragile behavior is unexercised; keeping docs, comments, and README claims truthful to the code; improving log and error messages so failures are diagnosable; and general cleanup of leftovers, inconsistencies, and half-finished edges. Prefer many small safe wins over one large risky change, skip anything that cannot be implemented and verified within the remaining budget, and stop cleanly when time runs out, ending with a short summary of what was improved and a list of follow-ups worth their own task entries.</content>
+            <contentHash></contentHash>
+            <relatesTo>
+                <ref>update-npm-packages</ref>
+            </relatesTo>
+            <notes></notes>
+            <formSchemaRef>tasks.xml.schemas.json#timeboxed-improvement-ralph-loop-options</formSchemaRef>
+            <labels>
+                <label>maintenance</label>
+                <label>quality</label>
+            </labels>
+            <created>2026-07-02T00:00:00.000Z</created>
+            <updated>2026-07-02T00:00:00.000Z</updated>
+            <updatedBy>AI</updatedBy>
+        </entry>
+        <entry type="task">
             <title>surface-empty-listing-hint-for-missing-vibraryinclude</title>
             <createdBy>AI</createdBy>
             <approved></approved>

@@ -29,5 +29,27 @@
                 "default": true
             }
         }
+    },
+    "timeboxed-improvement-ralph-loop-options": {
+        "$id": "timeboxed-improvement-ralph-loop-options",
+        "type": "object",
+        "properties": {
+            "timeBudgetMinutes": {
+                "type": "integer",
+                "title": "Time budget (minutes)",
+                "default": 30,
+                "minimum": 5
+            },
+            "updateDependencies": {
+                "type": "boolean",
+                "title": "Allow dependency updates",
+                "default": false
+            },
+            "useRalphLoop": {
+                "type": "boolean",
+                "title": "Use Ralph loop (iterate until the task is verifiably complete)",
+                "default": true
+            }
+        }
     }
 }
