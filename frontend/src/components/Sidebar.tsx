@@ -11,6 +11,7 @@ import styles from './Sidebar.module.css';
 
 type SidebarProperties = {
     files: string[];
+    hasVibraryInclude: boolean;
     selected: string | null;
     refreshing: boolean;
     countForFile: (name: string) => FileCount;
@@ -238,7 +239,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
     });
 };
 
-const Sidebar = function ({ files, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
+const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -351,7 +352,11 @@ const Sidebar = function ({ files, selected, refreshing, countForFile, openTabs,
             >
                 {files.length === 0 ?
                     (
-                        <p className={styles.empty}>No reviews / specs / tasks files in this folder.</p>
+                        <p className={styles.empty}>
+                            {hasVibraryInclude ?
+                                'No reviews / specs / tasks files match the patterns in .vibraryinclude.' :
+                                'No .vibraryinclude file found. Add one with gitignore-style patterns (e.g. "specs*.xml") to choose which reviews / specs / tasks files to show; prefix a pattern with "!" to re-exclude.'}
+                        </p>
                     ) :
                     (
                         <ul>

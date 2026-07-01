@@ -4,7 +4,7 @@ import path from 'node:path';
 import { Router } from 'express';
 
 import { ENTRY_TYPES } from '../../frontend/src/vibraryXmlCore.js';
-import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles } from '../utils/vibraryFiles.js';
+import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from '../utils/vibraryFiles.js';
 import { applySpecAsync } from '../utils/runClaudeApply.js';
 import { applySpecsAsync } from '../utils/runClaudeApplyBatch.js';
 import { generateSpecsAsync } from '../utils/runClaudeGenerate.js';
@@ -21,8 +21,8 @@ const createFilesRouter = function ({ cwd }) {
 
     router.get('/files', async function (request, response) {
         try {
-            const files = await listVibraryFiles(cwd);
-            return sendSuccessResponse(response, { files });
+            const [files, hasVibraryInclude] = await Promise.all([listVibraryFiles(cwd), vibraryIncludeExistsAsync(cwd)]);
+            return sendSuccessResponse(response, { files, hasVibraryInclude });
         } catch (error) {
             console.error('Failed to list vibrary files:', error);
             return sendErrorResponse(response, 500, 'Unable to list files');

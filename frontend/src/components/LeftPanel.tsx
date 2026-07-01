@@ -71,6 +71,7 @@ const useViewportWidth = function (): number {
 type LeftPanelProperties = {
     // Explorer (file tree) props, forwarded straight to Sidebar.
     files: string[];
+    hasVibraryInclude: boolean;
     selected: string | null;
     refreshing: boolean;
     countForFile: (name: string) => FileCount;
@@ -140,6 +141,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
             {activeView === 'explorer' &&
             <Sidebar
                 files={properties.files}
+                hasVibraryInclude={properties.hasVibraryInclude}
                 selected={properties.selected}
                 refreshing={properties.refreshing}
                 countForFile={properties.countForFile}

@@ -40,6 +40,9 @@ const MOBILE_QUERY = '(max-width: 700px)';
 
 const App = function () {
     const [files, setFiles] = useState<string[]>([]);
+    // Whether a ".vibraryinclude" file exists at all, so the explorer's empty state can tell "nothing included yet
+    // because no .vibraryinclude exists" apart from "a .vibraryinclude exists but its patterns match nothing".
+    const [hasVibraryInclude, setHasVibraryInclude] = useState(true);
     const [allTitles, setAllTitles] = useState<string[]>([]);
     // Errors from loading the file list or titles (not tied to any one open tab), shown as a banner above the editor.
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -103,14 +106,15 @@ const App = function () {
     useEffect(function () {
         const loadAsync = async function () {
             try {
-                const [loadedFiles, cwd] = await Promise.all([listFiles(), getWorkspace()]);
-                setFiles(loadedFiles);
+                const [loadedListing, cwd] = await Promise.all([listFiles(), getWorkspace()]);
+                setFiles(loadedListing.files);
+                setHasVibraryInclude(loadedListing.hasVibraryInclude);
                 setWorkspaceCwd(cwd);
                 // Reopen the folder's previously open tabs, skipping any that no longer exist (deleted, or stored under
                 // a folder that happens to share this one's key). openOrFocus fetches each tab's content on its own.
                 const record = readSessionTabs(cwd);
                 if (record !== null) {
-                    const present = new Set(loadedFiles);
+                    const present = new Set(loadedListing.files);
                     const toRestore = record.paths.filter(function (path) { return present.has(path); });
                     for (const path of toRestore) {
                         openOrFocus(path);
@@ -148,7 +152,9 @@ const App = function () {
     const handleRefresh = useCallback(async function () {
         setRefreshing(true);
         try {
-            setFiles(await listFiles());
+            const listing = await listFiles();
+            setFiles(listing.files);
+            setHasVibraryInclude(listing.hasVibraryInclude);
             setAllTitles(await loadAllSpecTitles());
             setLoadError(null);
         } catch (error) {
@@ -220,7 +226,9 @@ const App = function () {
         }
         try {
             await createFile(name);
-            setFiles(await listFiles());
+            const listing = await listFiles();
+            setFiles(listing.files);
+            setHasVibraryInclude(listing.hasVibraryInclude);
             setLoadError(null);
             openOrFocus(name);
             setDrawerOpen(false);
@@ -246,7 +254,9 @@ const App = function () {
                 await deleteFile(path);
                 closeTab(path);
             }
-            setFiles(await listFiles());
+            const listing = await listFiles();
+            setFiles(listing.files);
+            setHasVibraryInclude(listing.hasVibraryInclude);
             setAllTitles(await loadAllSpecTitles());
             setLoadError(null);
         } catch (error) {
@@ -289,7 +299,9 @@ const App = function () {
                 await renameFile(from, to);
                 closeTab(from);
             }
-            setFiles(await listFiles());
+            const listing = await listFiles();
+            setFiles(listing.files);
+            setHasVibraryInclude(listing.hasVibraryInclude);
             setAllTitles(await loadAllSpecTitles());
             setLoadError(null);
             if (!isFolder) {
@@ -315,7 +327,9 @@ const App = function () {
         const fullName = `${folderPath}/${name}`;
         try {
             await createFile(fullName);
-            setFiles(await listFiles());
+            const listing = await listFiles();
+            setFiles(listing.files);
+            setHasVibraryInclude(listing.hasVibraryInclude);
             setLoadError(null);
             openOrFocus(fullName);
             setDrawerOpen(false);
@@ -472,6 +486,7 @@ const App = function () {
         <div className={styles.layout}>
             <LeftPanel
                 files={files}
+                hasVibraryInclude={hasVibraryInclude}
                 selected={activePath}
                 open={drawerOpen}
                 isCollapsed={sidebarCollapsed}

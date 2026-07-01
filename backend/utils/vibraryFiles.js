@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { glob } from 'glob';
@@ -59,6 +59,18 @@ const isVibraryNameIncluded = async function (cwd, name) {
     return ig.ignores(name);
 };
 
+// Whether a ".vibraryinclude" file exists at the cwd root, so the listing endpoint (and the explorer's empty state) can
+// tell "nothing is included yet because no .vibraryinclude exists" apart from "a .vibraryinclude exists but its
+// patterns match nothing".
+const vibraryIncludeExistsAsync = async function (cwd) {
+    try {
+        await access(path.join(cwd, VIBRARY_INCLUDE_FILE));
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 const listVibraryFiles = async function (cwd) {
     const ig = await loadVibraryInclude(cwd);
     const matches = await glob('**/{reviews,specs,tasks,ideas}*.xml', { cwd, nodir: true, ignore: ['**/node_modules/**', '**/.git/**'] });
@@ -71,4 +83,4 @@ const listVibraryFiles = async function (cwd) {
         });
 };
 
-export { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles };
+export { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync };

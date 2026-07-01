@@ -103,9 +103,12 @@ const streamClaude = async function (url: string, body: unknown, options: Stream
     return resultText;
 };
 
-const listFiles = async function (): Promise<string[]> {
-    const output = await request<{ files: string[] }>('/api/files');
-    return output.files;
+// The listing plus whether a ".vibraryinclude" file exists at all, so the explorer's empty state can tell "nothing
+// included yet because no .vibraryinclude exists" apart from "a .vibraryinclude exists but matches nothing".
+type FileListing = { files: string[]; hasVibraryInclude: boolean };
+
+const listFiles = function (): Promise<FileListing> {
+    return request<FileListing>('/api/files');
 };
 
 const getWorkspace = async function (): Promise<string> {
@@ -233,7 +236,7 @@ const saveSettings = async function (settings: AppSettings): Promise<void> {
 // Collects every entry title across all vibrary files in the folder, for the "Relates to" option list. Files that
 // fail to parse are skipped so one bad file does not break the option list.
 const loadAllSpecTitles = async function (): Promise<string[]> {
-    const files = await listFiles();
+    const { files } = await listFiles();
     const titles = new Set<string>();
 
     await Promise.all(files.map(async function (name) {
@@ -364,4 +367,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, discardPaths, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadAllSpecTitles, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, unstagePaths };
+export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, discardPaths, type FileListing, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadAllSpecTitles, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, unstagePaths };

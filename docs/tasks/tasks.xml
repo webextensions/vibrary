@@ -25,32 +25,12 @@
             <contentHash>1265d460039010</contentHash>
             <relatesTo>
                 <ref>update-npm-packages</ref>
-                <ref>extract-shared-claude-spawn-helper</ref>
             </relatesTo>
             <notes></notes>
             <formSchemaRef></formSchemaRef>
             <labels>
                 <label>testing</label>
                 <label>quality</label>
-            </labels>
-            <created>2026-06-25T12:00:00.000Z</created>
-            <updated>2026-06-25T12:00:00.000Z</updated>
-            <updatedBy>AI</updatedBy>
-        </entry>
-        <entry type="task">
-            <title>extract-shared-claude-spawn-helper</title>
-            <createdBy>AI</createdBy>
-            <approved></approved>
-            <content>backend/utils holds five near-identical headless-agent spawners (runClaudeRunTask.js, runClaudeGenerate.js, runClaudeTitle.js, runClaudeApply.js, runClaudeApplyBatch.js). Each redefines its own *_TIMEOUT_MS constant and repeats the same spawn(&apos;claude&apos;, ...) wiring: stdout/stderr accumulation, an &apos;error&apos; handler mapping ENOENT to &quot;Claude CLI not found on PATH&quot;, and a &apos;close&apos; handler that rejects on SIGTERM timeout and otherwise falls back to `Claude exited with code ${code}`. Extract one shared helper parameterized by args, cwd, timeout, and a result-mapping callback so each caller keeps only its prompt building and output handling. While there, reconcile the policy inconsistency that runClaudeTitle.js omits --dangerously-skip-permissions while the run-task and generate spawners pass it.</content>
-            <contentHash>ccc2cfb76ce02</contentHash>
-            <relatesTo>
-                <ref>add-test-suite-for-vibrary-xml</ref>
-            </relatesTo>
-            <notes></notes>
-            <formSchemaRef></formSchemaRef>
-            <labels>
-                <label>refactor</label>
-                <label>backend</label>
             </labels>
             <created>2026-06-25T12:00:00.000Z</created>
             <updated>2026-06-25T12:00:00.000Z</updated>
@@ -74,23 +54,6 @@
             <created>2026-07-02T00:00:00.000Z</created>
             <updated>2026-07-01T21:33:27.681Z</updated>
             <updatedBy>Human</updatedBy>
-        </entry>
-        <entry type="task">
-            <title>surface-empty-listing-hint-for-missing-vibraryinclude</title>
-            <createdBy>AI</createdBy>
-            <approved></approved>
-            <content>listVibraryFiles in backend/utils/vibraryFiles.js treats a missing .vibraryinclude as an empty &quot;ignore&quot; matcher, so inclusion is opt-in: when the file is absent (or its patterns match nothing) the listing returns empty with no explanation, which reads as &quot;no vibrary files found&quot; even when files exist on disk. Surface a clear empty-state hint in the UI (and/or in the listing API response) that distinguishes &quot;no .vibraryinclude present&quot; from &quot;present but no patterns match&quot;, and point the user at how to add gitignore-style include patterns (with &quot;!&quot; to re-exclude).</content>
-            <contentHash>aa679c922e6d0</contentHash>
-            <relatesTo></relatesTo>
-            <notes></notes>
-            <formSchemaRef></formSchemaRef>
-            <labels>
-                <label>frontend</label>
-                <label>ux</label>
-            </labels>
-            <created>2026-06-25T12:00:00.000Z</created>
-            <updated>2026-06-25T12:00:00.000Z</updated>
-            <updatedBy>AI</updatedBy>
         </entry>
     </entries>
 </root>
