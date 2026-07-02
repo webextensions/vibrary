@@ -1,21 +1,13 @@
-import path from 'node:path';
-
 import { Router } from 'express';
 
+import { abortOnDisconnect } from '../utils/abortOnDisconnect.js';
 import { generateCommitMessageAsync } from '../utils/runClaudeCommitMessage.js';
+import { resolveWithinCwd } from '../utils/resolveWithinCwd.js';
 import { commitAsync, diffAsync, discardAsync, isGitRepoAsync, pullAsync, pushAsync, removeUntrackedAsync, stageAsync, stashApplyAsync, stashDropAsync, stashListAsync, stashPopAsync, stashSaveAsync, statusAsync, unstageAsync } from '../utils/runGit.js';
 import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
 
 const createGitRouter = function ({ cwd }) {
     const router = Router();
-
-    // Resolve a path against cwd and confirm it stays inside cwd, so a stage/unstage request can never touch a file
-    // outside the served folder. Returns null when the path escapes. Mirrors the guard in the files router.
-    const resolveWithinCwd = function (name) {
-        const root = path.resolve(cwd);
-        const target = path.resolve(root, name);
-        return target === root || target.startsWith(root + path.sep) ? target : null;
-    };
 
     // Validate a request's { paths } array: a non-empty array of in-cwd strings. Returns the array on success, or null
     // so the route can answer 400 without touching git.
@@ -24,24 +16,11 @@ const createGitRouter = function ({ cwd }) {
             return null;
         }
         for (const entry of paths) {
-            if (typeof entry !== 'string' || entry === '' || resolveWithinCwd(entry) === null) {
+            if (typeof entry !== 'string' || entry === '' || resolveWithinCwd(cwd, entry) === null) {
                 return null;
             }
         }
         return paths;
-    };
-
-    // Wire a client disconnect to an AbortController so a long-running "claude -p" child (commit-message generation) is
-    // killed when the browser aborts its fetch. Listens on the response, not the request, for the same reason the files
-    // router does: Express drains the request body up front, so request 'close' fires too early.
-    const abortOnDisconnect = function (request, response) {
-        const controller = new AbortController();
-        response.on('close', function () {
-            if (!response.writableEnded) {
-                controller.abort();
-            }
-        });
-        return controller;
     };
 
     // Reject every git route up front when the folder is not a repository, so the panel can show a clear empty state

@@ -4,7 +4,9 @@ import path from 'node:path';
 import { Router } from 'express';
 
 import { ENTRY_TYPES } from '../../frontend/src/vibraryXmlCore.js';
+import { abortOnDisconnect } from '../utils/abortOnDisconnect.js';
 import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from '../utils/vibraryFiles.js';
+import { resolveWithinCwd } from '../utils/resolveWithinCwd.js';
 import { applySpecAsync } from '../utils/runClaudeApply.js';
 import { applySpecsAsync } from '../utils/runClaudeApplyBatch.js';
 import { generateSpecsAsync } from '../utils/runClaudeGenerate.js';
@@ -33,29 +35,6 @@ const createFilesRouter = function ({ cwd }) {
     router.get('/workspace', function (request, response) {
         return sendSuccessResponse(response, { cwd: path.resolve(cwd) });
     });
-
-    // Resolve a validated name against cwd and confirm it stays inside cwd. The name validation already blocks
-    // traversal; this is a defense-in-depth guard before any filesystem access. Returns null when the name escapes.
-    const resolveWithinCwd = function (name) {
-        const root = path.resolve(cwd);
-        const target = path.resolve(root, name);
-        return target === root || target.startsWith(root + path.sep) ? target : null;
-    };
-
-    // Wire a client disconnect to an AbortController so a long-running "claude -p" child is killed when the browser
-    // aborts its fetch (the user cancels the run, or refreshes the page). We listen on the RESPONSE, not the request:
-    // Express consumes the request body up front and Node then closes the request stream, so request 'close' fires
-    // immediately - long before the client actually leaves. Response 'close' fires only when the connection ends; the
-    // writableEnded guard distinguishes a normal completion (already ended) from a premature client disconnect.
-    const abortOnDisconnect = function (request, response) {
-        const controller = new AbortController();
-        response.on('close', function () {
-            if (!response.writableEnded) {
-                controller.abort();
-            }
-        });
-        return controller;
-    };
 
     // Stream a "claude -p" run to the client as newline-delimited JSON (claude's own stream-json lines, one per write),
     // followed by a terminal {"type":"_exit",...} line carrying the process outcome. `runner({ signal, onLine })` runs
@@ -97,7 +76,7 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        const target = resolveWithinCwd(name);
+        const target = resolveWithinCwd(cwd, name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
@@ -122,7 +101,7 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        const target = resolveWithinCwd(name);
+        const target = resolveWithinCwd(cwd, name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
@@ -149,7 +128,7 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidSchemasName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        const target = resolveWithinCwd(name);
+        const target = resolveWithinCwd(cwd, name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
@@ -170,7 +149,7 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        const target = resolveWithinCwd(name);
+        const target = resolveWithinCwd(cwd, name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
@@ -211,8 +190,8 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidVibraryName(newName)) {
             return sendErrorResponse(response, 400, 'Invalid new file name');
         }
-        const source = resolveWithinCwd(name);
-        const target = resolveWithinCwd(newName);
+        const source = resolveWithinCwd(cwd, name);
+        const target = resolveWithinCwd(cwd, newName);
         if (source === null || target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
@@ -255,8 +234,8 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidVibraryName(newName)) {
             return sendErrorResponse(response, 400, 'Invalid new file name');
         }
-        const source = resolveWithinCwd(name);
-        const target = resolveWithinCwd(newName);
+        const source = resolveWithinCwd(cwd, name);
+        const target = resolveWithinCwd(cwd, newName);
         if (source === null || target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
@@ -291,7 +270,7 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        const target = resolveWithinCwd(name);
+        const target = resolveWithinCwd(cwd, name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
@@ -316,7 +295,7 @@ const createFilesRouter = function ({ cwd }) {
         if (!isValidVibraryName(name)) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        const target = resolveWithinCwd(name);
+        const target = resolveWithinCwd(cwd, name);
         if (target === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
