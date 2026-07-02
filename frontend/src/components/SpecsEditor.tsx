@@ -391,25 +391,33 @@ const SpecsEditor = function (
             return editingIds.has(spec.id) || spec.id === highlightMatchId || isFilterMatch(spec);
         });
 
-    // Selected specs in document order, ignoring any stale ids whose spec was removed. The footer count and the popup
-    // summary both read from this.
+    // Selected specs in document order, ignoring any stale ids whose spec was removed. The footer count, and the
+    // Approve/Remove Approval/Duplicate/Delete operations (which apply to any entry type), read from this.
     const selectedSpecs = specs.filter(function (spec) {
         return selectedIds.has(spec.id);
     });
 
-    // Queue the backend's headless agent over every selected spec as one combined "claude -p" job on the activity
-    // monitor (its stdout is logged to the browser console for debugging). The popup closes as soon as the job is
-    // enqueued; progress and any error live in the activity monitor.
+    // The subset of the selection the headless-agent "Apply changes" action can actually run against: only spec and
+    // task entries have a run action at all (see RunActionSection, which renders nothing for a review or idea), so
+    // applying a review/idea through this bulk flow would send it through the "apply spec" prompt nonsensically. The
+    // single-card Run/Apply button already enforces this per entry; the bulk Actions popup mirrors it here.
+    const applicableSpecs = selectedSpecs.filter(function (spec) {
+        return spec.type === 'spec' || spec.type === 'task';
+    });
+
+    // Queue the backend's headless agent over every applicable selected spec as one combined "claude -p" job on the
+    // activity monitor (its stdout is logged to the browser console for debugging). The popup closes as soon as the
+    // job is enqueued; progress and any error live in the activity monitor.
     const handleApplyChanges = async function () {
-        if (selectedSpecs.length === 0) {
+        if (applicableSpecs.length === 0) {
             return;
         }
-        const entries = selectedSpecs.map(function (spec) {
+        const entries = applicableSpecs.map(function (spec) {
             return { title: spec.title, content: spec.content, notes: spec.notes };
         });
         const count = entries.length;
         const promptParts = [`Apply ${count} ${count === 1 ? 'spec' : 'specs'}:`];
-        for (const spec of selectedSpecs) {
+        for (const spec of applicableSpecs) {
             promptParts.push(`- ${spec.title}`);
         }
         const label = `${count} ${count === 1 ? 'spec' : 'specs'}`;
@@ -644,16 +652,20 @@ const SpecsEditor = function (
                 <div className={styles.actionsAnchor} ref={actionsReference}>
                     {actionsOpen &&
                     <div className={styles.actionsPopup}>
-                        <p className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
+                        <p className={styles.actionsHeader}>
+                            {applicableSpecs.length} {applicableSpecs.length === 1 ? 'entry' : 'entries'} selected
+                            {selectedSpecs.length > applicableSpecs.length &&
+                            ` (${selectedSpecs.length - applicableSpecs.length} skipped - not a spec or task)`}
+                        </p>
                         <ul className={styles.actionsTitleList}>
-                            {selectedSpecs.map(function (spec) {
+                            {applicableSpecs.map(function (spec) {
                                 return <li key={spec.id}>{spec.title || '(untitled)'}</li>;
                             })}
                         </ul>
                         <button
                             type="button"
                             className={styles.aiSubmit}
-                            disabled={selectedSpecs.length === 0}
+                            disabled={applicableSpecs.length === 0}
                             onClick={handleApplyChanges}
                         >
                             Apply changes
@@ -662,7 +674,7 @@ const SpecsEditor = function (
                     <button
                         type="button"
                         className={styles.actionsButton}
-                        disabled={selectedSpecs.length === 0}
+                        disabled={applicableSpecs.length === 0}
                         aria-expanded={actionsOpen}
                         onClick={function () {
                             setOperationsOpen(false);
