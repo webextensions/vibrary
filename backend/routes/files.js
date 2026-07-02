@@ -324,7 +324,7 @@ const createFilesRouter = function ({ cwd }) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
-        const { type, count } = request.body || {};
+        const { type, count, instructions } = request.body || {};
         if (!ENTRY_TYPES.includes(type)) {
             return sendErrorResponse(response, 400, `Expected "type" to be one of: ${ENTRY_TYPES.join(', ')}`);
         }
@@ -333,7 +333,7 @@ const createFilesRouter = function ({ cwd }) {
         }
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return generateSpecsAsync({ cwd, name, type, count, signal, onLine });
+            return generateSpecsAsync({ cwd, name, type, count, instructions: typeof instructions === 'string' ? instructions : '', signal, onLine });
         });
     });
 

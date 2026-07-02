@@ -1,3 +1,4 @@
+import cx from 'classnames';
 import { type FormEvent, useState } from 'react';
 
 import { ENTRY_TYPE_BY_FAMILY, type EntryType } from '../vibraryXml.ts';
@@ -21,8 +22,9 @@ type CreateEntriesDialogProperties = {
     // entries can be of any type the user picks).
     defaultEntryType: EntryType;
     // Generates the requested number of entries of the given type via the backend AI agent and refreshes the file.
-    // Rejects on failure so the dialog can surface the error.
-    onGenerate: (type: EntryType, count: number) => Promise<void>
+    // `instructions` carries optional custom one-time guidance from this dialog's own field. Rejects on failure so the
+    // dialog can surface the error.
+    onGenerate: (type: EntryType, count: number, instructions: string) => Promise<void>
 };
 
 // The floating "+" button's "Create entries with AI" dialog: pick a type and a count, then run the backend's headless
@@ -32,6 +34,7 @@ type CreateEntriesDialogProperties = {
 const CreateEntriesDialog = function ({ onClose, defaultEntryType, onGenerate }: CreateEntriesDialogProperties) {
     const [generateType, setGenerateType] = useState<EntryType>(defaultEntryType);
     const [generateCount, setGenerateCount] = useState(DEFAULT_GENERATE_COUNT);
+    const [instructions, setInstructions] = useState('');
     const [generating, setGenerating] = useState(false);
     const [generateError, setGenerateError] = useState<string | null>(null);
 
@@ -40,7 +43,7 @@ const CreateEntriesDialog = function ({ onClose, defaultEntryType, onGenerate }:
         setGenerating(true);
         setGenerateError(null);
         try {
-            await onGenerate(generateType, generateCount);
+            await onGenerate(generateType, generateCount, instructions.trim());
             onClose();
         } catch (error) {
             setGenerateError((error as Error).message);
@@ -90,6 +93,19 @@ const CreateEntriesDialog = function ({ onClose, defaultEntryType, onGenerate }:
                         disabled={generating}
                         onChange={function (changeEvent) {
                             setGenerateCount(changeEvent.target.valueAsNumber);
+                        }}
+                    />
+                </label>
+                <label className={cx(styles.aiField, styles.aiFieldColumn)} htmlFor="ai-instructions">
+                    Custom instructions (optional):
+                    <textarea
+                        id="ai-instructions"
+                        rows={3}
+                        placeholder="e.g. focus on the backend only, use a specific format"
+                        value={instructions}
+                        disabled={generating}
+                        onChange={function (changeEvent) {
+                            setInstructions(changeEvent.target.value);
                         }}
                     />
                 </label>

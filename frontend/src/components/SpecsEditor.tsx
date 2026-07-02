@@ -36,8 +36,9 @@ type SpecsEditorProperties = {
     highlightMatchIndex?: number;
     onChange: (next: Spec[]) => void;
     // Generates the requested number of entries of the given type via the backend AI agent and refreshes the file.
-    // Rejects on failure so the dialog can surface the error.
-    onGenerate: (type: EntryType, count: number) => Promise<void>;
+    // `instructions` carries optional custom one-time guidance from the dialog's own field. Rejects on failure so the
+    // dialog can surface the error.
+    onGenerate: (type: EntryType, count: number, instructions: string) => Promise<void>;
     // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
     onOpenRelated: (title: string) => void;
     // Whether the filter dropdowns are open. Toggled by the Filter button in the toolbar (see App.tsx).

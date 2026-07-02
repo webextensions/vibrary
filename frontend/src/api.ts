@@ -175,9 +175,10 @@ const duplicateFile = async function (name: string, newName: string): Promise<vo
 
 // Runs the backend's headless AI agent to append `count` new specs to the file, streaming its activity through
 // `options.onEvent`. Resolves with the run's final result text once the file has been updated on disk; the caller
-// reloads it to pick up the additions.
-const generateSpecs = function (name: string, type: EntryType, count: number, options: StreamOptions): Promise<string> {
-    return streamClaude(`/api/files/${encodeURIComponent(name)}/generate`, { type, count }, options);
+// reloads it to pick up the additions. `instructions` carries optional custom one-time guidance, the same field every
+// other run/apply call accepts; folded into the agent's prompt when non-empty.
+const generateSpecs = function (name: string, type: EntryType, count: number, instructions: string, options: StreamOptions): Promise<string> {
+    return streamClaude(`/api/files/${encodeURIComponent(name)}/generate`, { type, count, instructions }, options);
 };
 
 // Runs the backend's headless AI agent to make the codebase conform to a single spec, editing files directly and

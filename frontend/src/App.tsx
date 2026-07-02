@@ -479,7 +479,7 @@ const App = function () {
 
     // Generate entries of the chosen type with the backend AI agent, then refresh the editor from disk. The agent reads
     // the file from disk, so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile).
-    const handleGenerate = useCallback(async function (type: EntryType, count: number) {
+    const handleGenerate = useCallback(async function (type: EntryType, count: number, instructions: string) {
         if (activeTab === null || activeTab.parseError !== null) {
             return;
         }
@@ -488,12 +488,16 @@ const App = function () {
             await saveFile(path, serializeVibraryXml(activeTab.specs));
             patchTab(path, { dirty: false, status: { kind: 'idle' } });
         }
+        const promptParts = [`Generate ${count} ${type} ${count === 1 ? 'entry' : 'entries'} in ${path}`];
+        if (instructions !== '') {
+            promptParts.push('', 'Instructions:', instructions);
+        }
         const claudeOutput = await enqueue({
             kind: 'generate',
             label: `${count} ${type}`,
-            prompt: `Generate ${count} ${type} ${count === 1 ? 'entry' : 'entries'} in ${path}`,
+            prompt: promptParts.join('\n'),
             run: function (signal, onEvent) {
-                return generateSpecs(path, type, count, { signal, onEvent });
+                return generateSpecs(path, type, count, instructions, { signal, onEvent });
             }
         });
         // Surface the agent's raw output for debugging the generation run.

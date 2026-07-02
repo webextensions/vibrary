@@ -4,9 +4,11 @@ import { CLAUDE_STREAM_FLAGS, emitUserPrompt, spawnClaudeStreamAsync } from './s
 const GENERATE_TIMEOUT_MS = 10 * 60 * 1000;
 
 // The instruction handed to "claude -p". It edits the target file on disk directly; <contentHash> is left empty because
-// the editor recomputes it from <content> on load (see vibraryXmlCore.parseVibraryXml).
-const buildPrompt = function (name, type, count) {
-    return [
+// the editor recomputes it from <content> on load (see vibraryXmlCore.parseVibraryXml). `instructions` carries optional
+// custom one-time guidance the user supplied for this run (the same field every other run/apply route accepts);
+// appended as an extra block only when non-empty.
+const buildPrompt = function (name, type, count, instructions) {
+    const lines = [
         `Add exactly ${count} new <entry type="${type}"> elements to the file "${name}" in this project.`,
         '',
         `First read docs/vibrary-file-format.md to learn the XML format, then read the existing entries in ${name} and`,
@@ -28,14 +30,18 @@ const buildPrompt = function (name, type, count) {
         '- Keep the file valid XML, matching the existing structure and four-space indentation.',
         '',
         `Edit ${name} directly.`
-    ].join('\n');
+    ];
+    if (instructions !== '') {
+        lines.push('', 'Additional one-time instructions for this run:', instructions);
+    }
+    return lines.join('\n');
 };
 
 // Run the headless agent to append `count` entries of `type` to `name` within `cwd`, streaming its activity line by
 // line through `onLine` (claude's stream-json events). Resolves on a clean exit; rejects with a descriptive Error
 // otherwise (missing CLI, non-zero exit, timeout, or abort).
-const generateSpecsAsync = function ({ cwd, name, type, count, signal, onLine }) {
-    const prompt = buildPrompt(name, type, count);
+const generateSpecsAsync = function ({ cwd, name, type, count, instructions, signal, onLine }) {
+    const prompt = buildPrompt(name, type, count, instructions);
     emitUserPrompt(onLine, prompt);
     return spawnClaudeStreamAsync({
         cwd,
