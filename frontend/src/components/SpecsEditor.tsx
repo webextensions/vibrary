@@ -265,14 +265,12 @@ const SpecsEditor = function (
         }));
     };
 
-    // Clone an existing entry as a starting point for a similar one: same type/content/notes/labels/relatesTo, but a
-    // fresh id and timestamps, an unapproved state (a copy has not itself been signed off), and "-copy" appended to a
-    // non-empty title so it does not collide with the source's. Inserted right after the source, opened in edit mode,
-    // scrolled into view and focused - same finishing touches as addSpec.
-    const duplicateAt = function (index: number) {
-        const source = specs[index];
-        const now = nowTimestamp();
-        const duplicate: Spec = {
+    // Clone a source entry as a starting point for a similar one: same type/content/notes/labels/relatesTo, but a fresh
+    // id and timestamps, an unapproved state (a copy has not itself been signed off), and "-copy" appended to a
+    // non-empty title so it does not collide with the source's. Shared by the single-card Duplicate button and the
+    // bulk "Duplicate" operation below.
+    const cloneSpec = function (source: Spec, now: string): Spec {
+        return {
             ...source,
             id: crypto.randomUUID(),
             title: source.title === '' ? '' : `${source.title}-copy`,
@@ -281,6 +279,12 @@ const SpecsEditor = function (
             updated: now,
             updatedBy: 'Human'
         };
+    };
+
+    // Duplicate one entry, inserted right after the source, opened in edit mode, scrolled into view and focused - same
+    // finishing touches as addSpec.
+    const duplicateAt = function (index: number) {
+        const duplicate = cloneSpec(specs[index], nowTimestamp());
         onChange([...specs.slice(0, index + 1), duplicate, ...specs.slice(index + 1)]);
         setEditingIds(function (previous) {
             return new Set(previous).add(duplicate.id);
@@ -457,6 +461,23 @@ const SpecsEditor = function (
         setOperationsOpen(false);
     };
 
+    // Duplicate every selected entry in place, each inserted right after its own source - the bulk counterpart to the
+    // single-card Duplicate button. Unlike duplicateAt, no single card to scroll to or focus, so the new entries are
+    // left in review mode and the selection is cleared (it described the originals, not the copies).
+    const handleBulkDuplicate = function () {
+        const now = nowTimestamp();
+        const next: Spec[] = [];
+        for (const spec of specs) {
+            next.push(spec);
+            if (selectedIds.has(spec.id)) {
+                next.push(cloneSpec(spec, now));
+            }
+        }
+        onChange(next);
+        setSelectedIds(new Set());
+        setOperationsOpen(false);
+    };
+
     const handleBulkDelete = async function () {
         const confirmed = await confirmDialog(
             `Remove ${selectedSpecs.length} ${selectedSpecs.length === 1 ? 'entry' : 'entries'}?`,
@@ -584,6 +605,7 @@ const SpecsEditor = function (
                         <p className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
                         <button type="button" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
+                        <button type="button" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
                         <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
                     </div>}
                     <button
