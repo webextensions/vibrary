@@ -1,23 +1,6 @@
 <root>
     <entries>
         <entry type="task">
-            <title>address-uuid-audit-finding-in-node-notifier</title>
-            <createdBy>AI</createdBy>
-            <approved></approved>
-            <content>npm audit reports a moderate-severity vulnerability (GHSA-w5hq-g745-h8pq, missing buffer bounds check) in uuid &lt;11.1.1, pulled in transitively by node-notifier ^10.0.1 (used by scripts/notifier.js for desktop notifications). `npm audit fix --force` would downgrade node-notifier to 6.0.0, a breaking major change, so it was deliberately not applied automatically. Decide whether to accept the node-notifier downgrade (and verify desktop notifications still work), find/wait for a node-notifier release that drops the vulnerable uuid range, or accept the risk (dev-only dependency, not shipped to end users of the published package).</content>
-            <contentHash>bf6fc3b0b75e3</contentHash>
-            <relatesTo></relatesTo>
-            <notes></notes>
-            <formSchemaRef></formSchemaRef>
-            <labels>
-                <label>dependencies</label>
-                <label>security</label>
-            </labels>
-            <created>2026-07-02T00:00:00.000Z</created>
-            <updated>2026-07-02T00:00:00.000Z</updated>
-            <updatedBy>AI</updatedBy>
-        </entry>
-        <entry type="task">
             <title>timeboxed-improvement-ralph-loop</title>
             <createdBy>AI</createdBy>
             <approved>b1b85074a3c26</approved>
