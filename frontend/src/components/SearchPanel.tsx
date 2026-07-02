@@ -50,6 +50,10 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
     const [error, setError] = useState<string | null>(null);
     // The query the current `results` belong to, so an empty/too-short query clears the "no matches" message correctly.
     const [searchedQuery, setSearchedQuery] = useState('');
+    // Bumped by the error message's Retry button to re-run the search effect below without changing the query or file
+    // filter - simplest way to give a failed search an explicit retry, matching SourceControlPanel's own Refresh
+    // button staying live in its error state.
+    const [retryNonce, setRetryNonce] = useState(0);
 
     // Every file the Explorer would list, for the "narrow to files" multi-select; loaded once. An empty selection
     // searches everywhere, matching how the editor's own status/type filters treat an empty selection.
@@ -118,7 +122,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             isCancelled = true;
             clearTimeout(timer);
         };
-    }, [query, fileFilter]);
+    }, [query, fileFilter, retryNonce]);
 
     const totalMatches = results.reduce(function (sum, file) {
         return sum + file.matches.length;
@@ -153,7 +157,20 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                 }}
             />}
 
-            {error !== null && <p className={styles.message}>{error}</p>}
+            {error !== null &&
+            <p className={styles.message}>
+                {error}
+                {' '}
+                <button
+                    type="button"
+                    className={styles.retryButton}
+                    onClick={function () {
+                        setRetryNonce(function (previous) { return previous + 1; });
+                    }}
+                >
+                    Retry
+                </button>
+            </p>}
 
             {error === null && searchedQuery !== '' && results.length === 0 && !searching &&
             <p className={styles.message}>No matches.</p>}
