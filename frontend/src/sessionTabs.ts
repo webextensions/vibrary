@@ -4,6 +4,10 @@
 
 const SESSION_STORAGE_KEY = 'vibrary:open-tabs';
 
+// Bound how many folders' tab sessions are remembered, so launching the server from many different project folders
+// over time does not grow this map unboundedly - mirrors useOpenTabs.ts's CLOSED_TABS_LIMIT for the same reason.
+const MAX_TRACKED_FOLDERS = 20;
+
 type SessionRecord = { paths: string[]; activePath: string | null };
 
 const isSessionRecord = function (value: unknown): value is SessionRecord {
@@ -38,9 +42,19 @@ const readSessionTabs = function (cwd: string): SessionRecord | null {
 
 const writeSessionTabs = function (cwd: string, record: SessionRecord): void {
     try {
-        // Read-modify-write so other folders' records are preserved.
+        // Read-modify-write so other folders' records are preserved. Delete-then-reinsert moves this folder to the
+        // most-recently-written end of the object's key order (plain string keys iterate in insertion order), so the
+        // eviction below - trimming from the front once over the cap - drops the actual least-recently-used folders.
         const map = readMap();
+        delete map[cwd];
         map[cwd] = record;
+        const keys = Object.keys(map);
+        // A negative `end` on slice() counts from the array's end, not "clamp to zero" - so this must be floored
+        // explicitly, or a keys.length still under the cap would evict from the front instead of evicting nothing.
+        const staleKeys = keys.slice(0, Math.max(0, keys.length - MAX_TRACKED_FOLDERS));
+        for (const staleKey of staleKeys) {
+            delete map[staleKey];
+        }
         window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(map));
     } catch {
         // Ignore: storage blocked or full means we just do not persist this session.
