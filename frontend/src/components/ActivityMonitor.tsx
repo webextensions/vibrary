@@ -117,7 +117,8 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry 
 
 // Gear button + popover for the per-project settings: which activity kinds pop a top-level start notification (the
 // toast itself is fired by ActivityNotifier), plus a bulk reset for every task's remembered run options. Closes on an
-// outside click.
+// outside click or Escape, matching every other popup in the app (Sidebar/TabBar menus, SpecsEditor's
+// speed-dial/Operations/Actions popups).
 const NotificationSettingsMenu = function () {
     const { isKindEnabled, setKindEnabled, resetNotifications, hasStoredTaskOptions, resetAllTaskOptions } = useSettings();
     const [open, setOpen] = useState(false);
@@ -132,9 +133,16 @@ const NotificationSettingsMenu = function () {
                 setOpen(false);
             }
         };
+        const handleKeyDown = function (event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setOpen(false);
+            }
+        };
         document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
         return function () {
             document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
         };
     }, [open]);
 
