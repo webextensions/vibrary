@@ -51,8 +51,9 @@ type ActivityQueue = {
     moveJob: (id: string, direction: 'up' | 'down') => void;
     retryJob: (id: string) => void;
     // Re-enqueue every failed/aborted job, the bulk counterpart of retryJob - mirrors clearFinished acting on the whole
-    // finished-job set instead of one row at a time.
-    retryAllFailed: () => void;
+    // finished-job set instead of one row at a time. `scope`, when given, restricts this to just those job ids (the
+    // Activity monitor passes its currently filtered/shown ids so this respects an active Kind/Status filter).
+    retryAllFailed: (scope?: string[]) => void;
     // Send a chat message to an activity that resumes its claude session, showing the message immediately and appending
     // the reply to the existing transcript. If a reply is already streaming, the message is queued and auto-sent as the
     // next turn. A no-op if the job has no session id yet or the message is empty.
@@ -62,7 +63,8 @@ type ActivityQueue = {
     cancelPendingMessage: (jobId: string, messageId: string) => void;
     // Whether a given transcript item id is a chat message still waiting to be sent (as opposed to already sent).
     isMessagePending: (jobId: string, messageId: string) => boolean;
-    clearFinished: () => void;
+    // Clears every finished (success/error/aborted) job, or just those in `scope` when given - see retryAllFailed.
+    clearFinished: (scope?: string[]) => void;
     // Per-job streamed transcript, kept off the `jobs` array so high-frequency token updates only re-render the open
     // detail tab (via useJobEvents) rather than every queue consumer.
     subscribeEvents: (jobId: string, callback: () => void) => () => void;

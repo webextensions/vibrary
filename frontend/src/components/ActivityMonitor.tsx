@@ -210,10 +210,12 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
     const running = jobs.find(function (job) {
         return job.status === 'running';
     });
-    const hasFinished = jobs.some(function (job) {
+    // Scoped to shownJobs (not the full queue) so Clear/Retry all - and their enabled state - respect an active
+    // Kind/Status filter instead of silently acting on jobs the filter is hiding.
+    const hasFinished = shownJobs.some(function (job) {
         return FINISHED_STATUSES.has(job.status);
     });
-    const hasRetryable = jobs.some(function (job) {
+    const hasRetryable = shownJobs.some(function (job) {
         return job.status === 'error' || job.status === 'aborted';
     });
 
@@ -253,11 +255,27 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
                     <StopIcon />
                     Abort
                 </button>
-                <button type="button" className={styles.control} onClick={clearFinished} disabled={!hasFinished}>
+                <button
+                    type="button"
+                    className={styles.control}
+                    title={hasActiveFilter ? 'Clear finished jobs matching the current filter' : 'Clear finished jobs'}
+                    onClick={function () {
+                        clearFinished(shownJobs.map(function (job) { return job.id; }));
+                    }}
+                    disabled={!hasFinished}
+                >
                     <RemoveIcon />
                     Clear
                 </button>
-                <button type="button" className={styles.control} onClick={retryAllFailed} disabled={!hasRetryable}>
+                <button
+                    type="button"
+                    className={styles.control}
+                    title={hasActiveFilter ? 'Retry failed/aborted jobs matching the current filter' : 'Retry all failed/aborted jobs'}
+                    onClick={function () {
+                        retryAllFailed(shownJobs.map(function (job) { return job.id; }));
+                    }}
+                    disabled={!hasRetryable}
+                >
                     <RefreshIcon />
                     Retry all
                 </button>

@@ -314,10 +314,14 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
     };
 
     // Re-run every failed/aborted job, the bulk counterpart of retryJob - snapshotting the target ids up front so
-    // retrying one does not affect which others are retried in this same pass.
-    const retryAllFailed = function () {
+    // retrying one does not affect which others are retried in this same pass. `scope`, when given, additionally
+    // restricts which ids are eligible - the Activity monitor passes its currently filtered/shown job ids so "Retry
+    // all" only retries what is actually visible under an active Kind/Status filter, not the whole queue.
+    const retryAllFailed = function (scope?: string[]) {
+        const scopeSet = scope === undefined ? null : new Set(scope);
         const targets = jobsReference.current.filter(function (candidate) {
-            return candidate.status === 'error' || candidate.status === 'aborted';
+            return (candidate.status === 'error' || candidate.status === 'aborted') &&
+            (scopeSet === null || scopeSet.has(candidate.id));
         });
         for (const target of targets) {
             void retryJob(target.id);
@@ -371,14 +375,20 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         return (pendingReference.current.get(jobId) ?? []).some(function (entry) { return entry.id === messageId; });
     };
 
-    const clearFinished = function () {
+    // `scope`, when given, additionally restricts which finished jobs are cleared - see retryAllFailed above for why
+    // (the Activity monitor passes its currently filtered/shown job ids).
+    const clearFinished = function (scope?: string[]) {
         const finished = new Set<JobStatus>(['success', 'error', 'aborted']);
+        const scopeSet = scope === undefined ? null : new Set(scope);
+        const isTarget = function (candidate: Job) {
+            return finished.has(candidate.status) && (scopeSet === null || scopeSet.has(candidate.id));
+        };
         const removed = jobsReference.current.filter(function (candidate) {
-            return finished.has(candidate.status);
+            return isTarget(candidate);
         });
         updateJobs(function (previous) {
             return previous.filter(function (candidate) {
-                return candidate.status === 'queued' || candidate.status === 'running';
+                return !isTarget(candidate);
             });
         });
         for (const job of removed) {
