@@ -1,11 +1,15 @@
 import cx from 'classnames';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import type { MultiValue } from 'react-select';
+import Select from 'react-select';
 
 import { type Job, type JobKind, type JobStatus, useActivityQueue } from '../activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
-import { AiIcon, ChevronIcon, EditIcon, ListIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, SpecIcon, StopIcon, TaskIcon } from './Icons.tsx';
+import { AiIcon, ChevronIcon, EditIcon, FilterIcon, ListIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, SpecIcon, StopIcon, TaskIcon } from './Icons.tsx';
 
 import styles from './ActivityMonitor.module.css';
+
+type Option = { value: string; label: string };
 
 // The glyph and human label shown per job kind, so a row reads at a glance which action it is.
 const KIND_META: Record<JobKind, { label: string; Icon: () => ReactNode }> = {
@@ -26,6 +30,15 @@ const STATUS_LABEL: Record<JobStatus, string> = {
     error: 'Failed',
     aborted: 'Aborted'
 };
+
+// One filter option per job kind/status, mirroring SpecsEditor's FILTER_OPTIONS/TYPE_FILTER_OPTIONS pattern - the
+// option value is the kind/status itself, so a selection maps straight back for filtering.
+const KIND_FILTER_OPTIONS: Option[] = (Object.keys(KIND_META) as JobKind[]).map(function (kind) {
+    return { value: kind, label: KIND_META[kind].label };
+});
+const STATUS_FILTER_OPTIONS: Option[] = (Object.keys(STATUS_LABEL) as JobStatus[]).map(function (status) {
+    return { value: status, label: STATUS_LABEL[status] };
+});
 
 // mm:ss for an elapsed span; the running job ticks live, finished jobs show their final duration.
 const formatDuration = function (milliseconds: number): string {
@@ -181,6 +194,19 @@ const NotificationSettingsMenu = function () {
 const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: string, title: string) => void }) {
     const { jobs, paused, pause, resume, abortCurrent, removeJob, moveJob, retryJob, clearFinished } = useActivityQueue();
 
+    // Kind/status filters for the job list, mirroring SpecsEditor's own filter row - useful once the queue's history
+    // accumulates every run/apply/generate/chat-continuation job across a session. An empty selection filters nothing,
+    // matching how the editor's own filters treat an empty selection.
+    const [showFilters, setShowFilters] = useState(false);
+    const [kindFilter, setKindFilter] = useState<Option[]>([]);
+    const [statusFilter, setStatusFilter] = useState<Option[]>([]);
+    const hasActiveFilter = kindFilter.length > 0 || statusFilter.length > 0;
+    const shownJobs = jobs.filter(function (job) {
+        const kindMatches = kindFilter.length === 0 || kindFilter.some(function (option) { return option.value === job.kind; });
+        const statusMatches = statusFilter.length === 0 || statusFilter.some(function (option) { return option.value === job.status; });
+        return kindMatches && statusMatches;
+    });
+
     const running = jobs.find(function (job) {
         return job.status === 'running';
     });
@@ -228,33 +254,75 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
                     <RemoveIcon />
                     Clear
                 </button>
+                {jobs.length > 0 &&
+                <button
+                    type="button"
+                    className={cx(styles.control, showFilters && styles.active)}
+                    aria-expanded={showFilters}
+                    onClick={function () {
+                        setShowFilters(function (previous) { return !previous; });
+                    }}
+                >
+                    <span className={styles.filterIconWrap}>
+                        <FilterIcon />
+                        {hasActiveFilter && <span className={styles.filterDot} />}
+                    </span>
+                    Filter
+                </button>}
                 <NotificationSettingsMenu />
             </div>
 
+            {showFilters &&
+            <div className={styles.filterRow}>
+                <Select<Option, true>
+                    classNamePrefix="rs"
+                    isMulti
+                    placeholder="Kind"
+                    aria-label="Filter activity by kind"
+                    options={KIND_FILTER_OPTIONS}
+                    value={kindFilter}
+                    onChange={function (options: MultiValue<Option>) {
+                        setKindFilter([...options]);
+                    }}
+                />
+                <Select<Option, true>
+                    classNamePrefix="rs"
+                    isMulti
+                    placeholder="Status"
+                    aria-label="Filter activity by status"
+                    options={STATUS_FILTER_OPTIONS}
+                    value={statusFilter}
+                    onChange={function (options: MultiValue<Option>) {
+                        setStatusFilter([...options]);
+                    }}
+                />
+            </div>}
+
             {paused && running && <p className={styles.note}>Paused - will stop after the current job.</p>}
 
-            {jobs.length === 0 ?
-                (
-                    <p className={styles.empty}>No activity yet. Run a task or apply a spec to queue a job.</p>
-                ) :
-                (
-                    <ul className={styles.jobs}>
-                        {jobs.map(function (job) {
-                            return (
-                                <JobRow
-                                    key={job.id}
-                                    job={job}
-                                    now={now}
-                                    onOpen={onOpenActivity}
-                                    onAbort={abortCurrent}
-                                    onRemove={removeJob}
-                                    onMove={moveJob}
-                                    onRetry={retryJob}
-                                />
-                            );
-                        })}
-                    </ul>
-                )}
+            {jobs.length === 0 &&
+            <p className={styles.empty}>No activity yet. Run a task or apply a spec to queue a job.</p>}
+
+            {jobs.length > 0 && shownJobs.length === 0 &&
+            <p className={styles.empty}>No jobs match the current filter.</p>}
+
+            {shownJobs.length > 0 &&
+            <ul className={styles.jobs}>
+                {shownJobs.map(function (job) {
+                    return (
+                        <JobRow
+                            key={job.id}
+                            job={job}
+                            now={now}
+                            onOpen={onOpenActivity}
+                            onAbort={abortCurrent}
+                            onRemove={removeJob}
+                            onMove={moveJob}
+                            onRetry={retryJob}
+                        />
+                    );
+                })}
+            </ul>}
         </div>
     );
 };

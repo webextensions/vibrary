@@ -45,6 +45,40 @@
     background: #ffebe9;
 }
 
+.control.active {
+    background: #fff;
+    border-color: #54aeff;
+}
+
+/* Wraps the funnel icon so the active-filter dot can anchor to its top-right corner, matching App.module.css's own
+   Filter button treatment. */
+.filter-icon-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.filter-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #cf222e;
+}
+
+/* Kind/status filter selects, shown below the controls row while the Filter toggle is on. */
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-row > * {
+    flex: 1;
+    min-width: 140px;
+}
+
 .settings-wrap {
     position: relative;
     display: inline-flex;
