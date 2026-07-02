@@ -337,6 +337,17 @@ const SpecsEditor = function (
         });
     }, [specs]);
 
+    // A card's label chip toggles that label into (or out of) the active label filter - a quick "show me more/fewer
+    // like this" shortcut, mirroring how a "Relates to" chip navigates instead. Symmetric with the dropdown: clicking
+    // an already-selected label's chip again clears it.
+    const handleLabelClick = function (label: string) {
+        onLabelFilterChange(
+            selectedLabelKeys.has(label) ?
+                labelFilter.filter(function (option) { return option.value !== label; }) :
+                [...labelFilter, { value: label, label }]
+        );
+    };
+
     // Keep each spec's original index so updateAt/removeAt still address the full list after filtering. A spec being
     // edited is always shown - otherwise a freshly added spec (none/none) or one whose status just changed would
     // vanish mid-edit.
@@ -512,6 +523,7 @@ const SpecsEditor = function (
                             schemas={schemas}
                             allTitles={allTitles}
                             onOpenRelated={onOpenRelated}
+                            onLabelClick={handleLabelClick}
                             onChange={function (next) {
                                 updateAt(index, next);
                             }}
