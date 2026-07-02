@@ -30,12 +30,17 @@ Each entry is shown as a card with these controls:
   across every vibrary file in the folder (the current entry's own title is excluded). The option list refreshes
   after a save. In review mode each reference renders as a chip; clicking it opens the target entry's file (switching
   files if needed) and scrolls to / highlights it.
+- **Apply this spec** / **Run this task** - the card's headless-agent run action, shown only on `spec`/`task` entries
+  (see above). A **Provide custom one time instructions** checkbox reveals a prompt for free-text guidance specific to
+  that one run (for example "focus on the backend only"), folded into the agent's prompt alongside the entry's own
+  content.
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
 entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks / ideas - defaulting to the
-open file's name family) and how many; a headless agent then appends that many entries of the chosen type to the file.
-**Duplicate** on a card clones it (a fresh entry with the same content, notes, labels and relations, but its own id,
-timestamps and an unapproved state) as a starting point for a similar one. **Remove** on a card deletes that entry.
+open file's name family), how many, and optional custom instructions for the run; a headless agent then appends that
+many entries of the chosen type to the file. **Duplicate** on a card clones it (a fresh entry with the same content,
+notes, labels and relations, but its own id, timestamps and an unapproved state) as a starting point for a similar
+one. **Remove** on a card deletes that entry.
 
 ## Bulk selection
 
@@ -46,8 +51,9 @@ filter) and Escape clears the selection. Two buttons act on the ticked entries:
 - **Operations** - **Approve**, **Remove Approval**, **Duplicate** (each ticked entry's copy is inserted right after
   its own source), and **Delete**. These apply to any entry type.
 - **Actions** - **Apply changes**, which queues the same headless-agent run as the single-card button over every
-  ticked entry as one combined job. Only applies to `spec`/`task` entries (mirroring the single-card gating above);
-  if the selection includes a `review`/`idea`, the popup says how many were skipped.
+  ticked entry as one combined job, with its own **Provide custom one time instructions** checkbox applying the
+  entered guidance to the whole batch. Only applies to `spec`/`task` entries (mirroring the single-card gating
+  above); if the selection includes a `review`/`idea`, the popup says how many were skipped.
 
 ## Filtering
 
