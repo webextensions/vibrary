@@ -242,4 +242,4 @@ const useOpenTabs = function () {
     };
 };
 
-export { type TabState, type TabStatus, useOpenTabs };
+export { useOpenTabs };
