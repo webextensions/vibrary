@@ -1,8 +1,9 @@
 # The editor
 
 When you select a file in the sidebar, it opens in an editor with two tabs. Every entry uses the same editor regardless
-of its type; the only difference today is that the "Apply this spec" action is shown only on `spec` entries. A single
-file can hold a mix of entry types.
+of its type; the only difference today is that only `spec` and `task` entries get a headless-agent run action ("Apply
+this spec" / "Run this task" respectively) - `review` and `idea` entries have none. A single file can hold a mix of
+entry types.
 
 ## Structured tab (source of truth)
 
@@ -35,6 +36,18 @@ entries with AI** opens a dialog where you pick what to create (specs / reviews 
 open file's name family) and how many; a headless agent then appends that many entries of the chosen type to the file.
 **Duplicate** on a card clones it (a fresh entry with the same content, notes, labels and relations, but its own id,
 timestamps and an unapproved state) as a starting point for a similar one. **Remove** on a card deletes that entry.
+
+## Bulk selection
+
+Each card has a checkbox at its top-left; the footer below the list shows how many of the file's entries are ticked,
+with **Select all** / **Deselect all** links (Select all only ticks the entries currently shown under an active
+filter) and Escape clears the selection. Two buttons act on the ticked entries:
+
+- **Operations** - **Approve**, **Remove Approval**, **Duplicate** (each ticked entry's copy is inserted right after
+  its own source), and **Delete**. These apply to any entry type.
+- **Actions** - **Apply changes**, which queues the same headless-agent run as the single-card button over every
+  ticked entry as one combined job. Only applies to `spec`/`task` entries (mirroring the single-card gating above);
+  if the selection includes a `review`/`idea`, the popup says how many were skipped.
 
 ## Filtering
 

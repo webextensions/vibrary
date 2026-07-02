@@ -35,9 +35,10 @@ elements:
 </root>
 ```
 
-All entry types share the same fields for now; the only behavioral difference is that the editor's "Apply this spec"
-action is shown only on `type="spec"` entries. Type-specific features for reviews/tasks/ideas come later. An entry with
-no `type` attribute is treated as a `spec`.
+All entry types share the same fields; the only behavioral difference is that the editor's headless-agent run action -
+"Apply this spec" or "Run this task" - is shown only on `type="spec"` and `type="task"` entries (`review` and `idea`
+have none). A `task` entry may additionally declare a `formSchemaRef` (see below) for a per-run options form; the other
+types leave it empty. An entry with no `type` attribute is treated as a `spec`.
 
 ## Fields
 
@@ -57,6 +58,10 @@ Each `<entry>` has these child elements:
 - `relatesTo` - zero or more `<ref>` entries, each the `title` of another entry (in any vibrary file in the folder).
 - `notes` - free text.
 - `labels` - zero or more `<label>` entries; freeform tags chosen by the user.
+- `formSchemaRef` - only consulted on `type="task"` entries: a reference to a per-run options form, in
+  `<sibling-file>#<schemaId>` form (for example `tasks.xml.schemas.json#deploy-options`), resolved against that
+  sidecar's schemas when the file loads. Empty (the default) means the task has no options form. Ignored on every
+  other entry type.
 
 ## Notes
 
