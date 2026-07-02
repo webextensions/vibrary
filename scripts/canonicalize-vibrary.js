@@ -31,9 +31,7 @@ const sortLists = function (spec) {
 };
 
 const canonicalize = function (xml) {
-    // The file's own <metadata><type> drives output; the diff driver only sees a temp blob, so the name is unavailable.
-    const { type, entries } = parseVibraryXml(xml);
-    const fileType = type ?? 'specs';
+    const entries = parseVibraryXml(xml);
     const sorted = entries.map(function (spec) {
         return sortLists(spec);
     });
@@ -41,13 +39,13 @@ const canonicalize = function (xml) {
     // Sort entries by <title>, then by the entry's own canonical text as a deterministic tiebreak so blank or
     // duplicate titles cannot leave a residual diff.
     const keyed = sorted.map(function (spec) {
-        return { spec, key: serializeVibraryXml(fileType, [spec]) };
+        return { spec, key: serializeVibraryXml([spec]) };
     });
     keyed.sort(function (a, b) {
         return compare(a.spec.title, b.spec.title) || compare(a.key, b.key);
     });
 
-    return serializeVibraryXml(fileType, keyed.map(function (entry) {
+    return serializeVibraryXml(keyed.map(function (entry) {
         return entry.spec;
     }));
 };
@@ -63,8 +61,10 @@ const main = function () {
 
     try {
         process.stdout.write(canonicalize(xml));
-    } catch {
+    } catch (error) {
         // Malformed XML (or anything else) - fall back to the raw bytes so the diff still works and never errors out.
+        // Say so on stderr, so a systematic failure (e.g. core API drift) cannot masquerade as "already canonical".
+        process.stderr.write(`canonicalize-vibrary: falling back to raw bytes (${error.message})\n`);
         process.stdout.write(xml);
     }
 };

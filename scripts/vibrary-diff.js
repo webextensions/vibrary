@@ -23,8 +23,10 @@ const readMaybe = function (file) {
 const toCanonical = function (xml) {
     try {
         return canonicalize(xml);
-    } catch {
-        // Malformed XML - compare the raw bytes instead so we never error out.
+    } catch (error) {
+        // Malformed XML - compare the raw bytes instead so we never error out. Warn on stderr (git surfaces a diff
+        // driver's stderr) so a systematic failure cannot silently disable the reorder-insensitive behavior.
+        process.stderr.write(`vibrary-diff: comparing raw bytes (${error.message})\n`);
         return xml;
     }
 };

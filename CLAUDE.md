@@ -9,7 +9,7 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 
 - `node --run lint` - eslint (flat config, eslint-config-ironplate presets)
 - `node --run typecheck` - `tsc --noEmit -p frontend`
-- `node --run test` - `node --test frontend/src/**/*.test.js`
+- `node --run test` - `node --test frontend/src/**/*.test.js scripts/**/*.test.js`
 - `node --run build` - vite build into `dist/` (served by the Express server)
 - `npm start` - concurrently: build watcher + server with auto-reload (see `scripts/start-*.js`)
 - `node --run dev` - vite dev server alone, proxying `/api` to a separately running server on port 3000
