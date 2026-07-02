@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AccordionSection } from './AccordionSection.tsx';
 import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
-import { buildFileTree, type TreeNode } from '../fileTree.ts';
+import { buildFileTree, collectFolderPaths, type TreeNode } from '../fileTree.ts';
 import { type FileCount } from '../useFileCounts.ts';
 
 import styles from './Sidebar.module.css';
@@ -283,6 +283,13 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
+    // Every folder path in the current tree, for the "Collapse all" action below - a folder not yet seen (a fresh one
+    // from a refresh) is implicitly expanded, since `collapsed` only ever names folders explicitly toggled shut.
+    const allFolderPaths = useMemo(function () {
+        return tree.flatMap(function (node) {
+            return collectFolderPaths(node);
+        });
+    }, [tree]);
     const [collapsed, setCollapsed] = useState<Set<string>>(function () {
         return new Set();
     });
@@ -364,6 +371,13 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
             }
             return next;
         });
+    };
+
+    // Collapse every folder in the tree at once, mirroring the file explorer's own "Collapse All" convention (only
+    // that direction - not a paired "Expand all" - matches per-folder collapse being the one bulk action worth having
+    // here; opening every nested folder at once is rarely what someone wants from a deep tree).
+    const handleCollapseAll = function () {
+        setCollapsed(new Set(allFolderPaths));
     };
 
     const handleToggleFileSelect = function (path: string) {
@@ -454,6 +468,16 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
                             disabled={refreshing}
                         >
                             <RefreshIcon />
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.sidebarAction}
+                            aria-label="Collapse all folders"
+                            title="Collapse all folders"
+                            onClick={handleCollapseAll}
+                            disabled={allFolderPaths.every(function (path) { return collapsed.has(path); })}
+                        >
+                            <ChevronIcon />
                         </button>
                     </>
                 )}

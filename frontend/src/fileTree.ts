@@ -63,4 +63,15 @@ const collectFilePaths = function (node: TreeNode): string[] {
     });
 };
 
-export { buildFileTree, collectFilePaths, type FileNode, type FolderNode, type TreeNode };
+// Flattens a tree node to the paths of every folder within it, including the node itself when it is one. A leaf file
+// yields nothing. Used to bulk-collapse the sidebar's tree (its own counterpart to collectFilePaths above).
+const collectFolderPaths = function (node: TreeNode): string[] {
+    if (node.kind === 'file') {
+        return [];
+    }
+    return [node.path, ...node.children.flatMap(function (child) {
+        return collectFolderPaths(child);
+    })];
+};
+
+export { buildFileTree, collectFilePaths, collectFolderPaths, type FileNode, type FolderNode, type TreeNode };
