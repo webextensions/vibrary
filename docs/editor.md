@@ -22,16 +22,26 @@ Each entry is shown as a card with these controls:
   text; removing an existing approval is confirmed first.
 - **Content** - multi-line textarea.
 - **Notes** - multi-line textarea.
-- **Labels** - freeform creatable multi-select. Type a label and press Enter to add it; any value is allowed.
+- **Labels** - freeform creatable multi-select. Type a label and press Enter to add it; any value is allowed. In review
+  mode each label renders as a chip; clicking a chip toggles that label into (or out of) the label filter (see
+  Filtering below) as a quick "show me more/fewer like this".
 - **Relates to** - searchable multi-select shown at the bottom. Type to filter; options are the titles of all entries
   across every vibrary file in the folder (the current entry's own title is excluded). The option list refreshes
-  after a save.
+  after a save. In review mode each reference renders as a chip; clicking it opens the target entry's file (switching
+  files if needed) and scrolls to / highlights it.
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
 entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks / ideas - defaulting to the
 open file's name family) and how many; a headless agent then appends that many entries of the chosen type to the file.
 **Duplicate** on a card clones it (a fresh entry with the same content, notes, labels and relations, but its own id,
 timestamps and an unapproved state) as a starting point for a similar one. **Remove** on a card deletes that entry.
+
+## Filtering
+
+The toolbar's **Filter** button (visible once a file has entries) opens three multi-select dropdowns: **Approval
+status**, **Entry type**, and **Labels** (whose options are whatever labels are actually used in the open file). An
+entry is shown when it matches every dimension that has a selection; an empty selection in a dimension imposes no
+constraint there. A dot on the Filter button and an "X of Y shown" count both indicate when a filter is active.
 
 ## Raw tab
 
@@ -43,5 +53,5 @@ you can see it, and saving is disabled until the file is fixed (edit it outside 
 
 ## Saving
 
-The **Save** button writes the file. It always serializes the Structured model to XML (see
-[vibrary-file-format.md](vibrary-file-format.md)), regardless of which tab is active.
+The **Save** button (or Ctrl+S / Cmd+S from anywhere in the app) writes the file. It always serializes the Structured
+model to XML (see [vibrary-file-format.md](vibrary-file-format.md)), regardless of which tab is active.
