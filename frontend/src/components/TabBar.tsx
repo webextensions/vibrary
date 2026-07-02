@@ -25,7 +25,8 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
     // Explorer's one-open-menu-at-a-time kebab.
     const [menuPath, setMenuPath] = useState<string | null>(null);
 
-    // Close the open context menu on any click outside it; the menu's own buttons close it themselves before acting.
+    // Close the open context menu on any click outside it, or on Escape; the menu's own buttons close it themselves
+    // before acting.
     useEffect(function () {
         if (menuPath === null) {
             return undefined;
@@ -33,9 +34,16 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
         const handleDocumentClick = function () {
             setMenuPath(null);
         };
+        const handleKeyDown = function (event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setMenuPath(null);
+            }
+        };
         document.addEventListener('click', handleDocumentClick);
+        document.addEventListener('keydown', handleKeyDown);
         return function () {
             document.removeEventListener('click', handleDocumentClick);
+            document.removeEventListener('keydown', handleKeyDown);
         };
     }, [menuPath]);
 

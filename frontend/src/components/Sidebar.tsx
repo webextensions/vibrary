@@ -272,8 +272,9 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
     const [openEditorsOpen, setOpenEditorsOpen] = useState<boolean>(true);
     const [vibraryOpen, setVibraryOpen] = useState<boolean>(true);
 
-    // Close the open menu on any click outside it. The menu's own buttons stop propagation, so this only fires for
-    // clicks elsewhere; the toggle button also stops propagation so opening one menu does not immediately re-close it.
+    // Close the open menu on any click outside it, or on Escape. The menu's own buttons stop propagation, so the click
+    // listener only fires for clicks elsewhere; the toggle button also stops propagation so opening one menu does not
+    // immediately re-close it.
     useEffect(function () {
         if (openMenuPath === null) {
             return undefined;
@@ -281,9 +282,16 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
         const handleDocumentClick = function () {
             setOpenMenuPath(null);
         };
+        const handleKeyDown = function (event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setOpenMenuPath(null);
+            }
+        };
         document.addEventListener('click', handleDocumentClick);
+        document.addEventListener('keydown', handleKeyDown);
         return function () {
             document.removeEventListener('click', handleDocumentClick);
+            document.removeEventListener('keydown', handleKeyDown);
         };
     }, [openMenuPath]);
 
