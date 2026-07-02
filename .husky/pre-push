@@ -7,4 +7,5 @@ cd ../               # Change directory to project's root folder
 
 node --run lint
 node --run typecheck
+node --run test
 node --run build
