@@ -330,6 +330,24 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
         };
     }, [openMenuPath]);
 
+    // Escape clears the file selection, matching the app's established Escape-to-dismiss convention for other
+    // transient list-scoped state (the row "More" menu above, SpecsEditor's own entry selection). Skipped while a row
+    // menu is open, so its own Escape handler closes it first rather than also wiping the selection.
+    useEffect(function () {
+        if (selectedPaths.size === 0 || openMenuPath !== null) {
+            return undefined;
+        }
+        const handleKeyDown = function (event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setRawSelectedPaths(new Set());
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return function () {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedPaths, openMenuPath]);
+
     const handleToggleMenu = function (path: string) {
         setOpenMenuPath(function (previous) {
             return previous === path ? null : path;

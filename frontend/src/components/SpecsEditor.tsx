@@ -226,6 +226,24 @@ const SpecsEditor = function (
         };
     }, [operationsOpen]);
 
+    // Escape clears the entry selection, matching the app's established Escape-to-dismiss convention for other
+    // transient list-scoped state (the popups above, Sidebar's file selection below). Skipped while one of those
+    // popups is open, so its own Escape handler closes it first rather than also wiping the selection it operates on.
+    useEffect(function () {
+        if (selectedIds.size === 0 || menuOpen || actionsOpen || operationsOpen) {
+            return undefined;
+        }
+        const handleKeyDown = function (event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setSelectedIds(new Set());
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return function () {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedIds, menuOpen, actionsOpen, operationsOpen]);
+
     const toggleSelect = function (id: string) {
         setSelectedIds(function (previous) {
             const next = new Set(previous);
