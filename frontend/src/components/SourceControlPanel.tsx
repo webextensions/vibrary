@@ -6,6 +6,7 @@ import { confirmDialog } from '../confirmDialog.ts';
 import { promptDialog } from '../promptDialog.ts';
 import { AccordionSection } from './AccordionSection.tsx';
 import { AiIcon, DiscardIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
+import { StashSection } from './StashSection.tsx';
 
 import styles from './SourceControlPanel.module.css';
 
@@ -543,76 +544,20 @@ const SourceControlPanel = function () {
                 </section>}
             </AccordionSection>
 
-            <AccordionSection
-                title="Stashes"
+            <StashSection
+                stashes={stashes}
                 expanded={stashesOpen}
                 onToggle={function () {
                     setStashesOpen(!stashesOpen);
                 }}
-                badge={stashes.length > 0 ? <span className={styles.statusCount}>{stashes.length}</span> : undefined}
-                actions={
-                    <button
-                        type="button"
-                        className={styles.iconButton}
-                        aria-label="Stash all current changes"
-                        title={totalChanged === 0 ? 'No changes to stash' : 'Stash all current changes'}
-                        onClick={handleStashSave}
-                        disabled={busy || totalChanged === 0}
-                    >
-                        {stashing ? <span className={styles.spinner} role="status" aria-label="Stashing" /> : <PlusIcon />}
-                    </button>
-                }
-            >
-                {stashes.length === 0 && <p className={styles.message}>No stashes.</p>}
-                {stashes.length > 0 &&
-                <ul className={styles.fileList}>
-                    {stashes.map(function (stash) {
-                        return (
-                            <li key={stash.index} className={styles.stashRow}>
-                                <span className={styles.stashIndex}>{stash.index}</span>
-                                <span className={styles.stashMessage} title={`stash@{${stash.index}} - ${stash.message} (${new Date(stash.date).toLocaleString()})`}>
-                                    {stash.message}
-                                </span>
-                                <span className={styles.stashActions}>
-                                    <button
-                                        type="button"
-                                        className={styles.stashAction}
-                                        title="Apply this stash, keeping it in the list"
-                                        disabled={busy}
-                                        onClick={function () {
-                                            handleStashApply(stash);
-                                        }}
-                                    >
-                                        Apply
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={styles.stashAction}
-                                        title="Apply this stash and remove it from the list"
-                                        disabled={busy}
-                                        onClick={function () {
-                                            handleStashPop(stash);
-                                        }}
-                                    >
-                                        Pop
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={styles.stashAction}
-                                        title="Delete this stash"
-                                        disabled={busy}
-                                        onClick={function () {
-                                            void handleStashDrop(stash);
-                                        }}
-                                    >
-                                        Drop
-                                    </button>
-                                </span>
-                            </li>
-                        );
-                    })}
-                </ul>}
-            </AccordionSection>
+                busy={busy}
+                stashing={stashing}
+                totalChanged={totalChanged}
+                onStashSave={handleStashSave}
+                onStashApply={handleStashApply}
+                onStashPop={handleStashPop}
+                onStashDrop={handleStashDrop}
+            />
 
             <AccordionSection
                 title="Commit"
