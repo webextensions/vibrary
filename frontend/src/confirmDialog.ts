@@ -55,6 +55,13 @@ const confirmDialog = function (message: string, confirmLabel: string): Promise<
         container.closest('dialog')?.addEventListener('close', function () {
             finish(false);
         });
+
+        // Without an explicit focus, the native <dialog> focuses the first focusable descendant in tree order - the
+        // Cancel button, since it is appended before Confirm - so Enter would cancel instead of confirm. Focusing
+        // Confirm here matches promptDialog's own input-focus behavior and the platform's native confirm() dialog,
+        // where Enter performs the affirmative action; pressing Enter on a focused <button> triggers its click by
+        // default, so no separate keydown handler is needed.
+        confirmButton.focus();
     });
 };
 
