@@ -11,6 +11,42 @@ import styles from './ResponsiveDialog.module.css';
 // Below this width the dialog goes fullscreen, matching the web-app-template's ResponsiveDialog breakpoint.
 const FULLSCREEN_MEDIA_QUERY = '(max-width: 599.95px)';
 
+// Elements a keyboard user can land on, for both the initial auto-focus and the Tab trap below. Excludes anything with
+// tabindex="-1" (programmatically focusable but deliberately skipped in tab order).
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const getFocusableElements = function (container: HTMLElement): HTMLElement[] {
+    return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+};
+
+// Confirm/prompt dialogs (confirmDialog.ts, promptDialog.ts) get focus-trapping and focus-restoration for free from the
+// native <dialog> element they are built on. ResponsiveDialog predates that and renders its own portal instead, so it
+// has to do both by hand: move focus into the panel when it opens, keep Tab/Shift+Tab cycling within it while open, and
+// give focus back to whatever had it beforehand once it closes - otherwise a keyboard user can Tab straight through to
+// background content while the dialog is supposedly modal.
+const useFocusTrap = function (isOpen: boolean, panelReference: { current: HTMLDivElement | null }): void {
+    useEffect(function () {
+        if (!isOpen) {
+            return undefined;
+        }
+        const previouslyFocused = document.activeElement;
+        const frame = requestAnimationFrame(function () {
+            const panel = panelReference.current;
+            if (panel === null) {
+                return;
+            }
+            const [firstFocusable] = getFocusableElements(panel);
+            (firstFocusable ?? panel).focus({ preventScroll: true });
+        });
+        return function () {
+            cancelAnimationFrame(frame);
+            if (previouslyFocused instanceof HTMLElement) {
+                previouslyFocused.focus({ preventScroll: true });
+            }
+        };
+    }, [isOpen, panelReference]);
+};
+
 // Lock body scroll while the dialog is open so the page behind it stays put, restoring the previous value on close.
 const useBodyScrollLock = function (isLocked: boolean): void {
     useEffect(function () {
@@ -68,6 +104,7 @@ const ResponsiveDialog = function ({
     const titleId = useId();
 
     useBodyScrollLock(open);
+    useFocusTrap(open, panelReference);
 
     useEffect(function () {
         if (!open) {
@@ -76,6 +113,29 @@ const ResponsiveDialog = function ({
         const handleKeyDown = function (event: KeyboardEvent) {
             if (event.key === 'Escape') {
                 onClose();
+                return;
+            }
+            // Keep Tab/Shift+Tab cycling within the panel instead of escaping to background content.
+            if (event.key !== 'Tab') {
+                return;
+            }
+            const panel = panelReference.current;
+            if (panel === null) {
+                return;
+            }
+            const focusable = getFocusableElements(panel);
+            if (focusable.length === 0) {
+                event.preventDefault();
+                return;
+            }
+            const first = focusable[0];
+            const last = focusable.at(-1) as HTMLElement;
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -165,6 +225,7 @@ const ResponsiveDialog = function ({
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby={title ? titleId : undefined}
+                    tabIndex={-1}
                 >
                     {panelInner}
                 </div>
@@ -178,6 +239,7 @@ const ResponsiveDialog = function ({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={title ? titleId : undefined}
+                tabIndex={-1}
             >
                 {panelInner}
             </div>
