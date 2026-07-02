@@ -668,6 +668,7 @@ const App = function () {
                                     <button
                                         type="button"
                                         className={styles.save}
+                                        title={activeTab.dirty ? 'Save (Ctrl+S)' : 'Saved'}
                                         onClick={onSave}
                                         disabled={activeTab.status.kind === 'saving' || !activeTab.dirty || activeTab.parseError !== null}
                                     >
