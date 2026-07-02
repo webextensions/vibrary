@@ -399,7 +399,7 @@ const createFilesRouter = function ({ cwd }) {
     // Run a headless "claude -p" agent that makes the codebase conform to several selected specs in a single run.
     // Like /apply, project-scoped: the entries' text is sent in the body and acted on against the whole project (cwd).
     router.post('/apply-batch', function (request, response) {
-        const { entries } = request.body || {};
+        const { entries, instructions } = request.body || {};
         if (!Array.isArray(entries) || entries.length === 0) {
             return sendErrorResponse(response, 400, 'Expected a non-empty "entries" array');
         }
@@ -421,6 +421,7 @@ const createFilesRouter = function ({ cwd }) {
                         notes: typeof entry.notes === 'string' ? entry.notes : ''
                     };
                 }),
+                instructions: typeof instructions === 'string' ? instructions : '',
                 signal,
                 onLine
             });

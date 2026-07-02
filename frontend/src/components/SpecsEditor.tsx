@@ -7,12 +7,14 @@ import { useActivityQueue } from '../activityQueue.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
+import { promptDialog } from '../promptDialog.ts';
 import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, type Spec } from '../vibraryXml.ts';
 
 import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from './Icons.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 
+import formStyles from './forms.module.css';
 import styles from './SpecsEditor.module.css';
 
 type Option = { value: string; label: string };
@@ -143,8 +145,11 @@ const SpecsEditor = function (
     }, [highlightMatchId, highlightQuery]);
 
     // The "Actions" popup above the footer: whether it is open. A batch apply is queued on the activity monitor, which
-    // owns its progress and errors, so the popup itself holds no in-flight state.
+    // owns its progress and errors once running; the popup's own state is just the optional custom-instructions
+    // prompt, mirroring RunActionSection's single-card "Provide custom one time instructions" flow.
     const [actionsOpen, setActionsOpen] = useState(false);
+    const [useCustomInstructions, setUseCustomInstructions] = useState(false);
+    const [applyingBatch, setApplyingBatch] = useState(false);
     const actionsReference = useRef<HTMLDivElement>(null);
 
     // The "Operations" popup above the footer: bulk approve / remove-approval / delete over the selected entries.
@@ -406,11 +411,27 @@ const SpecsEditor = function (
     });
 
     // Queue the backend's headless agent over every applicable selected spec as one combined "claude -p" job on the
-    // activity monitor (its stdout is logged to the browser console for debugging). The popup closes as soon as the
-    // job is enqueued; progress and any error live in the activity monitor.
+    // activity monitor (its stdout is logged to the browser console for debugging). When "Provide custom one time
+    // instructions" is ticked, prompt first (mirroring the single-card flow) and fold the entered text into the batch
+    // prompt; cancelling aborts without enqueueing. The popup closes as soon as the job is enqueued; progress and any
+    // error live in the activity monitor.
     const handleApplyChanges = async function () {
-        if (applicableSpecs.length === 0) {
+        if (applicableSpecs.length === 0 || applyingBatch) {
             return;
+        }
+        let instructions = '';
+        if (useCustomInstructions) {
+            setApplyingBatch(true);
+            const entered = await promptDialog({
+                message: 'Custom one-time instructions for this run:',
+                placeholder: 'e.g. focus on the backend only, skip tests',
+                confirmLabel: 'Apply changes'
+            });
+            setApplyingBatch(false);
+            if (entered === null) {
+                return;
+            }
+            instructions = entered;
         }
         const entries = applicableSpecs.map(function (spec) {
             return { title: spec.title, content: spec.content, notes: spec.notes };
@@ -420,13 +441,16 @@ const SpecsEditor = function (
         for (const spec of applicableSpecs) {
             promptParts.push(`- ${spec.title}`);
         }
+        if (instructions !== '') {
+            promptParts.push('', 'Instructions:', instructions);
+        }
         const label = `${count} ${count === 1 ? 'spec' : 'specs'}`;
         const promise = enqueue({
             kind: 'apply-batch',
             label,
             prompt: promptParts.join('\n'),
             run: function (signal, onEvent) {
-                return applySpecs(entries, { signal, onEvent });
+                return applySpecs(entries, instructions, { signal, onEvent });
             }
         });
         // Close the popup right away (synchronously, before the await); progress lives in the activity monitor. The
@@ -662,10 +686,20 @@ const SpecsEditor = function (
                                 return <li key={spec.id}>{spec.title || '(untitled)'}</li>;
                             })}
                         </ul>
+                        <label className={formStyles.checkbox}>
+                            <input
+                                type="checkbox"
+                                checked={useCustomInstructions}
+                                onChange={function (changeEvent) {
+                                    setUseCustomInstructions(changeEvent.target.checked);
+                                }}
+                            />
+                            Provide custom one time instructions
+                        </label>
                         <button
                             type="button"
                             className={styles.aiSubmit}
-                            disabled={applicableSpecs.length === 0}
+                            disabled={applicableSpecs.length === 0 || applyingBatch}
                             onClick={handleApplyChanges}
                         >
                             Apply changes

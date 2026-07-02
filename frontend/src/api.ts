@@ -197,9 +197,10 @@ const runTask = function (task: { title: string; content: string; notes: string;
 
 // Runs the backend's headless AI agent to make the codebase conform to several selected specs in a single run, editing
 // files directly and streaming its activity through `options.onEvent`. Resolves with the run's final result text once
-// the agent finishes.
-const applySpecs = function (entries: { title: string; content: string; notes: string }[], options: StreamOptions): Promise<string> {
-    return streamClaude('/api/apply-batch', { entries }, options);
+// the agent finishes. `instructions` carries optional custom one-time guidance for the whole batch, the bulk
+// counterpart of applySpec's own `instructions`; folded into the agent's prompt when non-empty.
+const applySpecs = function (entries: { title: string; content: string; notes: string }[], instructions: string, options: StreamOptions): Promise<string> {
+    return streamClaude('/api/apply-batch', { entries, instructions }, options);
 };
 
 // Continues a finished activity as a chat by resuming its claude session with a follow-up message, streaming the reply
