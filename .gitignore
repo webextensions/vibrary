@@ -146,3 +146,7 @@ vite.config.ts.timestamp-*
 
 # vibrary machine-local per-project settings (remembered task options, notification toggles)
 .vibrary/settings.local.json
+
+# Claude Code: machine-local overrides and the ralph-loop plugin's transient per-session state
+.claude/settings.local.json
+.claude/ralph-loop.local.md
