@@ -8,7 +8,7 @@ import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
 import { promptDialog } from '../promptDialog.ts';
-import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, type Spec } from '../vibraryXml.ts';
+import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../vibraryXml.ts';
 
 import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from './Icons.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
@@ -296,7 +296,7 @@ const SpecsEditor = function (
     const cloneSpec = function (source: Spec, now: string): Spec {
         return {
             ...source,
-            id: crypto.randomUUID(),
+            id: randomId(),
             title: source.title === '' ? '' : `${source.title}-copy`,
             approved: '',
             created: now,

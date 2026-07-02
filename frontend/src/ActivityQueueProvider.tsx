@@ -3,6 +3,7 @@ import { type ReactNode, useRef, useState } from 'react';
 import { chatContinue } from './api.ts';
 import { type ActivityQueue, ActivityQueueContext, type Job, type JobSpec, type JobStatus } from './activityQueue.ts';
 import { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, removeItem, type TranscriptItem, type TranscriptState } from './activityStream.ts';
+import { randomId } from './vibraryXml.ts';
 
 // In-memory job queue for every "claude -p" action triggered from the UI (run task, apply spec, apply a batch,
 // generate, derive a title). The queue runs strictly one job at a time: an empty queue starts immediately, otherwise a
@@ -213,7 +214,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
 
     const enqueue = function (spec: JobSpec): Promise<string> {
         const job: Job = {
-            id: crypto.randomUUID(),
+            id: randomId(),
             kind: spec.kind,
             label: spec.label,
             status: 'queued',
@@ -341,7 +342,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         if (!target || target.sessionId === null) {
             return;
         }
-        const messageId = `user:${crypto.randomUUID()}`;
+        const messageId = `user:${randomId()}`;
         pushUserMessage(id, text, messageId);
         const pending = pendingReference.current.get(id) ?? [];
         pending.push({ id: messageId, text });

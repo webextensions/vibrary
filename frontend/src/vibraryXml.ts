@@ -85,5 +85,7 @@ export {
     type Spec
 };
 
-// Pure pass-through (no retyping needed), so re-export it straight from the core.
-export { nowTimestamp } from './vibraryXmlCore.js';
+// Pure pass-throughs (no retyping needed), so re-export them straight from the core. randomId is the guarded id
+// minter every call site must use instead of bare crypto.randomUUID, which is undefined over plain HTTP on a LAN
+// address (the phone case).
+export { nowTimestamp, randomId } from './vibraryXmlCore.js';

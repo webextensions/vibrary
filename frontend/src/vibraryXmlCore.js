@@ -106,8 +106,9 @@ const hashContent = function (spec) {
 /* eslint-enable no-bitwise, @stylistic/no-mixed-operators, unicorn/prefer-code-point */
 
 // crypto.randomUUID is only exposed in secure contexts (https or localhost); when the UI is opened over plain HTTP on a
-// LAN address (for example from a phone), it is undefined. These ids are client-only React keys that are never
-// serialized, so fall back to a non-cryptographic unique-enough id rather than letting the parse throw.
+// LAN address (for example from a phone), it is undefined. These ids are client-only identity keys (entry ids, job ids,
+// chat-message ids) that are never serialized, so fall back to a non-cryptographic unique-enough id rather than
+// throwing. Exported so every id-minting call site shares this guard instead of calling crypto.randomUUID bare.
 const randomId = function () {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
         return crypto.randomUUID();
@@ -243,5 +244,6 @@ export {
     hashContent,
     nowTimestamp,
     parseVibraryXml,
+    randomId,
     serializeVibraryXml
 };
