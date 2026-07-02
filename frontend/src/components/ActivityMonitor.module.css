@@ -110,6 +110,12 @@
     color: #656d76;
 }
 
+.settings-error {
+    margin: 0;
+    color: #cf222e;
+    font-size: 12px;
+}
+
 .settings-row {
     display: flex;
     align-items: center;

@@ -23,7 +23,12 @@ type SettingsStore = {
     // there is nothing to reset.
     hasStoredTaskOptions: boolean;
     // Drop every task's remembered options in one call, mirroring resetNotifications above.
-    resetAllTaskOptions: () => void
+    resetAllTaskOptions: () => void;
+    // The debounced write-to-disk's error message, or null once a write has since succeeded (or none has failed yet).
+    // Every other feature that persists user intent (SourceControlPanel's actions, ActivityQueue jobs) surfaces a
+    // visible error on failure; a toggled notification preference or remembered task-options form should too, rather
+    // than silently diverging from what is actually on disk.
+    saveError: string | null
 };
 
 const SettingsContext = createContext<SettingsStore | null>(null);

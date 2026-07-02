@@ -120,7 +120,7 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry 
 // outside click or Escape, matching every other popup in the app (Sidebar/TabBar menus, SpecsEditor's
 // speed-dial/Operations/Actions popups).
 const NotificationSettingsMenu = function () {
-    const { isKindEnabled, setKindEnabled, resetNotifications, hasStoredTaskOptions, resetAllTaskOptions } = useSettings();
+    const { isKindEnabled, setKindEnabled, resetNotifications, hasStoredTaskOptions, resetAllTaskOptions, saveError } = useSettings();
     const [open, setOpen] = useState(false);
     const wrapReference = useRef<HTMLDivElement>(null);
 
@@ -163,6 +163,8 @@ const NotificationSettingsMenu = function () {
             </button>
             {open &&
             <div className={styles.settingsPanel}>
+                {saveError !== null &&
+                <p className={styles.settingsError}>Failed to save settings: {saveError}</p>}
                 <p className={styles.settingsHeading}>Notify when an activity starts</p>
                 {(Object.keys(KIND_META) as JobKind[]).map(function (kind) {
                     return (

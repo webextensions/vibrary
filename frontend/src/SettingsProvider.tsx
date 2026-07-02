@@ -16,6 +16,7 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
         return normalizeSettings({});
     });
     const [loaded, setLoaded] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
     // Mirrors `settings` for the mutators, which fold updates off the latest snapshot without re-reading async state.
     const latestReference = useRef<AppSettings>(settings);
     const saveTimerReference = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,9 +60,15 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
         }
         saveTimerReference.current = setTimeout(function () {
             saveTimerReference.current = null;
-            void saveSettings(next).catch(function (error) {
-                console.error('[vibrary] failed to save settings:', error);
-            });
+            void (async function () {
+                try {
+                    await saveSettings(next);
+                    setSaveError(null);
+                } catch (error) {
+                    console.error('[vibrary] failed to save settings:', error);
+                    setSaveError((error as Error).message);
+                }
+            })();
         }, SAVE_DEBOUNCE_MS);
     };
 
@@ -100,7 +107,8 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
             persist(function (previous) {
                 return { ...previous, taskOptions: {} };
             });
-        }
+        },
+        saveError
     };
 
     return <SettingsContext value={store}>{children}</SettingsContext>;
