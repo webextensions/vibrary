@@ -88,7 +88,7 @@ type LeftPanelProperties = {
     // Activity monitor: open a job's detail editor tab when its row is clicked.
     onOpenActivity: (jobId: string, title: string) => void;
     // Search: open the file holding a clicked match and ask the editor to scroll to / highlight it.
-    onOpenMatch: (name: string, query: string) => void;
+    onOpenMatch: (name: string, query: string, matchIndex: number) => void;
     // Responsive wrapper state, owned by App: the mobile drawer's open flag and the desktop collapse flag, plus the
     // callbacks that toggle the collapse (per breakpoint) or force the panel expanded.
     open: boolean;

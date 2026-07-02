@@ -75,9 +75,10 @@ const App = function () {
     // the one-time restore has run, so the initial empty tab list never overwrites a stored session.
     const [workspaceCwd, setWorkspaceCwd] = useState<string | null>(null);
     const [sessionReady, setSessionReady] = useState<boolean>(false);
-    // The file + query from a clicked Search result, so the open file's editor can scroll to / highlight the matching
-    // entry. Cleared to null once consumed isn't necessary - the editor only acts when it matches the active tab.
-    const [searchTarget, setSearchTarget] = useState<{ path: string; query: string } | null>(null);
+    // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
+    // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
+    // necessary - the editor only acts when it matches the active tab.
+    const [searchTarget, setSearchTarget] = useState<{ path: string; query: string; matchIndex: number } | null>(null);
 
     const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab } =
         useOpenTabs();
@@ -519,17 +520,19 @@ const App = function () {
         applyCollapsed(false);
     }, [applyCollapsed]);
 
-    // Open the file holding a clicked Search match and remember the query, so the editor scrolls to / highlights the
-    // first matching entry once the tab is active.
-    const handleOpenMatch = useCallback(function (name: string, query: string) {
+    // Open the file holding a clicked Search match and remember its query and index among that file's matches, so the
+    // editor scrolls to / highlights the corresponding entry (not always the first one that matches) once the tab is
+    // active.
+    const handleOpenMatch = useCallback(function (name: string, query: string, matchIndex = 0) {
         openOrFocus(name);
-        setSearchTarget({ path: name, query });
+        setSearchTarget({ path: name, query, matchIndex });
         setDrawerOpen(false);
     }, [openOrFocus]);
 
     // Open the entry a clicked "Relates to" chip points at: resolve its title to a file via titleIndex, then reuse the
-    // same open+scroll+highlight mechanism as a clicked Search result. A silent no-op for a stale reference (the
-    // target entry was renamed or removed since the "Relates to" was set) - there is nothing sensible to navigate to.
+    // same open+scroll+highlight mechanism as a clicked Search result (its title is unique enough that the first match
+    // is always the right one). A silent no-op for a stale reference (the target entry was renamed or removed since the
+    // "Relates to" was set) - there is nothing sensible to navigate to.
     const handleOpenRelated = useCallback(function (title: string) {
         const entry = titleIndex.find(function (candidate) {
             return candidate.title === title;
@@ -705,6 +708,7 @@ const App = function () {
                                         schemas={activeTab.schemas}
                                         allTitles={allTitles}
                                         highlightQuery={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.query : undefined}
+                                        highlightMatchIndex={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.matchIndex : 0}
                                         onChange={onSpecsChange}
                                         onGenerate={handleGenerate}
                                         onOpenRelated={handleOpenRelated}

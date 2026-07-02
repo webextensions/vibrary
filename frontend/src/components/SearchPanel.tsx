@@ -39,8 +39,10 @@ const highlight = function (text: string, query: string): ReactNode {
 };
 
 // Full-text search across the included vibrary files. Results are grouped by file; clicking a match opens the file and
-// asks the editor to scroll to / highlight the first matching entry (see App's searchTarget wiring).
-const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, query: string) => void }) {
+// asks the editor to scroll to / highlight the corresponding entry (see App's searchTarget wiring). The match's index
+// within its file's result list is passed along, so distinct matches in the same file resolve to distinct entries
+// instead of every match landing on whichever entry happens to match first.
+const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, query: string, matchIndex: number) => void }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchFileResult[]>([]);
     const [truncated, setTruncated] = useState(false);
@@ -168,14 +170,14 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                         <li key={file.path} className={styles.fileGroup}>
                             <p className={styles.filePath} title={file.path}>{file.path}</p>
                             <ul className={styles.matchList}>
-                                {file.matches.map(function (match) {
+                                {file.matches.map(function (match, matchIndex) {
                                     return (
                                         <li key={match.line}>
                                             <button
                                                 type="button"
                                                 className={styles.matchRow}
                                                 onClick={function () {
-                                                    onOpenMatch(file.path, searchedQuery);
+                                                    onOpenMatch(file.path, searchedQuery, matchIndex);
                                                 }}
                                             >
                                                 <span className={styles.lineNumber}>{match.line}</span>

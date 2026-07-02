@@ -25,9 +25,13 @@ type SpecsEditorProperties = {
     // Resolved option-form schemas for this file's entries, keyed by formSchemaRef; forwarded to each SpecCard.
     schemas: SchemaMap;
     allTitles: string[];
-    // A Search query whose first matching entry the editor scrolls to and briefly highlights. Set when this file was
-    // opened from a Search result; undefined otherwise.
+    // A Search query whose matching entry the editor scrolls to and briefly highlights. Set when this file was opened
+    // from a Search result; undefined otherwise.
     highlightQuery?: string;
+    // Which of the (possibly several) entries matching highlightQuery to land on: 0 for the first, 1 for the second,
+    // and so on, matching the position of the clicked row within that file's Search results. Ignored when
+    // highlightQuery is unset; defaults to 0 (the "Relates to" chip navigation path, whose title match is unique).
+    highlightMatchIndex?: number;
     onChange: (next: Spec[]) => void;
     // Generates the requested number of entries of the given type via the backend AI agent and refreshes the file.
     // Rejects on failure so the dialog can surface the error.
@@ -79,7 +83,7 @@ const TYPE_FILTER_OPTIONS: Option[] = ENTRY_TYPES.map(function (type) {
 });
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, highlightQuery, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
+    { defaultEntryType, specs, schemas, allTitles, highlightQuery, highlightMatchIndex, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -98,18 +102,24 @@ const SpecsEditor = function (
     // Id of the entry briefly ring-highlighted after the file was opened from a Search result; cleared on a timer.
     const [highlightId, setHighlightId] = useState<string | null>(null);
 
-    // The id of the first entry whose title/content/notes contains the search query, or null when there is no query or
-    // no match. Drives both the scroll-to target and keeping that entry visible even under an active filter.
+    // The id of the entry at highlightMatchIndex among those whose title/content/notes contain the search query, or
+    // null when there is no query or no match. An index past the last match clamps to the last one, so a stale index
+    // (entries changed since the search ran) still lands somewhere sensible rather than nowhere. Drives both the
+    // scroll-to target and keeping that entry visible even under an active filter.
     const highlightMatchId = useMemo(function () {
         const needle = highlightQuery?.trim().toLowerCase();
         if (!needle) {
             return null;
         }
-        const found = specs.find(function (spec) {
+        const matches = specs.filter(function (spec) {
             return `${spec.title}\n${spec.content}\n${spec.notes}`.toLowerCase().includes(needle);
         });
-        return found ? found.id : null;
-    }, [highlightQuery, specs]);
+        if (matches.length === 0) {
+            return null;
+        }
+        const index = Math.min(highlightMatchIndex ?? 0, matches.length - 1);
+        return matches[index].id;
+    }, [highlightQuery, highlightMatchIndex, specs]);
 
     // When a match is found, scroll its card into view and ring-highlight it for a couple of seconds so the user can
     // spot the entry the search result pointed at. The card's id is set in SpecCard.
