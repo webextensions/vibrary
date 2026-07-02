@@ -288,7 +288,7 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
                     <textarea
                         className={styles.composerInput}
                         value={draft}
-                        placeholder="Continue this activity as a chat..."
+                        placeholder="Continue this activity as a chat... (Ctrl+Enter to send)"
                         rows={2}
                         onChange={function (event) { setDraft(event.target.value); }}
                         onKeyDown={function (event) {
@@ -299,7 +299,7 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
                             handleSend();
                         }}
                     />
-                    <button type="button" className={styles.action} disabled={draft.trim() === ''} onClick={handleSend}>
+                    <button type="button" className={styles.action} title="Send (Ctrl+Enter)" disabled={draft.trim() === ''} onClick={handleSend}>
                         Send
                     </button>
                 </div>
