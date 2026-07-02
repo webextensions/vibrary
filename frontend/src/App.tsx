@@ -429,6 +429,26 @@ const App = function () {
         }
     }, [activeTab, patchTab, markCounted]);
 
+    // Ctrl+S / Cmd+S saves the active file, matching every other text editor. Prevents the browser's own "Save Page
+    // As" first, so it never fires even when there is nothing to save. Mirrors the toolbar Save button's own guard
+    // (dirty, not already saving, no parse error) so the shortcut cannot double-save or "succeed" on a broken file.
+    useEffect(function () {
+        const handleKeyDown = function (event: KeyboardEvent) {
+            if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') {
+                return;
+            }
+            event.preventDefault();
+            if (activeTab === null || activeTab.kind !== 'file' || !activeTab.dirty || activeTab.parseError !== null || activeTab.status.kind === 'saving') {
+                return;
+            }
+            void onSave();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return function () {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [activeTab, onSave]);
+
     // Generate entries of the chosen type with the backend AI agent, then refresh the editor from disk. The agent reads
     // the file from disk, so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile).
     const handleGenerate = useCallback(async function (type: EntryType, count: number) {
