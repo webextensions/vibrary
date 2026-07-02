@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
@@ -7,10 +7,10 @@ import { useActivityQueue } from '../activityQueue.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
-import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPE_BY_FAMILY, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, type Spec } from '../vibraryXml.ts';
+import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, type Spec } from '../vibraryXml.ts';
 
 import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from './Icons.tsx';
-import { ResponsiveDialog } from './ResponsiveDialog.tsx';
+import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 
 import styles from './SpecsEditor.module.css';
@@ -70,15 +70,6 @@ const TYPE_LABELS: Record<EntryType, string> = {
 // when matching.
 const TYPE_FILTER_OPTIONS: Option[] = ENTRY_TYPES.map(function (type) {
     return { value: type, label: TYPE_LABELS[type] };
-});
-
-// Default and bounds for the "how many" input; the backend enforces the same upper bound.
-const DEFAULT_GENERATE_COUNT = 3;
-const MAX_GENERATE_COUNT = 50;
-
-// Options for the "what to create" dropdown: the family label (plural) maps to the singular entry type written to file.
-const CREATE_TYPE_OPTIONS: { value: EntryType; label: string }[] = Object.entries(ENTRY_TYPE_BY_FAMILY).map(function ([family, entryType]) {
-    return { value: entryType, label: family };
 });
 
 const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, highlightQuery, onChange, onGenerate, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange }: SpecsEditorProperties) {
@@ -141,15 +132,10 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
     const [operationsOpen, setOperationsOpen] = useState(false);
     const operationsReference = useRef<HTMLDivElement>(null);
 
-    // The "+" button expands into a speed-dial menu offering manual vs AI entry creation; the AI choice opens a dialog.
+    // The "+" button expands into a speed-dial menu offering manual vs AI entry creation; the AI choice opens
+    // CreateEntriesDialog, which owns its own form state.
     const [menuOpen, setMenuOpen] = useState(false);
     const [aiDialogOpen, setAiDialogOpen] = useState(false);
-    // The "Create entries with AI" form: what type and how many to request, whether a run is in flight, and the last
-    // run's error.
-    const [generateType, setGenerateType] = useState<EntryType>(defaultEntryType);
-    const [generateCount, setGenerateCount] = useState(DEFAULT_GENERATE_COUNT);
-    const [generating, setGenerating] = useState(false);
-    const [generateError, setGenerateError] = useState<string | null>(null);
     const speedDialReference = useRef<HTMLDivElement>(null);
 
     // While the speed-dial menu is open, collapse it on an outside click or Escape so it behaves like a popup.
@@ -304,27 +290,6 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
                 textarea.focus({ preventScroll: true });
             }
         });
-    };
-
-    const openAiDialog = function () {
-        setGenerateType(defaultEntryType);
-        setGenerateCount(DEFAULT_GENERATE_COUNT);
-        setGenerateError(null);
-        setAiDialogOpen(true);
-    };
-
-    const handleGenerateSubmit = async function (event: FormEvent) {
-        event.preventDefault();
-        setGenerating(true);
-        setGenerateError(null);
-        try {
-            await onGenerate(generateType, generateCount);
-            setAiDialogOpen(false);
-        } catch (error) {
-            setGenerateError((error as Error).message);
-        } finally {
-            setGenerating(false);
-        }
     };
 
     // A spec matches when its approval state is among the selected statuses AND its type is among the selected types.
@@ -611,7 +576,7 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
                             className={styles.speedDialAction}
                             onClick={function () {
                                 setMenuOpen(false);
-                                openAiDialog();
+                                setAiDialogOpen(true);
                             }}
                         >
                             <AiIcon /><span>Create entries with AI</span>
@@ -646,61 +611,14 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
                 </div>
             </div>}
 
-            <ResponsiveDialog
-                open={aiDialogOpen}
+            {aiDialogOpen &&
+            <CreateEntriesDialog
                 onClose={function () {
-                    // A run edits files on disk, so block dismissal until it finishes rather than leaving it orphaned.
-                    if (!generating) {
-                        setAiDialogOpen(false);
-                    }
+                    setAiDialogOpen(false);
                 }}
-                title="Create entries with AI"
-                closable={generating ? 'disabled' : true}
-                draggable
-                noPrimaryButton
-            >
-                <form className={styles.aiForm} onSubmit={handleGenerateSubmit}>
-                    <label className={styles.aiField} htmlFor="ai-entry-type">
-                        What to create:
-                        <select
-                            id="ai-entry-type"
-                            value={generateType}
-                            disabled={generating}
-                            onChange={function (changeEvent) {
-                                setGenerateType(changeEvent.target.value as EntryType);
-                            }}
-                        >
-                            {CREATE_TYPE_OPTIONS.map(function (option) {
-                                return <option key={option.value} value={option.value}>{option.label}</option>;
-                            })}
-                        </select>
-                    </label>
-                    <label className={styles.aiField} htmlFor="ai-entry-count">
-                        How many:
-                        <input
-                            id="ai-entry-count"
-                            type="number"
-                            min={1}
-                            max={MAX_GENERATE_COUNT}
-                            value={generateCount}
-                            disabled={generating}
-                            onChange={function (changeEvent) {
-                                setGenerateCount(changeEvent.target.valueAsNumber);
-                            }}
-                        />
-                    </label>
-                    {generateError !== null && <p className={styles.aiError}>{generateError}</p>}
-                    <button
-                        type="submit"
-                        className={styles.aiSubmit}
-                        disabled={generating || !Number.isSafeInteger(generateCount) || generateCount < 1 || generateCount > MAX_GENERATE_COUNT}
-                    >
-                        {generating ?
-                            <span className={styles.aiSpinner} role="status" aria-label="Generating" /> :
-                            'Create'}
-                    </button>
-                </form>
-            </ResponsiveDialog>
+                defaultEntryType={defaultEntryType}
+                onGenerate={onGenerate}
+            />}
         </div>
     );
 };
