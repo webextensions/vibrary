@@ -168,6 +168,16 @@ describe('approvalState', function () {
         const spec = { content: 'x-edited', approved: hashContent({ content: 'x' }) };
         assert.equal(approvalState(spec), 'stale');
     });
+
+    // The parser trims edge whitespace and XML normalizes CRLF, so an approval hashed against the raw textarea value
+    // would go stale on the next reload without any edit. hashContent normalizes the same way to keep the invariant.
+    it('stays "current" across a save/load round trip for content with edge whitespace or CRLF', function () {
+        for (const content of ['approved text\n', '    indented\nend', 'a\r\nb', 'plain']) {
+            const spec = { title: 't', content, approved: hashContent({ content }), contentHash: hashContent({ content }), type: 'spec', createdBy: '', relatesTo: [], notes: '', formSchemaRef: '', labels: [], created: '', updated: '', updatedBy: '' };
+            const [reloaded] = parseVibraryXml(serializeVibraryXml([spec]));
+            assert.equal(approvalState(reloaded), 'current', `content ${JSON.stringify(content)} went ${approvalState(reloaded)}`);
+        }
+    });
 });
 
 describe('countApprovedSpecs', function () {
