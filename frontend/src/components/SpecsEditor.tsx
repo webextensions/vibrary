@@ -39,7 +39,11 @@ type SpecsEditorProperties = {
     onStatusFilterChange: (next: Option[]) => void;
     // Selected entry-type filters, owned by App alongside statusFilter.
     typeFilter: Option[];
-    onTypeFilterChange: (next: Option[]) => void
+    onTypeFilterChange: (next: Option[]) => void;
+    // Selected label filters, owned by App alongside statusFilter/typeFilter. Options are derived from whatever labels
+    // are actually present on this file's entries (labels are freeform, unlike the fixed status/type enums).
+    labelFilter: Option[];
+    onLabelFilterChange: (next: Option[]) => void
 };
 
 // Human-readable label per approval state, shown as the filter option text.
@@ -72,7 +76,10 @@ const TYPE_FILTER_OPTIONS: Option[] = ENTRY_TYPES.map(function (type) {
     return { value: type, label: TYPE_LABELS[type] };
 });
 
-const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, highlightQuery, onChange, onGenerate, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange }: SpecsEditorProperties) {
+const SpecsEditor = function (
+    { defaultEntryType, specs, schemas, allTitles, highlightQuery, onChange, onGenerate, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
+    SpecsEditorProperties
+) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
     // ones the user explicitly clicks "Edit" on) appear here.
     const [editingIds, setEditingIds] = useState<Set<string>>(function () {
@@ -292,19 +299,41 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
         });
     };
 
-    // A spec matches when its approval state is among the selected statuses AND its type is among the selected types.
-    // An empty selection in either dimension imposes no constraint there.
+    // A spec matches when its approval state is among the selected statuses, its type is among the selected types, AND
+    // it carries at least one of the selected labels. An empty selection in any dimension imposes no constraint there.
     const selectedKeys = new Set(statusFilter.map(function (option) {
         return option.value;
     }));
     const selectedTypeKeys = new Set(typeFilter.map(function (option) {
         return option.value;
     }));
+    const selectedLabelKeys = new Set(labelFilter.map(function (option) {
+        return option.value;
+    }));
     const isFilterMatch = function (spec: Spec): boolean {
         const isStatusMatch = selectedKeys.size === 0 || selectedKeys.has(approvalState(spec));
         const isTypeMatch = selectedTypeKeys.size === 0 || selectedTypeKeys.has(spec.type);
-        return isStatusMatch && isTypeMatch;
+        const isLabelMatch = selectedLabelKeys.size === 0 || spec.labels.some(function (label) {
+            return selectedLabelKeys.has(label);
+        });
+        return isStatusMatch && isTypeMatch && isLabelMatch;
     };
+
+    // Every distinct label currently used across this file's entries, alphabetized, as the label filter's option
+    // list - labels are freeform (unlike the fixed status/type enums), so the options must come from the data itself.
+    const labelFilterOptions: Option[] = useMemo(function () {
+        const labels = new Set<string>();
+        for (const spec of specs) {
+            for (const label of spec.labels) {
+                labels.add(label);
+            }
+        }
+        return [...labels].toSorted(function (a, b) {
+            return a.localeCompare(b);
+        }).map(function (label) {
+            return { value: label, label };
+        });
+    }, [specs]);
 
     // Keep each spec's original index so updateAt/removeAt still address the full list after filtering. A spec being
     // edited is always shown - otherwise a freshly added spec (none/none) or one whose status just changed would
@@ -423,9 +452,9 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
     return (
         <div className={styles.specsEditor}>
             <div className={styles.scrollArea}>
-                {specs.length > 0 && (showFilters || statusFilter.length > 0 || typeFilter.length > 0) &&
+                {specs.length > 0 && (showFilters || statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0) &&
                 <div className={styles.specFilter}>
-                    {(statusFilter.length > 0 || typeFilter.length > 0) &&
+                    {(statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0) &&
                     <span className={cx(styles.filterCount, styles.muted)}>{shown.length} of {specs.length} shown</span>}
                     {showFilters &&
                     <Select<Option, true>
@@ -449,6 +478,18 @@ const SpecsEditor = function ({ defaultEntryType, specs, schemas, allTitles, hig
                         value={typeFilter}
                         onChange={function (options: MultiValue<Option>) {
                             onTypeFilterChange([...options]);
+                        }}
+                    />}
+                    {showFilters &&
+                    <Select<Option, true>
+                        classNamePrefix="rs"
+                        isMulti
+                        placeholder="Labels"
+                        aria-label="Filter specs by label"
+                        options={labelFilterOptions}
+                        value={labelFilter}
+                        onChange={function (options: MultiValue<Option>) {
+                            onLabelFilterChange([...options]);
                         }}
                     />}
                 </div>}

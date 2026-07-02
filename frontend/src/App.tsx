@@ -65,6 +65,7 @@ const App = function () {
     const [showFilters, setShowFilters] = useState<boolean>(false);
     const [statusFilter, setStatusFilter] = useState<Option[]>([]);
     const [typeFilter, setTypeFilter] = useState<Option[]>([]);
+    const [labelFilter, setLabelFilter] = useState<Option[]>([]);
     // The served folder, used to scope which tabs are remembered across reloads. sessionReady gates persistence until
     // the one-time restore has run, so the initial empty tab list never overwrites a stored session.
     const [workspaceCwd, setWorkspaceCwd] = useState<string | null>(null);
@@ -626,7 +627,7 @@ const App = function () {
                                     >
                                         <span className={styles.filterIconWrap}>
                                             <FilterIcon />
-                                            {(statusFilter.length > 0 || typeFilter.length > 0) && <span className={styles.filterDot} />}
+                                            {(statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0) && <span className={styles.filterDot} />}
                                         </span>
                                         <span className={styles.tabText}>Filter</span>
                                     </button>}
@@ -673,6 +674,8 @@ const App = function () {
                                         onStatusFilterChange={setStatusFilter}
                                         typeFilter={typeFilter}
                                         onTypeFilterChange={setTypeFilter}
+                                        labelFilter={labelFilter}
+                                        onLabelFilterChange={setLabelFilter}
                                     />
                                 ) :
                                 (
