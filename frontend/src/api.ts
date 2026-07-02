@@ -243,27 +243,35 @@ const saveSettings = async function (settings: AppSettings): Promise<void> {
     });
 };
 
-// Collects every entry title across all vibrary files in the folder, for the "Relates to" option list. Files that
-// fail to parse are skipped so one bad file does not break the option list.
-const loadAllSpecTitles = async function (): Promise<string[]> {
+// One entry title paired with the file it lives in.
+type TitleIndexEntry = { title: string; path: string };
+
+// Collects every entry title across all vibrary files in the folder, alongside which file it lives in: backs both the
+// "Relates to" option list (title only) and resolving a clicked "Relates to" chip back to its target file. Files that
+// fail to parse are skipped so one bad file does not break the index. A title duplicated across files keeps whichever
+// file's scan resolves first - titles are meant to be unique identifiers, so this is only an edge case.
+const loadTitleIndex = async function (): Promise<TitleIndexEntry[]> {
     const { files } = await listFiles();
-    const titles = new Set<string>();
+    const seen = new Set<string>();
+    const index: TitleIndexEntry[] = [];
 
     await Promise.all(files.map(async function (name) {
         try {
             const content = await getFile(name);
             for (const spec of parseVibraryXml(content)) {
-                if (spec.title !== '') {
-                    titles.add(spec.title);
+                if (spec.title === '' || seen.has(spec.title)) {
+                    continue;
                 }
+                seen.add(spec.title);
+                index.push({ title: spec.title, path: name });
             }
         } catch {
             // Skip files that cannot be read or parsed
         }
     }));
 
-    return [...titles].toSorted(function (a, b) {
-        return a.localeCompare(b);
+    return index.toSorted(function (a, b) {
+        return a.title.localeCompare(b.title);
     });
 };
 
@@ -379,4 +387,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadAllSpecTitles, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, unstagePaths };
+export { applySpec, applySpecs, type ApprovalCount, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadTitleIndex, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

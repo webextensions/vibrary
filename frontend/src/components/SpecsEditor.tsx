@@ -32,6 +32,8 @@ type SpecsEditorProperties = {
     // Generates the requested number of entries of the given type via the backend AI agent and refreshes the file.
     // Rejects on failure so the dialog can surface the error.
     onGenerate: (type: EntryType, count: number) => Promise<void>;
+    // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
+    onOpenRelated: (title: string) => void;
     // Whether the filter dropdowns are open. Toggled by the Filter button in the toolbar (see App.tsx).
     showFilters: boolean;
     // Selected status filters, owned by App so the toolbar's Filter button can show an "active" badge.
@@ -77,7 +79,7 @@ const TYPE_FILTER_OPTIONS: Option[] = ENTRY_TYPES.map(function (type) {
 });
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, highlightQuery, onChange, onGenerate, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
+    { defaultEntryType, specs, schemas, allTitles, highlightQuery, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -509,6 +511,7 @@ const SpecsEditor = function (
                             value={spec}
                             schemas={schemas}
                             allTitles={allTitles}
+                            onOpenRelated={onOpenRelated}
                             onChange={function (next) {
                                 updateAt(index, next);
                             }}

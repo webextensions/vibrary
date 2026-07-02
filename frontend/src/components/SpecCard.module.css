@@ -287,6 +287,18 @@
     line-height: 1.5;
 }
 
+/* A "Relates to" chip, which navigates to its target entry instead of being inert text like a label chip. */
+.chip-link {
+    color: #0969da;
+    cursor: pointer;
+    font: inherit;
+}
+
+.chip-link:hover {
+    background: #ddf4ff;
+    border-color: #54aeff;
+}
+
 .muted {
     color: #656d76;
 }

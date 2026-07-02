@@ -39,6 +39,8 @@ type SpecCardProperties = {
     highlighted?: boolean;
     schemas: SchemaMap;
     allTitles: string[];
+    // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
+    onOpenRelated: (title: string) => void;
     onChange: (next: Spec) => void;
     onToggleMode: () => void;
     onRemove: () => void;
@@ -88,20 +90,36 @@ const Row = function (
     );
 };
 
-const Chips = function ({ items }: { items: string[] }) {
+// Plain read-only tags by default (labels); when onItemClick is given (Relates to), each chip becomes a button that
+// navigates to the referenced entry instead.
+const Chips = function ({ items, onItemClick }: { items: string[]; onItemClick?: (item: string) => void }) {
     if (items.length === 0) {
         return <span className={styles.muted}>-</span>;
     }
     return (
         <span className={styles.chips}>
             {items.map(function (item) {
-                return <span key={item} className={styles.chip}>{item}</span>;
+                return onItemClick ?
+                    (
+                        <button
+                            key={item}
+                            type="button"
+                            className={cx(styles.chip, styles.chipLink)}
+                            title={`Go to "${item}"`}
+                            onClick={function () {
+                                onItemClick(item);
+                            }}
+                        >
+                            {item}
+                        </button>
+                    ) :
+                    <span key={item} className={styles.chip}>{item}</span>;
             })}
         </span>
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onOpenRelated, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueue();
     const { loaded: settingsLoaded, getTaskOptions, setTaskOptions, resetTaskOptions } = useSettings();
@@ -455,7 +473,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                                     }}
                                 />
                             ) :
-                            <Chips items={value.relatesTo} />}
+                            <Chips items={value.relatesTo} onItemClick={onOpenRelated} />}
                     </Row>
 
                     <Row label="Created by" inline>

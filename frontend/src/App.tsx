@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useActivityQueue } from './activityQueue.ts';
-import { createFile, deleteFile, duplicateFile, generateSpecs, getWorkspace, listFiles, loadAllSpecTitles, renameFile, saveFile } from './api.ts';
+import { createFile, deleteFile, duplicateFile, generateSpecs, getWorkspace, listFiles, loadTitleIndex, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
@@ -43,7 +43,12 @@ const App = function () {
     // Whether a ".vibraryinclude" file exists at all, so the explorer's empty state can tell "nothing included yet
     // because no .vibraryinclude exists" apart from "a .vibraryinclude exists but its patterns match nothing".
     const [hasVibraryInclude, setHasVibraryInclude] = useState(true);
-    const [allTitles, setAllTitles] = useState<string[]>([]);
+    // Every entry title across every vibrary file, paired with which file it lives in - backs both the "Relates to"
+    // option list (title only, see allTitles below) and resolving a clicked "Relates to" chip to its target file.
+    const [titleIndex, setTitleIndex] = useState<TitleIndexEntry[]>([]);
+    const allTitles = titleIndex.map(function (entry) {
+        return entry.title;
+    });
     // Errors from loading the file list or titles (not tied to any one open tab), shown as a banner above the editor.
     const [loadError, setLoadError] = useState<string | null>(null);
     // Desktop: whether the inline sidebar is collapsed (persisted). Seed from storage so the first paint already
@@ -125,7 +130,7 @@ const App = function () {
                     }
                 }
                 setSessionReady(true);
-                setAllTitles(await loadAllSpecTitles());
+                setTitleIndex(await loadTitleIndex());
             } catch (error) {
                 setLoadError((error as Error).message);
             }
@@ -156,7 +161,7 @@ const App = function () {
             const listing = await listFiles();
             setFiles(listing.files);
             setHasVibraryInclude(listing.hasVibraryInclude);
-            setAllTitles(await loadAllSpecTitles());
+            setTitleIndex(await loadTitleIndex());
             setLoadError(null);
         } catch (error) {
             setLoadError((error as Error).message);
@@ -258,7 +263,7 @@ const App = function () {
             const listing = await listFiles();
             setFiles(listing.files);
             setHasVibraryInclude(listing.hasVibraryInclude);
-            setAllTitles(await loadAllSpecTitles());
+            setTitleIndex(await loadTitleIndex());
             setLoadError(null);
         } catch (error) {
             setLoadError((error as Error).message);
@@ -303,7 +308,7 @@ const App = function () {
             const listing = await listFiles();
             setFiles(listing.files);
             setHasVibraryInclude(listing.hasVibraryInclude);
-            setAllTitles(await loadAllSpecTitles());
+            setTitleIndex(await loadTitleIndex());
             setLoadError(null);
             if (!isFolder) {
                 openOrFocus(entered);
@@ -330,7 +335,7 @@ const App = function () {
             const listing = await listFiles();
             setFiles(listing.files);
             setHasVibraryInclude(listing.hasVibraryInclude);
-            setAllTitles(await loadAllSpecTitles());
+            setTitleIndex(await loadTitleIndex());
             setLoadError(null);
             openOrFocus(entered);
         } catch (error) {
@@ -418,7 +423,7 @@ const App = function () {
             await saveFile(path, serializeVibraryXml(specs));
             patchTab(path, { status: { kind: 'idle' }, dirty: false });
             markCounted(path, specs);
-            setAllTitles(await loadAllSpecTitles());
+            setTitleIndex(await loadTitleIndex());
         } catch (error) {
             patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
         }
@@ -455,7 +460,7 @@ const App = function () {
             status: { kind: 'idle' },
             reloadNonce: activeTab.reloadNonce + 1
         });
-        setAllTitles(await loadAllSpecTitles());
+        setTitleIndex(await loadTitleIndex());
     }, [activeTab, enqueue, patchTab]);
 
     const onSpecsChange = useCallback(function (next: Spec[]) {
@@ -501,6 +506,19 @@ const App = function () {
         setSearchTarget({ path: name, query });
         setDrawerOpen(false);
     }, [openOrFocus]);
+
+    // Open the entry a clicked "Relates to" chip points at: resolve its title to a file via titleIndex, then reuse the
+    // same open+scroll+highlight mechanism as a clicked Search result. A silent no-op for a stale reference (the
+    // target entry was renamed or removed since the "Relates to" was set) - there is nothing sensible to navigate to.
+    const handleOpenRelated = useCallback(function (title: string) {
+        const entry = titleIndex.find(function (candidate) {
+            return candidate.title === title;
+        });
+        if (entry === undefined) {
+            return;
+        }
+        handleOpenMatch(entry.path, title);
+    }, [titleIndex, handleOpenMatch]);
 
     // The open tabs in tab-bar shape, shared by the editor's TabBar and the Explorer's "Open Editors" list so the two
     // stay in sync. Activity tabs carry the job's title; file tabs fall back to their basename in the consumer.
@@ -669,6 +687,7 @@ const App = function () {
                                         highlightQuery={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.query : undefined}
                                         onChange={onSpecsChange}
                                         onGenerate={handleGenerate}
+                                        onOpenRelated={handleOpenRelated}
                                         showFilters={showFilters}
                                         statusFilter={statusFilter}
                                         onStatusFilterChange={setStatusFilter}
