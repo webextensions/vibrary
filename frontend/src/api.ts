@@ -12,7 +12,14 @@ type StreamOptions = { signal?: AbortSignal; onEvent?: (event: ClaudeStreamEvent
 
 const request = async function <T>(url: string, init?: RequestInit): Promise<T> {
     const response = await fetch(url, init);
-    const body = (await response.json()) as ApiResponse<T>;
+    let body: ApiResponse<T>;
+    try {
+        body = (await response.json()) as ApiResponse<T>;
+    } catch {
+        // Non-JSON body (an HTML error page from Express or a proxy, or a connection cut mid-response): surface the
+        // HTTP status instead of letting the JSON parser's SyntaxError reach the UI. Mirrors streamClaude below.
+        throw new Error(`Request failed (${response.status})`);
+    }
     if (body.status !== 'success') {
         throw new Error(body.errorMessage || `Request failed (${response.status})`);
     }
