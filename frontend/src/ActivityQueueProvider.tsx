@@ -313,6 +313,17 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         }
     };
 
+    // Re-run every failed/aborted job, the bulk counterpart of retryJob - snapshotting the target ids up front so
+    // retrying one does not affect which others are retried in this same pass.
+    const retryAllFailed = function () {
+        const targets = jobsReference.current.filter(function (candidate) {
+            return candidate.status === 'error' || candidate.status === 'aborted';
+        });
+        for (const target of targets) {
+            void retryJob(target.id);
+        }
+    };
+
     // Send a chat message to an activity: show it immediately, then send it now (if idle) or queue it to auto-send after
     // the current reply finishes. Requires a captured session id to resume; ignores empty messages.
     const sendMessage = function (id: string, message: string) {
@@ -387,6 +398,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         removeJob,
         moveJob,
         retryJob,
+        retryAllFailed,
         sendMessage,
         cancelPendingMessage,
         isMessagePending,

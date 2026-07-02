@@ -192,7 +192,7 @@ const NotificationSettingsMenu = function () {
 // The "Activity monitor" body: a queue-wide control row over the list of jobs (running first as they sit mid-list,
 // queued after, finished history above). Reads everything from the shared activity queue.
 const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: string, title: string) => void }) {
-    const { jobs, paused, pause, resume, abortCurrent, removeJob, moveJob, retryJob, clearFinished } = useActivityQueue();
+    const { jobs, paused, pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished } = useActivityQueue();
 
     // Kind/status filters for the job list, mirroring SpecsEditor's own filter row - useful once the queue's history
     // accumulates every run/apply/generate/chat-continuation job across a session. An empty selection filters nothing,
@@ -212,6 +212,9 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
     });
     const hasFinished = jobs.some(function (job) {
         return FINISHED_STATUSES.has(job.status);
+    });
+    const hasRetryable = jobs.some(function (job) {
+        return job.status === 'error' || job.status === 'aborted';
     });
 
     // Re-render once a second while a job runs so the elapsed timer ticks; idle when nothing is running.
@@ -253,6 +256,10 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
                 <button type="button" className={styles.control} onClick={clearFinished} disabled={!hasFinished}>
                     <RemoveIcon />
                     Clear
+                </button>
+                <button type="button" className={styles.control} onClick={retryAllFailed} disabled={!hasRetryable}>
+                    <RefreshIcon />
+                    Retry all
                 </button>
                 {jobs.length > 0 &&
                 <button

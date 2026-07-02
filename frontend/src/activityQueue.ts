@@ -50,6 +50,9 @@ type ActivityQueue = {
     removeJob: (id: string) => void;
     moveJob: (id: string, direction: 'up' | 'down') => void;
     retryJob: (id: string) => void;
+    // Re-enqueue every failed/aborted job, the bulk counterpart of retryJob - mirrors clearFinished acting on the whole
+    // finished-job set instead of one row at a time.
+    retryAllFailed: () => void;
     // Send a chat message to an activity that resumes its claude session, showing the message immediately and appending
     // the reply to the existing transcript. If a reply is already streaming, the message is queued and auto-sent as the
     // next turn. A no-op if the job has no session id yet or the message is empty.
