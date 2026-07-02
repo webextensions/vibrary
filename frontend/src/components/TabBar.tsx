@@ -1,7 +1,7 @@
 import cx from 'classnames';
 import { useEffect, useState } from 'react';
 
-import { CloseIcon } from './Icons.tsx';
+import { CloseIcon, MoreIcon } from './Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { useMediaQuery } from '../useMediaQuery.ts';
 
@@ -102,6 +102,22 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
                         >
                             {tab.dirty && <span className={styles.tabDot} aria-hidden="true" />}
                             <span className={styles.tabName}>{tabLabel(tab)}</span>
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.tabMore}
+                            aria-label={`More actions for ${tabLabel(tab)}`}
+                            aria-haspopup="menu"
+                            aria-expanded={menuPath === tab.path}
+                            title="More"
+                            onClick={function (clickEvent) {
+                                clickEvent.stopPropagation();
+                                setMenuPath(function (previous) {
+                                    return previous === tab.path ? null : tab.path;
+                                });
+                            }}
+                        >
+                            <MoreIcon />
                         </button>
                         <button
                             type="button"
