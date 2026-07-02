@@ -83,6 +83,7 @@ type LeftPanelProperties = {
     onRename: (node: TreeNode) => void;
     onDuplicate: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void;
+    onBulkDelete: (paths: string[]) => Promise<boolean>;
     onSelectTab: (path: string) => void;
     onCloseTab: (path: string) => void;
     // Activity monitor: open a job's detail editor tab when its row is clicked.
@@ -154,6 +155,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
                 onRename={properties.onRename}
                 onDuplicate={properties.onDuplicate}
                 onNewFile={properties.onNewFile}
+                onBulkDelete={properties.onBulkDelete}
                 onSelectTab={properties.onSelectTab}
                 onCloseTab={properties.onCloseTab}
             />}

@@ -24,7 +24,11 @@ type SidebarProperties = {
     onDuplicate: (node: TreeNode) => void;
     onNewFile: (folderPath: string) => void;
     onSelectTab: (path: string) => void;
-    onCloseTab: (path: string) => void
+    onCloseTab: (path: string) => void;
+    // Bulk-delete the given files (paths), confirming first; resolves true if the user confirmed (regardless of
+    // whether every individual delete succeeded), false if they cancelled - the caller uses this to decide whether to
+    // clear its selection.
+    onBulkDelete: (paths: string[]) => Promise<boolean>
 };
 
 // The approved/total badge beside each file name. A ready count is green; loading shows '...' and an unreadable file '!'.
@@ -173,10 +177,12 @@ type TreeRowsProperties = {
     selected: string | null;
     collapsed: Set<string>;
     openMenuPath: string | null;
+    selectedPaths: Set<string>;
     countForFile: (name: string) => FileCount;
     onOpen: (name: string) => void;
     onToggle: (path: string) => void;
     onToggleMenu: (path: string) => void;
+    onToggleFileSelect: (path: string) => void;
     onDelete: (node: TreeNode) => void;
     onRename: (node: TreeNode) => void;
     onDuplicate: (node: TreeNode) => void;
@@ -185,7 +191,7 @@ type TreeRowsProperties = {
 
 // Renders one level of the file tree as flat sibling <li>s; folders recurse when open. Indentation comes from each
 // row's paddingLeft rather than nested <ul>s, so the existing list styling stays intact.
-const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, countForFile, onOpen, onToggle, onToggleMenu, onDelete, onRename, onDuplicate, onNewFile }: TreeRowsProperties) {
+const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, selectedPaths, countForFile, onOpen, onToggle, onToggleMenu, onToggleFileSelect, onDelete, onRename, onDuplicate, onNewFile }: TreeRowsProperties) {
     return nodes.map(function (node) {
         const indent = { paddingLeft: `${depth * 14}px` };
         const more = (
@@ -203,6 +209,18 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
             return (
                 <li key={node.path} style={indent}>
                     <div className={styles.treeRow}>
+                        <input
+                            type="checkbox"
+                            className={styles.selectCheckbox}
+                            checked={selectedPaths.has(node.path)}
+                            aria-label={`Select ${node.name}`}
+                            onClick={function (clickEvent) {
+                                clickEvent.stopPropagation();
+                            }}
+                            onChange={function () {
+                                onToggleFileSelect(node.path);
+                            }}
+                        />
                         <button
                             type="button"
                             className={cx(styles.rowButton, node.path === selected && styles.active)}
@@ -243,10 +261,12 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
                             selected={selected}
                             collapsed={collapsed}
                             openMenuPath={openMenuPath}
+                            selectedPaths={selectedPaths}
                             countForFile={countForFile}
                             onOpen={onOpen}
                             onToggle={onToggle}
                             onToggleMenu={onToggleMenu}
+                            onToggleFileSelect={onToggleFileSelect}
                             onDelete={onDelete}
                             onRename={onRename}
                             onDuplicate={onDuplicate}
@@ -259,7 +279,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, co
     });
 };
 
-const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onDuplicate, onNewFile, onSelectTab, onCloseTab }: SidebarProperties) {
+const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onDuplicate, onNewFile, onSelectTab, onCloseTab, onBulkDelete }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -271,6 +291,21 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
     // Accordion section open state, both local and defaulting to open.
     const [openEditorsOpen, setOpenEditorsOpen] = useState<boolean>(true);
     const [vibraryOpen, setVibraryOpen] = useState<boolean>(true);
+    // File paths checked for the bulk Delete action below the tree - mirrors SpecsEditor's per-entry selection. Files
+    // only (not folders): rename/duplicate need a per-item new name, so Delete is the one operation that generalizes
+    // cleanly to an arbitrary multi-file selection.
+    const [rawSelectedPaths, setRawSelectedPaths] = useState<Set<string>>(function () {
+        return new Set();
+    });
+    // Drop any selected path that no longer exists (deleted/renamed via the single-row action, or the list refreshed
+    // out from under the selection) on every render, so the footer's count never outlives the files it counts. A plain
+    // derivation rather than a setState effect - there is nothing to synchronize with an external system here.
+    const selectedPaths = useMemo(function () {
+        const present = new Set(files);
+        return new Set(Array.from(rawSelectedPaths).filter(function (path) {
+            return present.has(path);
+        }));
+    }, [rawSelectedPaths, files]);
 
     // Close the open menu on any click outside it, or on Escape. The menu's own buttons stop propagation, so the click
     // listener only fires for clicks elsewhere; the toggle button also stops propagation so opening one menu does not
@@ -311,6 +346,33 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
             }
             return next;
         });
+    };
+
+    const handleToggleFileSelect = function (path: string) {
+        setRawSelectedPaths(function (previous) {
+            const next = new Set(previous);
+            if (next.has(path)) {
+                next.delete(path);
+            } else {
+                next.add(path);
+            }
+            return next;
+        });
+    };
+
+    const handleSelectAllFiles = function () {
+        setRawSelectedPaths(new Set(files));
+    };
+
+    const handleDeselectAllFiles = function () {
+        setRawSelectedPaths(new Set());
+    };
+
+    const handleBulkDeleteClick = async function () {
+        const confirmed = await onBulkDelete(Array.from(selectedPaths));
+        if (confirmed) {
+            setRawSelectedPaths(new Set());
+        }
     };
 
     return (
@@ -387,23 +449,61 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
                         </p>
                     ) :
                     (
-                        <ul>
-                            <TreeRows
-                                nodes={tree}
-                                depth={0}
-                                selected={selected}
-                                collapsed={collapsed}
-                                openMenuPath={openMenuPath}
-                                countForFile={countForFile}
-                                onOpen={onOpen}
-                                onToggle={handleToggle}
-                                onToggleMenu={handleToggleMenu}
-                                onDelete={onDelete}
-                                onRename={onRename}
-                                onDuplicate={onDuplicate}
-                                onNewFile={onNewFile}
-                            />
-                        </ul>
+                        <>
+                            <ul>
+                                <TreeRows
+                                    nodes={tree}
+                                    depth={0}
+                                    selected={selected}
+                                    collapsed={collapsed}
+                                    openMenuPath={openMenuPath}
+                                    selectedPaths={selectedPaths}
+                                    countForFile={countForFile}
+                                    onOpen={onOpen}
+                                    onToggle={handleToggle}
+                                    onToggleMenu={handleToggleMenu}
+                                    onToggleFileSelect={handleToggleFileSelect}
+                                    onDelete={onDelete}
+                                    onRename={onRename}
+                                    onDuplicate={onDuplicate}
+                                    onNewFile={onNewFile}
+                                />
+                            </ul>
+                            <div className={styles.selectionFooter}>
+                                <span className={styles.footerCount}>
+                                    {selectedPaths.size > 0 ?
+                                        `${selectedPaths.size}/${files.length} files selected` :
+                                        `${files.length} files`}
+                                </span>
+                                <button
+                                    type="button"
+                                    className={styles.selectLink}
+                                    disabled={selectedPaths.size === files.length}
+                                    onClick={handleSelectAllFiles}
+                                >
+                                    Select all
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.selectLink}
+                                    disabled={selectedPaths.size === 0}
+                                    onClick={handleDeselectAllFiles}
+                                >
+                                    Deselect all
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.deleteSelected}
+                                    disabled={selectedPaths.size === 0}
+                                    onClick={function () {
+                                        void handleBulkDeleteClick();
+                                    }}
+                                >
+                                    <RemoveIcon />
+                                    Delete
+                                </button>
+                            </div>
+                        </>
                     )}
             </AccordionSection>
         </div>

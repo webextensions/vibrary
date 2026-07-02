@@ -271,6 +271,33 @@ const App = function () {
         }
     }, [closeTab]);
 
+    // The Explorer's bulk-select footer Delete button: same warn-then-delete-then-refresh shape as handleDelete above,
+    // but over an arbitrary multi-file selection instead of one node's subtree. Resolves whether the user confirmed, so
+    // the sidebar knows whether to clear its selection (kept intact on cancel).
+    const handleBulkDelete = useCallback(async function (paths: string[]): Promise<boolean> {
+        if (paths.length === 0) {
+            return false;
+        }
+        const confirmed = await confirmDialog(`Delete ${paths.length} file${paths.length === 1 ? '' : 's'}? This cannot be undone.`, 'Delete');
+        if (!confirmed) {
+            return false;
+        }
+        try {
+            for (const path of paths) {
+                await deleteFile(path);
+                closeTab(path);
+            }
+            const listing = await listFiles();
+            setFiles(listing.files);
+            setHasVibraryInclude(listing.hasVibraryInclude);
+            setTitleIndex(await loadTitleIndex());
+            setLoadError(null);
+        } catch (error) {
+            setLoadError((error as Error).message);
+        }
+        return true;
+    }, [closeTab]);
+
     // The explorer "More" menu's Rename action. A file renames (or moves - the new name may point into another folder)
     // just itself; a folder renames every file beneath it, since folders have no on-disk entity of their own. Open tabs
     // are keyed by path, so affected tabs are closed and the file reopened under its new name - which drops unsaved
@@ -572,6 +599,7 @@ const App = function () {
                 onRename={handleRename}
                 onDuplicate={handleDuplicate}
                 onNewFile={handleNewFile}
+                onBulkDelete={handleBulkDelete}
                 onSelectTab={setActive}
                 onCloseTab={handleCloseTab}
                 onOpenActivity={openActivity}
