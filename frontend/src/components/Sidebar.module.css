@@ -233,11 +233,13 @@
     cursor: pointer;
 }
 
-/* Bulk-selection footer below the file tree, matching SpecsEditor's own footer bar. */
+/* Bulk-selection footer below the file tree, matching SpecsEditor's own footer bar - including staying a single row
+   (no flex-wrap): the Delete button's margin-left: auto assumes it is the last item on the row, and wrapping onto its
+   own line left it visually isolated, pinned to the right edge under the other controls instead of staying grouped
+   with them. */
 .selection-footer {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
     gap: 10px;
     padding: 8px 0 0;
     margin-top: 4px;
