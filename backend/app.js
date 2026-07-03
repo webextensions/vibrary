@@ -33,6 +33,23 @@ const createApp = async function ({ cwd = process.cwd(), hmr = false } = {}) {
         return sendErrorResponse(response, 404, 'Unknown API endpoint');
     });
 
+    // Convert any error that escapes a route - express.json's body-parse SyntaxError, or a rejected await outside a
+    // route's try (Express 5 forwards those here) - into the API's JSON error envelope. Without this, Express's
+    // default handler answers with an HTML error page, which the client's JSON parsing reports as "Request failed"
+    // and hides the real problem. Client-caused errors (4xx, e.g. a malformed body) pass their message through;
+    // everything else is logged here and kept generic for the client.
+    app.use('/api', function (error, request, response, next) {
+        if (response.headersSent) {
+            return next(error);
+        }
+        const statusCode = typeof error.status === 'number' ? error.status : 500;
+        if (statusCode >= 500) {
+            console.error(`Unhandled error in ${request.method} ${request.originalUrl}:`, error);
+            return sendErrorResponse(response, statusCode, 'Internal server error');
+        }
+        return sendErrorResponse(response, statusCode, error.message);
+    });
+
     if (hmr) {
         // Dev-only: run Vite in middleware mode so a single server serves both /api and the frontend with HMR. Vite is a
         // devDependency, so import it lazily here - the published package never takes this branch.
