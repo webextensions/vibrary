@@ -108,43 +108,22 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
         }
     }, [refreshListing]);
 
-    // The sidebar's add button: prompt for a name, create the empty file on the server, then refresh the list and open
-    // it. The name must match the vibrary naming convention (<family>.xml or <family>-<name>.xml, where family is
-    // reviews/specs/tasks/ideas); the server validates and surfaces any problem (bad name, already exists) as the
-    // load-error banner.
-    const handleAddFile = useCallback(async function () {
+    // One create flow behind both entry points: prompt for a name (joined onto `folderPath` when given), create the
+    // empty file on the server, then refresh the list and open it. The name must match the vibrary naming convention
+    // (<family>.xml or <family>-<name>.xml, where family is reviews/specs/tasks/ideas); the server validates and
+    // surfaces any problem (bad name, already exists) as the load-error banner.
+    const promptAndCreateFile = useCallback(async function (folderPath?: string) {
         const name = await promptDialog({
-            message: 'New file name (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):',
+            message: folderPath === undefined ?
+                'New file name (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):' :
+                `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):`,
             placeholder: 'specs-<name>.xml',
             confirmLabel: 'Create'
         });
         if (name === null) {
             return;
         }
-        try {
-            await createFile(name);
-            if (await refreshListing()) {
-                setLoadError(null);
-            }
-            onFileOpened(name);
-        } catch (error) {
-            setLoadError(`Failed to create "${name}": ${(error as Error).message}`);
-        }
-    }, [onFileOpened, refreshListing]);
-
-    // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
-    // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
-    // server validates the vibrary naming convention, mirroring handleAddFile.
-    const handleNewFile = useCallback(async function (folderPath: string) {
-        const name = await promptDialog({
-            message: `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):`,
-            placeholder: 'specs-<name>.xml',
-            confirmLabel: 'Create'
-        });
-        if (name === null) {
-            return;
-        }
-        const fullName = `${folderPath}/${name}`;
+        const fullName = folderPath === undefined ? name : `${folderPath}/${name}`;
         try {
             await createFile(fullName);
             if (await refreshListing()) {
@@ -155,6 +134,18 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
             setLoadError(`Failed to create "${fullName}": ${(error as Error).message}`);
         }
     }, [onFileOpened, refreshListing]);
+
+    // The sidebar's add button. Wrapped (not promptAndCreateFile directly) so a click event can never be mistaken for
+    // a folder path.
+    const handleAddFile = useCallback(function () {
+        return promptAndCreateFile();
+    }, [promptAndCreateFile]);
+
+    // The explorer "More" menu's New File action on a folder: the entered name is the file's basename (or a deeper
+    // relative path) inside that folder.
+    const handleNewFile = useCallback(function (folderPath: string) {
+        return promptAndCreateFile(folderPath);
+    }, [promptAndCreateFile]);
 
     // The explorer empty state's one-click bootstrap: write the starter .vibraryinclude, then refresh so the newly
     // included files (or the still-empty-but-now-configured state) appear. Without an include file NOTHING is
