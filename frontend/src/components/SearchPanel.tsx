@@ -12,7 +12,8 @@ type Option = { value: string; label: string };
 
 // Wait for the user to pause typing before hitting the backend, so each keystroke does not fire a request.
 const DEBOUNCE_MS = 250;
-// Match the backend's floor; a one-character query is too broad to be useful.
+// Matches the backend's floor (searchVibrary's MIN_QUERY_LENGTH - keep the two in sync): a one-character query is
+// too broad to be useful, and skipping it here avoids a round trip that would answer with nothing.
 const MIN_QUERY_LENGTH = 2;
 
 // Emphasize each case-insensitive occurrence of `query` within a snippet line, leaving the rest as plain text. Splitting

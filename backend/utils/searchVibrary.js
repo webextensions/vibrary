@@ -9,6 +9,9 @@ const MAX_TOTAL_MATCHES = 500;
 const MAX_MATCHES_PER_FILE = 50;
 // Keep snippet lines short so the results list stays scannable.
 const MAX_SNIPPET_LENGTH = 200;
+// A one-character query is too broad to be useful and scans every included file for nothing; the frontend's
+// SearchPanel enforces the same floor before sending, so the UI never hits this branch.
+const MIN_QUERY_LENGTH = 2;
 
 // Collect up to `limit` line matches for `needle` within one file's content. Kept as its own function so the line scan's
 // early break is not a break inside a nested loop.
@@ -32,10 +35,12 @@ const collectMatchesInFile = function (content, needle, limit) {
 // `options.files`, when non-empty, narrows the scope to just those file names (an empty/absent list imposes no
 // constraint - "search everywhere" - matching how the editor's own status/type filters treat an empty selection).
 const searchVibrary = async function (cwd, query, options = {}) {
-    if (typeof query !== 'string' || query.trim() === '') {
+    // The needle is the trimmed query: surrounding whitespace is meaningless here (the emptiness/floor checks already
+    // treat it that way), so a padded direct API call searches for the same thing the UI would send.
+    const needle = typeof query === 'string' ? query.trim().toLowerCase() : '';
+    if (needle.length < MIN_QUERY_LENGTH) {
         return { results: [], truncated: false };
     }
-    const needle = query.toLowerCase();
     const allNames = await listVibraryFiles(cwd);
     const fileScope = Array.isArray(options.files) && options.files.length > 0 ? new Set(options.files) : null;
     const names = fileScope === null ?
