@@ -63,6 +63,12 @@
     padding: 0;
 }
 
+/* While a newer search is in flight, the previous query's results stay visible but dimmed, so leftovers read as
+ * provisional rather than as the answer to the current query. */
+.result-list-stale {
+    opacity: 0.5;
+}
+
 .file-group {
     margin-bottom: 8px;
 }

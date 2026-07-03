@@ -1,3 +1,4 @@
+import cx from 'classnames';
 import { type ReactNode, useEffect, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
@@ -172,6 +173,9 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                 </button>
             </p>}
 
+            {searching &&
+            <p className={styles.message} role="status">Searching...</p>}
+
             {error === null && searchedQuery !== '' && results.length === 0 && !searching &&
             <p className={styles.message}>No matches.</p>}
 
@@ -181,7 +185,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                 {truncated && ' (showing the first results)'}
             </p>}
 
-            <ul className={styles.resultList}>
+            <ul className={cx(styles.resultList, searching && styles.resultListStale)}>
                 {results.map(function (file) {
                     return (
                         <li key={file.path} className={styles.fileGroup}>
