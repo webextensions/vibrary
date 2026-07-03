@@ -221,7 +221,9 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                     type="checkbox"
                     className={styles.selectCheckbox}
                     checked={selected}
-                    aria-label="Select entry"
+                    // Name the entry (mirroring the sidebar's "Select <file>" checkboxes): a list of checkboxes all
+                    // announcing just "Select entry" is indistinguishable to a screen-reader user.
+                    aria-label={`Select ${value.title || `untitled ${value.type} #${index + 1}`}`}
                     onChange={onToggleSelect}
                 />
                 <div className={styles.specCardTitleGroup}>
