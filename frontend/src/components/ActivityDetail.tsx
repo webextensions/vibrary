@@ -168,11 +168,18 @@ const TranscriptBlock = function ({ item, isPending, onCancel }: { item: Transcr
 // Reads the job's metadata from the queue and its live transcript from useJobEvents (which re-renders only this tab as
 // tokens arrive).
 const ActivityDetail = function ({ jobId }: { jobId: string }) {
-    const { jobs, abortCurrent, retryJob, sendMessage, cancelPendingMessage, isMessagePending } = useActivityQueue();
+    const { jobs, abortCurrent, retryJob, sendMessage, cancelPendingMessage, isMessagePending, getDraft, setDraft: storeDraft } = useActivityQueue();
     const job = jobs.find(function (candidate) { return candidate.id === jobId; }) ?? null;
     const items = useJobEvents(jobId);
 
-    const [draft, setDraft] = useState<string>('');
+    // Seeded from the provider-held draft and mirrored back on every change: only the active tab is mounted, so local
+    // state alone would silently discard a half-typed follow-up on a tab switch - the one piece of user-typed input
+    // the app would otherwise forget (file tabs deliberately keep their unsaved edits across switches).
+    const [draft, setDraft] = useState<string>(function () { return getDraft(jobId); });
+    const updateDraft = function (text: string) {
+        setDraft(text);
+        storeDraft(jobId, text);
+    };
     const isRunning = job?.status === 'running';
     // Active = a reply is streaming, or a follow-up turn is queued behind another run; drives the typing indicator.
     const isActive = job?.status === 'running' || job?.status === 'queued';
@@ -224,7 +231,7 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
         }
         stickReference.current = true;
         sendMessage(job.id, draft);
-        setDraft('');
+        updateDraft('');
     };
 
     return (
@@ -275,7 +282,7 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
                         value={draft}
                         placeholder="Continue this activity as a chat... (Ctrl+Enter to send)"
                         rows={2}
-                        onChange={function (event) { setDraft(event.target.value); }}
+                        onChange={function (event) { updateDraft(event.target.value); }}
                         onKeyDown={function (event) {
                             if (event.key !== 'Enter' || (!event.metaKey && !event.ctrlKey)) {
                                 return;

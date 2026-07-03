@@ -43,6 +43,9 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
     // matches its optimistic transcript bubble's item id, so a still-queued one can be found and retracted (both from
     // here and from the transcript) via cancelPendingMessage before it is actually sent.
     const pendingReference = useRef(new Map<string, { id: string; text: string }[]>());
+    // Unsent chat-composer drafts per job id (see ActivityQueue.getDraft): survives the detail tab's unmount on a tab
+    // switch, mirroring how file tabs keep their unsaved edits.
+    const draftsReference = useRef(new Map<string, string>());
 
     const updateJobs = function (updater: (previous: Job[]) => Job[]) {
         const next = updater(jobsReference.current);
@@ -111,6 +114,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
     const clearEvents = function (jobId: string) {
         transcriptsReference.current.delete(jobId);
         pendingReference.current.delete(jobId);
+        draftsReference.current.delete(jobId);
         const listeners = eventListenersReference.current.get(jobId);
         if (listeners) {
             for (const listener of listeners) {
@@ -415,7 +419,17 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         isMessagePending,
         clearFinished,
         subscribeEvents,
-        getEvents
+        getEvents,
+        getDraft: function (jobId: string) {
+            return draftsReference.current.get(jobId) ?? '';
+        },
+        setDraft: function (jobId: string, text: string) {
+            if (text === '') {
+                draftsReference.current.delete(jobId);
+            } else {
+                draftsReference.current.set(jobId, text);
+            }
+        }
     };
 
     return <ActivityQueueContext value={value}>{children}</ActivityQueueContext>;

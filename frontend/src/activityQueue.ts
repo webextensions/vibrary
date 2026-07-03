@@ -68,7 +68,12 @@ type ActivityQueue = {
     // Per-job streamed transcript, kept off the `jobs` array so high-frequency token updates only re-render the open
     // detail tab (via useJobEvents) rather than every queue consumer.
     subscribeEvents: (jobId: string, callback: () => void) => () => void;
-    getEvents: (jobId: string) => TranscriptItem[]
+    getEvents: (jobId: string) => TranscriptItem[];
+    // The chat composer's unsent draft, keyed per job: only the active tab is mounted, so the detail component's local
+    // state dies on every tab switch - the queue provider outlives it, exactly like the transcripts above. Cleared
+    // together with the job's transcript.
+    getDraft: (jobId: string) => string;
+    setDraft: (jobId: string, text: string) => void
 };
 
 const ActivityQueueContext = createContext<ActivityQueue | null>(null);
