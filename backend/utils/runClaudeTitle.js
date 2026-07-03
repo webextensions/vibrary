@@ -1,5 +1,5 @@
 import { normalizeTitle } from '../../shared/vibraryXmlCore.js';
-import { spawnClaudeAsync } from './spawnClaude.js';
+import { spawnClaudeAsync } from '../shared/spawnClaude.js';
 
 // Deriving a short title is a quick, read-free task; cap it well under the apply/generate budget so a stall fails fast.
 const TITLE_TIMEOUT_MS = 2 * 60 * 1000;

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { startAppAsync } from './testHelpers.js';
+import { startAppAsync } from '../shared/testHelpers.js';
 
 // Integration coverage for the search router: the query floor, the match shape a clicked result relies on
 // (entryIndex/field/snippet), and the comma-separated `files` narrowing that only this route layer parses

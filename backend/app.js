@@ -8,7 +8,7 @@ import { createFilesRouter } from './routes/files.js';
 import { createGitRouter } from './routes/git.js';
 import { createSearchRouter } from './routes/search.js';
 import { createSettingsRouter } from './routes/settings.js';
-import { sendErrorResponse } from './utils/sendResponse.js';
+import { sendErrorResponse } from './shared/sendResponse.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 

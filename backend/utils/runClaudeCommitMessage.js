@@ -1,4 +1,4 @@
-import { spawnClaudeAsync } from './spawnClaude.js';
+import { spawnClaudeAsync } from '../shared/spawnClaude.js';
 
 // Drafting a commit message from a diff is a quick, read-free task; cap it well under the apply/generate budget so a
 // stall fails fast. Mirrors the title call's short ceiling.

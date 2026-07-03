@@ -1,4 +1,4 @@
-import { runStreamedAgentAsync } from './spawnClaude.js';
+import { runStreamedAgentAsync } from '../shared/spawnClaude.js';
 
 // Give the headless agent room to read the codebase and edit files; reject rather than hang forever if it stalls.
 // The base matches the single-spec apply's budget; each additional entry buys extra room (a batch of N is roughly N

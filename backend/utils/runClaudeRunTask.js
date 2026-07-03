@@ -1,6 +1,6 @@
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { runStreamedAgentAsync } from './spawnClaude.js';
+import { runStreamedAgentAsync } from '../shared/spawnClaude.js';
 
 // Give the headless agent room to read the codebase and edit files - and, when the Ralph loop is on, to iterate across
 // many passes; reject rather than hang forever if it stalls.

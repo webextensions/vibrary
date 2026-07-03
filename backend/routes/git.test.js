@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { startAppAsync } from './testHelpers.js';
+import { startAppAsync } from '../shared/testHelpers.js';
 
 // Integration coverage for the git router against a real repository in a scratch folder: the not-a-repo empty-state
 // contract, the status -> stage -> commit -> modify -> diff -> discard flow the Source Control panel drives, and the

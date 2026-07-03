@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { searchVibrary } from '../utils/searchVibrary.js';
-import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
+import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
 const createSearchRouter = function ({ cwd }) {
     const router = Router();

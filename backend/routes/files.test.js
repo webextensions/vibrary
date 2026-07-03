@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { startAppAsync } from './testHelpers.js';
+import { startAppAsync } from '../shared/testHelpers.js';
 
 // End-to-end coverage of the files API against a real Express app serving a scratch folder: the .vibraryinclude
 // gate, the create/save/read/rename/delete round trip, traversal rejection, and the summary's per-file error

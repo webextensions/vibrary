@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { startAppAsync } from './testHelpers.js';
+import { startAppAsync } from '../shared/testHelpers.js';
 
 // Integration coverage for the streaming agent routes (streamClaudeRoute): the NDJSON contract every run/apply/
 // generate action consumes - the echoed user_prompt line, the CLI's own stream-json lines passed through verbatim,

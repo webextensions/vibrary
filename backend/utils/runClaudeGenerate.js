@@ -1,4 +1,4 @@
-import { runStreamedAgentAsync } from './spawnClaude.js';
+import { runStreamedAgentAsync } from '../shared/spawnClaude.js';
 
 // Give the headless agent room to read the codebase and write the file; reject rather than hang forever if it stalls.
 const GENERATE_TIMEOUT_MS = 10 * 60 * 1000;

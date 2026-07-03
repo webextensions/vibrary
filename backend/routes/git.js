@@ -2,11 +2,11 @@ import { readFile } from 'node:fs/promises';
 
 import { Router } from 'express';
 
-import { abortOnDisconnect } from '../utils/abortOnDisconnect.js';
+import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { generateCommitMessageAsync } from '../utils/runClaudeCommitMessage.js';
-import { resolveWithinCwd } from '../utils/resolveWithinCwd.js';
+import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { commitAsync, diffAsync, discardAsync, isGitRepoAsync, pullAsync, pushAsync, removeUntrackedAsync, stageAsync, stashApplyAsync, stashDropAsync, stashListAsync, stashPopAsync, stashSaveAsync, statusAsync, unstageAsync } from '../utils/runGit.js';
-import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
+import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
 const createGitRouter = function ({ cwd }) {
     const router = Router();

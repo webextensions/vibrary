@@ -1,4 +1,4 @@
-import { runStreamedAgentAsync } from './spawnClaude.js';
+import { runStreamedAgentAsync } from '../shared/spawnClaude.js';
 
 // Give a follow-up room to read the codebase and edit files, just like a run-task; a chat reply can do real work.
 const CHAT_TIMEOUT_MS = 60 * 60 * 1000;

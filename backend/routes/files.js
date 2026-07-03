@@ -4,16 +4,16 @@ import path from 'node:path';
 import { Router } from 'express';
 
 import { countApprovedSpecs, ENTRY_TYPES, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
-import { abortOnDisconnect } from '../utils/abortOnDisconnect.js';
+import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from '../utils/vibraryFiles.js';
-import { resolveWithinCwd } from '../utils/resolveWithinCwd.js';
+import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { applySpecAsync } from '../utils/runClaudeApply.js';
 import { applySpecsAsync } from '../utils/runClaudeApplyBatch.js';
 import { generateSpecsAsync } from '../utils/runClaudeGenerate.js';
 import { runChatAsync } from '../utils/runClaudeChat.js';
 import { runTaskAsync } from '../utils/runClaudeRunTask.js';
 import { generateTitleAsync } from '../utils/runClaudeTitle.js';
-import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
+import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
 // Upper bound on specs generated in one request, guarding against a runaway agent run.
 const MAX_GENERATE_COUNT = 50;

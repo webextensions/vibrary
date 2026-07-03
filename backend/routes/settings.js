@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { Router } from 'express';
 
-import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js';
+import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
 // Per-project UI preferences (remembered task options, activity-start notification toggles) persisted to a single
 // machine-local file in the served folder. The ".local" suffix marks it as uncommitted (see .gitignore). The server
