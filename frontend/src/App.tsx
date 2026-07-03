@@ -1,5 +1,6 @@
 import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from './activityQueue.ts';
 import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, generateSpecs, getFilesSummary, getWorkspace, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
@@ -103,7 +104,7 @@ const App = function () {
     // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
-    const [searchTarget, setSearchTarget] = useState<{ path: string; query: string; matchIndex: number } | null>(null);
+    const [searchTarget, setSearchTarget] = useState<{ path: string; query: string; matchIndex: number; exactTitle: boolean } | null>(null);
 
     const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab } =
         useOpenTabs();
@@ -617,23 +618,26 @@ const App = function () {
     // active.
     const handleOpenMatch = useCallback(function (name: string, query: string, matchIndex = 0) {
         openOrFocus(name);
-        setSearchTarget({ path: name, query, matchIndex });
+        setSearchTarget({ path: name, query, matchIndex, exactTitle: false });
         setDrawerOpen(false);
     }, [openOrFocus]);
 
-    // Open the entry a clicked "Relates to" chip points at: resolve its title to a file via titleIndex, then reuse the
-    // same open+scroll+highlight mechanism as a clicked Search result (its title is unique enough that the first match
-    // is always the right one). A silent no-op for a stale reference (the target entry was renamed or removed since the
-    // "Relates to" was set) - there is nothing sensible to navigate to.
+    // Open the entry a clicked "Relates to" chip points at: resolve its title to a file via titleIndex, then reuse
+    // the open+scroll+highlight mechanism with EXACT-title matching - a substring match would let an earlier entry
+    // that merely MENTIONS the title (which related entries do by definition) win over the entry bearing it. A stale
+    // reference (the target renamed or removed since the chip was set) gets a toast instead of a silent dead click.
     const handleOpenRelated = useCallback(function (title: string) {
         const entry = titleIndex.find(function (candidate) {
             return candidate.title === title;
         });
         if (entry === undefined) {
+            toast(`No entry titled "${title}" found - it may have been renamed or removed.`);
             return;
         }
-        handleOpenMatch(entry.path, title);
-    }, [titleIndex, handleOpenMatch]);
+        openOrFocus(entry.path);
+        setSearchTarget({ path: entry.path, query: title, matchIndex: 0, exactTitle: true });
+        setDrawerOpen(false);
+    }, [titleIndex, openOrFocus]);
 
     // The open tabs in tab-bar shape, shared by the editor's TabBar and the Explorer's "Open Editors" list so the two
     // stay in sync. Activity tabs carry the job's title; file tabs fall back to their basename in the consumer.
@@ -804,6 +808,7 @@ const App = function () {
                                         allTitles={allTitles}
                                         highlightQuery={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.query : undefined}
                                         highlightMatchIndex={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.matchIndex : 0}
+                                        highlightExactTitle={searchTarget !== null && searchTarget.path === activeTab.path && searchTarget.exactTitle}
                                         onChange={onSpecsChange}
                                         onGenerate={handleGenerate}
                                         onOpenRelated={handleOpenRelated}

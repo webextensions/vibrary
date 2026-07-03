@@ -35,6 +35,9 @@ type SpecsEditorProperties = {
     // and so on, matching the position of the clicked row within that file's Search results. Ignored when
     // highlightQuery is unset; defaults to 0 (the "Relates to" chip navigation path, whose title match is unique).
     highlightMatchIndex?: number;
+    // When set, highlightQuery is an entry TITLE to match exactly (the "Relates to" chip path) rather than a
+    // substring to search - an earlier entry merely mentioning the title must not win over the entry bearing it.
+    highlightExactTitle?: boolean;
     onChange: (next: Spec[]) => void;
     // Generates the requested number of entries of the given type via the backend AI agent and refreshes the file.
     // `instructions` carries optional custom one-time guidance from the dialog's own field. Rejects on failure so the
@@ -87,7 +90,7 @@ const TYPE_FILTER_OPTIONS: Option[] = ENTRY_TYPES.map(function (type) {
 });
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, highlightQuery, highlightMatchIndex, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
+    { defaultEntryType, specs, schemas, allTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -116,6 +119,10 @@ const SpecsEditor = function (
         if (!needle || specs.length === 0) {
             return null;
         }
+        if (highlightExactTitle) {
+            const target = specs.find(function (spec) { return spec.title === highlightQuery; });
+            return target === undefined ? null : target.id;
+        }
         const matchesNeedle = function (spec: Spec) {
             return `${spec.title}\n${spec.content}\n${spec.notes}`.toLowerCase().includes(needle);
         };
@@ -125,7 +132,7 @@ const SpecsEditor = function (
         }
         const fallback = specs.find(function (spec) { return matchesNeedle(spec); });
         return fallback === undefined ? null : fallback.id;
-    }, [highlightQuery, highlightMatchIndex, specs]);
+    }, [highlightQuery, highlightMatchIndex, highlightExactTitle, specs]);
 
     // When a match is found, scroll its card into view and ring-highlight it for a couple of seconds so the user can
     // spot the entry the search result pointed at. The card's id is set in SpecCard.
