@@ -3,10 +3,11 @@ import { alertDialog } from 'helpmate/dist/dom/alertDialog.js';
 import styles from './promptDialog.module.css';
 
 // A single-line text prompt, built on helpmate's alert-only `alertDialog` the same way `confirmDialog` is: we hand it
-// our own label + input + Cancel/Confirm buttons and resolve with the trimmed text, or null when the user cancels,
-// submits nothing, or dismisses via the backdrop. With `allowEmpty`, an empty submit resolves with '' instead, so
-// null unambiguously means "cancelled" for prompts whose value is optional (e.g. a stash message). `initialValue`
-// prefills and selects the input for edit-in-place prompts like rename.
+// our own label + input + Cancel/Confirm buttons and resolve with the trimmed text, or null when the user cancels or
+// dismisses via the backdrop - null unambiguously means "cancelled". Submitting a required prompt empty keeps the
+// dialog open with a native validity message (the affirmative button must never silently behave as Cancel); with
+// `allowEmpty`, an empty submit instead resolves with '' (e.g. a stash message). `initialValue` prefills and selects
+// the input for edit-in-place prompts like rename.
 const promptDialog = function (
     { message, placeholder, confirmLabel, allowEmpty, initialValue }:
     { message: string; placeholder?: string; confirmLabel: string; allowEmpty?: boolean; initialValue?: string }

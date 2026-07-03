@@ -104,8 +104,9 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
     // Queue the headless agent for this entry on the activity monitor (one job runs at a time). Uses the in-memory value
     // (current edits), so no save is needed first; the job's raw stdout is logged to the browser console for debugging.
     // When "Provide custom one time instructions" is ticked, prompt first and forward the entered text to this run;
-    // cancelling (or leaving it blank) aborts queuing rather than proceeding without the instructions the user opted to
-    // give. The card returns as soon as the job is enqueued - progress lives in the activity monitor.
+    // cancelling aborts queuing rather than proceeding without the instructions the user opted to give (the prompt
+    // itself refuses an empty submit). The card returns as soon as the job is enqueued - progress lives in the
+    // activity monitor.
     const handleApply = async function () {
         if (prompting || activeJob !== undefined) {
             return;
