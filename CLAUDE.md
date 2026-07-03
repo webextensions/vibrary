@@ -24,19 +24,22 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
   factories taking `{ cwd }`. `utils/` holds the workers: `spawnClaude.js` (process lifecycle: stream-json flags,
   timeouts, abort -> process-group kill), one `runClaude*.js` per agent action (prompt builder + timeout each),
   `runGit.js` (simple-git wrappers), `vibraryFiles.js` (name validation - the path-traversal defense - and
-  `.vibraryinclude` gating), `searchVibrary.js`, `sendResponse.js` (the `{ status, output|errorMessage }` envelope).
+  `.vibraryinclude` gating), `searchVibrary.js` (entry-aware: matches parsed title/content/notes and returns
+  per-entry indexes that the editor's highlight addresses directly as `specs[entryIndex]` - keep the two sides
+  parsing the same file), `sendResponse.js` (the `{ status, output|errorMessage }` envelope).
 - `frontend/` - React 19 + TypeScript + Vite + CSS modules. `App.tsx` composes the layout; single-concern hooks own
   the state: `useOpenTabs.ts` (tab state - per-tab unsaved edits survive switching), `useFileOperations.ts` (the
   listing/summary plus every explorer file mutation and the error banner), `useSessionRestore.ts` (per-folder
-  which-tabs-were-open persistence); `ActivityQueueProvider.tsx` owns the
-  in-memory job queue (strictly one `claude -p` job at a time; per-job transcripts live in refs surfaced via
+  which-tabs-were-open persistence); `ActivityQueueProvider.tsx` owns the in-memory job queue (strictly one
+  `claude -p` job at a time; per-job transcripts live in refs surfaced via
   `useSyncExternalStore` so token streams re-render only the open detail tab; the context is split into a volatile
-  state half and a referentially-stable actions half - consume the narrowest one); `api.ts` is the fetch layer
-  (JSON envelope + NDJSON streaming).
+  state half and a referentially-stable actions half - consume the narrowest one, and any NEW queue action must read
+  live state through the refs, never captured state variables: the actions bundle freezes first-render closures);
+  `api.ts` is the fetch layer (JSON envelope + NDJSON streaming).
 - `frontend/src/vibraryXmlCore.js` - the deliberately untyped, framework-free, isomorphic core (parse/serialize/
-  hash/approval-state). It must keep working in the browser AND under plain node: `scripts/canonicalize-vibrary.js`
-  (the git diff driver's canonicalizer) and the backend import it. `vibraryXml.ts` is its hand-maintained type
-  layer (`as`-cast re-exports).
+  hash/approval-state, plus the single `normalizeTitle` rule and the guarded `randomId`). It must keep working in
+  the browser AND under plain node: `scripts/canonicalize-vibrary.js` (the git diff driver's canonicalizer) and the
+  backend import it. `vibraryXml.ts` is its hand-maintained type layer (`as`-cast re-exports).
 - `.vibraryinclude` (gitignore-style patterns, `ignore` library) gates EVERYTHING: listing, create, read, save,
   rename, delete all check it.
 - `scripts/` - dev launchers (`start-server.js`, `start-build.js`, `notifier.js`) and the reorder-insensitive git
@@ -47,12 +50,24 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 
 - Function expressions everywhere (`const x = function () {...}`), named exports only, `node:` prefixes, file
   extensions in imports, 4-space indent.
-- Naming: `Async` suffix for backend promise-returning functions; refs spelled out as `...Reference` (unicorn's
-  name-replacements rule; the conflicting react-x ref-name rule is disabled).
+- Naming: `Async` suffix for backend promise-returning functions; unicorn's name-replacements rule enforces
+  spelled-out names everywhere (`directory` not `dir`, `...Reference` not `...Ref` - the conflicting react-x
+  ref-name rule is disabled).
 - CSS modules use kebab-case class names accessed as camelCase (`localsConvention: 'camelCaseOnly'`).
 - Comments explain WHY (constraints, trade-offs), often at paragraph length; match that density when editing.
 - Plain HTTP on a LAN address (phone use) is a supported context: `crypto.randomUUID`/`crypto.subtle` are NOT
   guaranteed to exist - use the guarded helpers in `vibraryXmlCore.js` (e.g. `randomId`).
 - Every agent invocation runs `claude -p ... --dangerously-skip-permissions` (a headless run cannot answer
-  permission prompts); treat prompt text as code.
+  permission prompts); treat prompt text as code. The run recipe lives ONCE in `spawnClaude.js`'s
+  `runStreamedAgentAsync` - change flags/timeout policy there, not per action.
 - Commits: imperative summary, detailed prose body (wrapped ~72 cols) explaining why and how it was verified.
+
+## Packaging
+
+- The tarball ships only `backend`, `bin`, `dist`, and `frontend/src/vibraryXmlCore.js` (the backend imports the
+  core at RUNTIME). A new runtime import outside those paths, or a backend-reachable package left in
+  devDependencies, breaks the installed package while everything still works from the repo - this has happened.
+  Frontend-only libraries belong in devDependencies (vite prebuilds them into `dist/`); anything the backend or the
+  shipped core resolves at runtime belongs in dependencies.
+- After touching `files` or dependency placement, smoke-test the tarball: `npm pack`, install it with `--omit=dev`
+  into a scratch folder, start the packed server against a folder with a `.vibraryinclude`, and hit `/api/files`.
