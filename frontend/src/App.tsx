@@ -266,7 +266,7 @@ const App = function () {
         if (instructions !== '') {
             promptParts.push('', 'Instructions:', instructions);
         }
-        const claudeOutput = await enqueue({
+        await enqueue({
             kind: 'generate',
             label: `${count} ${type}`,
             prompt: promptParts.join('\n'),
@@ -274,8 +274,6 @@ const App = function () {
                 return generateSpecs(path, type, count, instructions, { signal, onEvent });
             }
         });
-        // Surface the agent's raw output for debugging the generation run.
-        console.log(`[vibrary] claude -p output for ${path}:\n${claudeOutput}`);
         const { content, specs, schemas } = await loadVibraryFile(path);
         patchTab(path, {
             specs,

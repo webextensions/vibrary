@@ -359,7 +359,7 @@ const SpecsEditor = function (
     });
 
     // Queue the backend's headless agent over every applicable selected spec as one combined "claude -p" job on the
-    // activity monitor (its stdout is logged to the browser console for debugging). When "Provide custom one time
+    // activity monitor. When "Provide custom one time
     // instructions" is ticked, prompt first (mirroring the single-card flow) and fold the entered text into the batch
     // prompt; cancelling aborts without enqueueing. The popup closes as soon as the job is enqueued; progress and any
     // error live in the activity monitor.
@@ -401,13 +401,14 @@ const SpecsEditor = function (
                 return applySpecs(entries, instructions, { signal, onEvent });
             }
         });
-        // Close the popup right away (synchronously, before the await); progress lives in the activity monitor. The
-        // await only logs the job's stdout once it finishes.
+        // Close the popup right away (synchronously, before the await); progress, the result, and any failure live
+        // in the activity monitor. The await only swallows the promise's rejection so a failed job (already recorded
+        // on the job row) does not surface again as an unhandled rejection.
         setActionsOpen(false);
         try {
-            console.log(`[vibrary] apply output for ${label}:\n${await promise}`);
-        } catch (error) {
-            console.error(`[vibrary] apply failed for ${label}:`, error);
+            await promise;
+        } catch {
+            // See above: the monitor already shows the failure.
         }
     };
 

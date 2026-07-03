@@ -105,7 +105,7 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
     });
 
     // Queue the headless agent for this entry on the activity monitor (one job runs at a time). Uses the in-memory value
-    // (current edits), so no save is needed first; the job's raw stdout is logged to the browser console for debugging.
+    // (current edits), so no save is needed first; the run's stream, result, and any failure render in the monitor.
     // When "Provide custom one time instructions" is ticked, prompt first and forward the entered text to this run;
     // cancelling aborts queuing rather than proceeding without the instructions the user opted to give (the prompt
     // itself refuses an empty submit). The card returns as soon as the job is enqueued - progress lives in the
@@ -139,10 +139,11 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
         if (instructions !== '') {
             promptParts.push('', 'Instructions:', instructions);
         }
-        // Enqueue and let the activity monitor own the run; await only to log the job's stdout when it eventually
-        // finishes (the await does not block the UI - the card has already returned control to the user).
+        // Enqueue and let the activity monitor own the run from here: it renders the stream, the result, and any
+        // failure. The card only swallows the promise's rejection so a failed job (already recorded on the job row)
+        // does not surface again as an unhandled rejection.
         try {
-            const output = await enqueue({
+            await enqueue({
                 kind: value.type === 'task' ? 'run-task' : 'apply-spec',
                 label: value.title,
                 prompt: promptParts.join('\n'),
@@ -150,9 +151,8 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
                     return runAction.run(runArguments, { signal, onEvent });
                 }
             });
-            console.log(`[vibrary] ${runAction.label} output for "${value.title}":\n${output}`);
-        } catch (error) {
-            console.error(`[vibrary] ${runAction.label} failed for "${value.title}":`, error);
+        } catch {
+            // See above: the monitor already shows the failure.
         }
     };
 
