@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import compression from 'compression';
 import express from 'express';
 
+import { createAgentsRouter } from './files/agents.js';
 import { createFilesRouter } from './files/files.js';
 import { createGitRouter } from './git/git.js';
 import { createSearchRouter } from './search/search.js';
@@ -22,6 +23,7 @@ const createApp = async function ({ cwd = process.cwd(), hmr = false } = {}) {
     app.use(express.json({ limit: '10mb' }));
 
     app.use('/api', createFilesRouter({ cwd }));
+    app.use('/api', createAgentsRouter({ cwd }));
     app.use('/api', createGitRouter({ cwd }));
     app.use('/api', createSearchRouter({ cwd }));
     app.use('/api', createSettingsRouter({ cwd }));

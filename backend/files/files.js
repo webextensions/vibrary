@@ -3,20 +3,13 @@ import path from 'node:path';
 
 import { Router } from 'express';
 
-import { countApprovedSpecs, ENTRY_TYPES, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
+import { countApprovedSpecs, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from './vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
-import { applySpecAsync } from './runClaudeApply.js';
-import { applySpecsAsync } from './runClaudeApplyBatch.js';
-import { generateSpecsAsync } from './runClaudeGenerate.js';
-import { runChatAsync } from './runClaudeChat.js';
-import { runTaskAsync } from './runClaudeRunTask.js';
 import { generateTitleAsync } from './runClaudeTitle.js';
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
-// Upper bound on specs generated in one request, guarding against a runaway agent run.
-const MAX_GENERATE_COUNT = 50;
 // The starter .vibraryinclude the empty state's one-click bootstrap writes: gitignore-style patterns (a pattern
 // without a slash matches at every depth, so these cover nested folders too), showing every vibrary family. Users
 // narrow it by editing the file; "!" re-excludes.
@@ -28,18 +21,6 @@ const VIBRARY_INCLUDE_TEMPLATE = [
     'tasks*.xml',
     ''
 ].join('\n');
-
-// A claude session id, as captured from the CLI's own stream-json init event (a UUID). Enforced before the value
-// lands on the agent's argv as --resume's value: the process already runs with permission prompts disabled, and a
-// value starting with "-" would sit exactly where an injected flag could be parser-quirked into existence - keeping
-// foreign shapes off that argv is cheap insurance, and a garbage id gets a clean 400 naming the problem instead of an
-// opaque CLI failure.
-const SESSION_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// Upper bound on entries applied in one batch run. Generous - its job is only to catch a pathological
-// select-everything-in-a-huge-file request before the single-argv prompt hits OS limits (Linux caps one argument
-// around 128 KiB) or the model's context; normal batches are far smaller.
-const MAX_APPLY_BATCH_COUNT = 50;
 
 const createFilesRouter = function ({ cwd }) {
     const router = Router();
@@ -107,38 +88,6 @@ const createFilesRouter = function ({ cwd }) {
     router.get('/workspace', function (request, response) {
         return sendSuccessResponse(response, { cwd: path.resolve(cwd) });
     });
-
-    // Stream a "claude -p" run to the client as newline-delimited JSON (claude's own stream-json lines, one per write),
-    // followed by a terminal {"type":"_exit",...} line carrying the process outcome. `runner({ signal, onLine })` runs
-    // the agent. Cache-Control: no-transform makes the compression middleware pass the body through unbuffered so lines
-    // reach the browser as they arrive. On an abort the client is already gone, so we just stop writing.
-    const streamClaudeRoute = async function (request, response, runner) {
-        const controller = abortOnDisconnect(request, response);
-        response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
-        response.setHeader('Cache-Control', 'no-transform');
-        response.flushHeaders();
-        const writeLine = function (line) {
-            if (response.writableEnded) {
-                return;
-            }
-            response.write(`${line}\n`);
-            // Flush so each line reaches the browser immediately rather than sitting in the compression middleware's
-            // buffer (no-transform disables gzip, but the wrapper still needs the explicit flush).
-            response.flush?.();
-        };
-        try {
-            await runner({ signal: controller.signal, onLine: writeLine });
-            writeLine(JSON.stringify({ type: '_exit', code: 0, error: null }));
-        } catch (error) {
-            if (!controller.signal.aborted) {
-                writeLine(JSON.stringify({ type: '_exit', code: 1, error: error.message }));
-            }
-        } finally {
-            if (!response.writableEnded) {
-                response.end();
-            }
-        }
-    };
 
     // Create a new, empty specs file from the explorer view. The name lives in the body (not the path) so it can be a
     // nested name like "docs/specs-foo.xml"; the parent directory is created if missing. The 'wx' write flag makes this
@@ -363,127 +312,6 @@ const createFilesRouter = function ({ cwd }) {
             console.error(`Failed to delete ${name}:`, error);
             return sendErrorResponse(response, 500, 'Unable to delete file');
         }
-    });
-
-    // Run a headless "claude -p" agent that reads the codebase and existing entries, then appends new ones to the file.
-    router.post('/files/:name/generate', async function (request, response) {
-        const { name } = request.params;
-        if (!isValidVibraryName(name)) {
-            return sendErrorResponse(response, 400, 'Invalid file name');
-        }
-        const target = resolveWithinCwd(cwd, name);
-        if (target === null) {
-            return sendErrorResponse(response, 400, 'Invalid file name');
-        }
-        if (!(await isVibraryNameIncluded(cwd, name))) {
-            return sendErrorResponse(response, 404, 'File not found');
-        }
-
-        const { type, count, instructions } = request.body || {};
-        if (!ENTRY_TYPES.includes(type)) {
-            return sendErrorResponse(response, 400, `Expected "type" to be one of: ${ENTRY_TYPES.join(', ')}`);
-        }
-        if (!Number.isSafeInteger(count) || count < 1 || count > MAX_GENERATE_COUNT) {
-            return sendErrorResponse(response, 400, `Expected an integer "count" between 1 and ${MAX_GENERATE_COUNT}`);
-        }
-
-        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return generateSpecsAsync({ cwd, name, type, count, instructions: typeof instructions === 'string' ? instructions : '', signal, onLine });
-        });
-    });
-
-    // Run a headless "claude -p" agent that makes the codebase conform to a single spec. Not file-name scoped: applying
-    // acts on the whole project (cwd), so the spec's text is sent in the body rather than read back from a file.
-    router.post('/apply', function (request, response) {
-        const { title, content, notes, instructions } = request.body || {};
-        if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
-            return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
-        }
-
-        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return applySpecAsync({
-                cwd,
-                title,
-                content,
-                notes: typeof notes === 'string' ? notes : '',
-                instructions: typeof instructions === 'string' ? instructions : '',
-                signal,
-                onLine
-            });
-        });
-    });
-
-    // Run a headless "claude -p" agent that carries out a single task. Like /apply, not file-name scoped: running acts
-    // on the whole project (cwd), so the task's text is sent in the body rather than read back from a file.
-    router.post('/run-task', function (request, response) {
-        const { title, content, notes, instructions, options } = request.body || {};
-        if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
-            return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
-        }
-
-        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return runTaskAsync({
-                cwd,
-                title,
-                content,
-                notes: typeof notes === 'string' ? notes : '',
-                instructions: typeof instructions === 'string' ? instructions : '',
-                options: typeof options === 'string' ? options : '',
-                signal,
-                onLine
-            });
-        });
-    });
-
-    // Continue a finished activity as a chat: resume its claude session with a follow-up message. Not file-name scoped;
-    // the message and the session id captured from the original run's stream are sent in the body.
-    router.post('/chat', function (request, response) {
-        const { message, sessionId } = request.body || {};
-        if (typeof message !== 'string' || message.trim() === '') {
-            return sendErrorResponse(response, 400, 'Expected a non-empty "message"');
-        }
-        if (typeof sessionId !== 'string' || !SESSION_ID_REGEX.test(sessionId)) {
-            return sendErrorResponse(response, 400, 'Expected "sessionId" to be a session UUID');
-        }
-
-        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return runChatAsync({ cwd, message, sessionId, signal, onLine });
-        });
-    });
-
-    // Run a headless "claude -p" agent that makes the codebase conform to several selected specs in a single run.
-    // Like /apply, project-scoped: the entries' text is sent in the body and acted on against the whole project (cwd).
-    router.post('/apply-batch', function (request, response) {
-        const { entries, instructions } = request.body || {};
-        if (!Array.isArray(entries) || entries.length === 0) {
-            return sendErrorResponse(response, 400, 'Expected a non-empty "entries" array');
-        }
-        if (entries.length > MAX_APPLY_BATCH_COUNT) {
-            return sendErrorResponse(response, 400, `Expected at most ${MAX_APPLY_BATCH_COUNT} entries per batch`);
-        }
-        const valid = entries.every(function (entry) {
-            return entry !== null && typeof entry === 'object' &&
-            typeof entry.title === 'string' && typeof entry.content === 'string' && entry.content.trim() !== '';
-        });
-        if (!valid) {
-            return sendErrorResponse(response, 400, 'Each entry needs a string "title" and a non-empty "content"');
-        }
-
-        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return applySpecsAsync({
-                cwd,
-                entries: entries.map(function (entry) {
-                    return {
-                        title: entry.title,
-                        content: entry.content,
-                        notes: typeof entry.notes === 'string' ? entry.notes : ''
-                    };
-                }),
-                instructions: typeof instructions === 'string' ? instructions : '',
-                signal,
-                onLine
-            });
-        });
     });
 
     // Run a headless "claude -p" agent that derives a hyphenated title from a spec's content, backing the editor's
