@@ -171,12 +171,14 @@ const App = function () {
         }
         patchTab(path, { reloading: true });
         try {
-            const { content, specs, schemas } = await loadVibraryFile(path);
+            // A parse failure arrives in-band (parseError set, content still present) so the Raw tab can show the
+            // malformed on-disk file; only a fetch failure lands in the catch, where there is no content to show.
+            const { content, specs, schemas, parseError } = await loadVibraryFile(path);
             patchTab(path, {
                 specs,
                 schemas,
                 rawFallback: content,
-                parseError: null,
+                parseError,
                 dirty: false,
                 status: { kind: 'idle' },
                 reloading: false,
@@ -274,12 +276,14 @@ const App = function () {
                 return generateSpecs(path, type, count, instructions, { signal, onEvent });
             }
         });
-        const { content, specs, schemas } = await loadVibraryFile(path);
+        // parseError arrives in-band: if the agent left the file malformed, the tab shows the parse error with the
+        // raw content visible instead of pretending the reload produced a clean model.
+        const { content, specs, schemas, parseError } = await loadVibraryFile(path);
         patchTab(path, {
             specs,
             schemas,
             rawFallback: content,
-            parseError: null,
+            parseError,
             dirty: false,
             status: { kind: 'idle' },
             reloadNonce: activeTab.reloadNonce + 1
@@ -435,7 +439,11 @@ const App = function () {
 
                 {activeTab !== null && activeTab.kind === 'activity' &&
                 <Suspense fallback={null}>
-                    <ActivityDetail jobId={activeTab.jobId ?? ''} />
+                    {/* Keyed by job so switching straight between two activity tabs remounts the detail: its composer
+                        draft is seeded from the provider only at mount, and an unkeyed instance would carry tab A's
+                        half-typed draft (and elapsed-timer/scroll state) over to tab B - and then mirror that draft
+                        into B's stored one. The editor below gets the same treatment via its own key. */}
+                    <ActivityDetail key={activeTab.jobId} jobId={activeTab.jobId ?? ''} />
                 </Suspense>}
 
                 {activeTab !== null && activeTab.kind === 'file' &&

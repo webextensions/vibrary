@@ -54,22 +54,15 @@ const newTab = function (path: string): TabState {
     };
 };
 
+// Built on newTab so a future TabState field only needs one constructor; the overrides are what makes an activity tab
+// different: its kind/job identity, and nothing to fetch (content is read live from the activity queue).
 const newActivityTab = function (jobId: string, title: string): TabState {
     return {
-        path: `activity:${jobId}`,
+        ...newTab(`activity:${jobId}`),
         kind: 'activity',
         jobId,
         title,
-        loading: false,
-        reloading: false,
-        specs: [],
-        schemas: {},
-        rawFallback: '',
-        parseError: null,
-        innerTab: 'structured',
-        status: { kind: 'idle' },
-        dirty: false,
-        reloadNonce: 0
+        loading: false
     };
 };
 
@@ -183,7 +176,9 @@ const useOpenTabs = function () {
 
         const loadAsync = async function (path: string) {
             try {
-                const { content, specs, schemas } = await loadVibraryFile(path);
+                // A parse failure arrives in-band (parseError set, content still present) so the Raw tab can show the
+                // malformed file; only a fetch failure lands in the catch below, where there is no content to show.
+                const { content, specs, schemas, parseError } = await loadVibraryFile(path);
                 setState(function (previous) {
                     if (previous.tabs.every(function (tab) { return tab.path !== path; })) {
                         return previous;
@@ -192,7 +187,7 @@ const useOpenTabs = function () {
                         ...previous,
                         tabs: previous.tabs.map(function (tab) {
                             return tab.path === path ?
-                                { ...tab, loading: false, specs, schemas, rawFallback: content, parseError: null } :
+                                { ...tab, loading: false, specs, schemas, rawFallback: content, parseError } :
                                 tab;
                         })
                     };
