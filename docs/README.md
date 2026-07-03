@@ -12,10 +12,13 @@ Vibrary is a small, globally-installable web app for browsing and editing vibrar
 ```bash
 vibrary-server            # start the server in the current folder (auto-opens the browser)
 vibrary server --port 4000 --no-open
+vibrary server --host 0.0.0.0   # expose on the network, e.g. to open the UI from a phone
 vibrary --help
 ```
 
-The server starts on port 3000 and advances to the next free port if it is busy.
+The server starts on port 3000 and advances to the next free port if it is busy. By default it binds to
+`127.0.0.1` (this machine only); `--host 0.0.0.0` exposes it to the network, which gives everyone on that network
+the same powers the UI has - including agent runs (see below) - so only do it on networks you trust.
 
 ## Agent runs and permissions
 

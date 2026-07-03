@@ -29,10 +29,12 @@ const buildProgram = function () {
         .command('server')
         .description('Start the vibrary web server for the current folder')
         .option('-p, --port <number>', 'preferred port (advances to the next free one if busy)', parsePort, 3000)
+        .option('--host <address>', 'address to bind; 0.0.0.0 exposes the server (and its agent runs) to the network', '127.0.0.1')
         .option('--no-open', 'do not open the browser automatically')
         .action(async function (options) {
             await startServer({
                 port: options.port,
+                host: options.host,
                 open: options.open
             });
         });
