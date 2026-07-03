@@ -46,7 +46,9 @@ types leave it empty. An entry with no `type` attribute is treated as a `spec`.
 Each `<entry>` has these child elements:
 
 - `title` - a hyphenated identifier for the entry (for example `sky-is-blue`). Other entries reference it by this value
-  in their `relatesTo`. The editor normalizes typed titles to lowercase and replaces whitespace with hyphens.
+  in their `relatesTo`, so titles should be unique across the folder: a duplicated title resolves to its first
+  occurrence in listing order, and the editor flags duplicates within a file. The editor normalizes typed titles to
+  lowercase with every non-alphanumeric run collapsed to a single hyphen.
 - `createdBy` - a single value, either `Human` or `AI`.
 - `approved` - the human approval: a short hash of the `content` captured when it was approved, or empty when not
   approved. If the stored hash no longer matches the current `content` the approval is stale (the text changed since

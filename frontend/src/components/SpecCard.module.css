@@ -112,6 +112,19 @@
     background: #dafbe1;
 }
 
+/* Duplicate-title warning chip beside the title, in the same amber family as the stale-approval state: both mean
+ * "this entry needs attention before its metadata can be trusted". */
+.duplicate-title-warning {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border: 1px solid #d4a72c;
+    border-radius: 10px;
+    background: #fff8c5;
+    color: #9a6700;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
 /* Stale approval: content changed since sign-off, prompting a reapprove */
 .spec-card .approve.reapprove {
     color: #9a6700;

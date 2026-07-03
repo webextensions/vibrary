@@ -27,6 +27,8 @@ type SpecCardProperties = {
     mode: Mode;
     // Briefly true after the card is scrolled to from a Search result, to ring-highlight it.
     highlighted?: boolean;
+    // Another entry in this file bears the same title; references by that title are ambiguous, so the card says so.
+    hasDuplicateTitle?: boolean;
     schemas: SchemaMap;
     allTitles: string[];
     // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
@@ -115,7 +117,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [expanded, setExpanded] = useState(false);
@@ -273,6 +275,13 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                         (
                             <span className={styles.specCardTitle}>{value.title || `(untitled ${value.type} #${index + 1})`}</span>
                         )}
+                    {hasDuplicateTitle &&
+                    <span
+                        className={styles.duplicateTitleWarning}
+                        title="Another entry in this file has the same title. Titles are how entries reference each other (relatesTo), so a duplicated title makes those references ambiguous."
+                    >
+                        duplicate title
+                    </span>}
                 </div>
                 <div className={styles.specCardActions}>
                     <button type="button" className={styles.remove} onClick={confirmRemove}>

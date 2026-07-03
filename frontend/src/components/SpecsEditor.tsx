@@ -321,6 +321,25 @@ const SpecsEditor = function (
         });
     }, [specs]);
 
+    // Titles duplicated within the open file. Titles are cross-file identifiers - relatesTo references resolve by
+    // exact title - so a duplicate silently makes references ambiguous; nothing else enforces the format doc's
+    // uniqueness rule (the create paths avoid collisions, but manual edits can introduce them). Flagged per card,
+    // styled after the stale-approval affordance.
+    const duplicateTitles = useMemo(function () {
+        const seen = new Set<string>();
+        const duplicates = new Set<string>();
+        for (const spec of specs) {
+            if (spec.title === '') {
+                continue;
+            }
+            if (seen.has(spec.title)) {
+                duplicates.add(spec.title);
+            }
+            seen.add(spec.title);
+        }
+        return duplicates;
+    }, [specs]);
+
     // A card's label chip toggles that label into (or out of) the active label filter - a quick "show me more/fewer
     // like this" shortcut, mirroring how a "Relates to" chip navigates instead. Symmetric with the dropdown: clicking
     // an already-selected label's chip again clears it.
@@ -549,6 +568,7 @@ const SpecsEditor = function (
                             index={index}
                             mode={editingIds.has(spec.id) ? 'edit' : 'review'}
                             highlighted={spec.id === highlightId}
+                            hasDuplicateTitle={duplicateTitles.has(spec.title) && spec.title !== ''}
                             value={spec}
                             schemas={schemas}
                             allTitles={allTitles}
