@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import { ActivityQueueProvider } from './activity/ActivityQueueProvider.tsx';
 import { App } from './App.tsx';
 import { ActivityNotifier } from './activity/ActivityNotifier.tsx';
-import { SettingsProvider } from './SettingsProvider.tsx';
+import { SettingsProvider } from './settings/SettingsProvider.tsx';
 import './index.css';
 
 const rootElement = document.getElementById('root');

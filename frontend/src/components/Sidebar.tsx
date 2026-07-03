@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { AccordionSection } from '../shared/AccordionSection.tsx';
 import { MenuPanel } from '../shared/MenuPanel.tsx';
 import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from '../shared/Icons.tsx';
-import { type TabInfo, tabLabel } from './tabLabel.ts';
+import { type TabInfo, tabLabel } from '../tabs/tabLabel.ts';
 import { buildFileTree, collectFolderPaths, type TreeNode } from '../fileTree.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { useEscapeToClear } from '../shared/useEscapeToClear.ts';

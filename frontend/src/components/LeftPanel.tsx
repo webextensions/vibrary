@@ -11,7 +11,7 @@ import { type LeftView, NavigationRail } from './NavigationRail.tsx';
 import { SearchPanel } from './SearchPanel.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { SourceControlPanel } from './SourceControlPanel.tsx';
-import { type TabInfo } from './tabLabel.ts';
+import { type TabInfo } from '../tabs/tabLabel.ts';
 
 import styles from './LeftPanel.module.css';
 

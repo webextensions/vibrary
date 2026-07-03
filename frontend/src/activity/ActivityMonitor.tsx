@@ -4,7 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { type Job, type JobKind, type JobStatus, useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
-import { useSettings } from '../settingsContext.ts';
+import { useSettings } from '../settings/settingsContext.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, formatDuration, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, FilterIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';

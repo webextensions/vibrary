@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { getWorkspace } from './api.ts';
+import { getWorkspace } from '../api.ts';
 import { readSessionTabs, writeSessionTabs } from './sessionTabs.ts';
 
 type SessionRestoreOptions = {

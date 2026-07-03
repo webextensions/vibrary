@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 
 import { useActivityQueueState } from './activityQueue.ts';
-import { useSettings } from '../settingsContext.ts';
+import { useSettings } from '../settings/settingsContext.ts';
 import { FINISHED_STATUSES, KIND_META } from './activityPresentation.ts';
 
 // Renders nothing; watches the job queue and pops a top-right toast when a job starts and when it finishes, for the

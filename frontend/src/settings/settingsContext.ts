@@ -1,7 +1,7 @@
 import { createContext, use } from 'react';
 
-import { type JobKind } from './activity/activityQueue.ts';
-import { type FormData } from './components/taskOptions.ts';
+import { type JobKind } from '../activity/activityQueue.ts';
+import { type FormData } from '../components/taskOptions.ts';
 
 // Context and accessor for the per-project settings store. The stateful provider lives in SettingsProvider.tsx; kept
 // separate (like activityQueue.ts) so each file exports one kind of thing and React Fast Refresh stays happy.
