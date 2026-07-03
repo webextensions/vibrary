@@ -164,6 +164,7 @@ const createFilesRouter = function ({ cwd }) {
             if (error.code === 'EEXIST') {
                 return sendErrorResponse(response, 409, 'File already exists');
             }
+            console.error(`Failed to create ${name}:`, error);
             return sendErrorResponse(response, 500, 'Unable to create file');
         }
     });
@@ -188,6 +189,7 @@ const createFilesRouter = function ({ cwd }) {
             if (error.code === 'ENOENT') {
                 return sendErrorResponse(response, 404, 'File not found');
             }
+            console.error(`Failed to read ${name}:`, error);
             return sendErrorResponse(response, 500, 'Unable to read file');
         }
     });
@@ -212,6 +214,7 @@ const createFilesRouter = function ({ cwd }) {
             if (error.code === 'ENOENT') {
                 return sendErrorResponse(response, 404, 'File not found');
             }
+            console.error(`Failed to read schema file ${name}:`, error);
             return sendErrorResponse(response, 500, 'Unable to read file');
         }
     });
@@ -357,6 +360,7 @@ const createFilesRouter = function ({ cwd }) {
             if (error.code === 'ENOENT') {
                 return sendErrorResponse(response, 404, 'File not found');
             }
+            console.error(`Failed to delete ${name}:`, error);
             return sendErrorResponse(response, 500, 'Unable to delete file');
         }
     });
