@@ -5,6 +5,12 @@ import { spawn } from 'node:child_process';
 // per-token content_block_delta events that drive the typewriter rendering.
 const CLAUDE_STREAM_FLAGS = ['--output-format', 'stream-json', '--verbose', '--include-partial-messages'];
 
+// How long a kill request waits for the SIGTERM'd process group to actually exit before escalating to SIGKILL. Without
+// the escalation, a child that ignores SIGTERM (wedged worker, uninterruptible I/O) would leave the promise pending
+// forever: the timed-out route would hang past its own timeoutMs, the UI's activity would stay "Running" after a
+// cancel, and an aborted worker would keep editing files - exactly what the kill exists to stop.
+const KILL_ESCALATION_GRACE_MS = 5 * 1000;
+
 // Spawn "claude <args>" in `cwd` with the full lifecycle the callers rely on: clean-exit resolve, descriptive rejects
 // (missing CLI, non-zero exit, timeout, external abort), and a tree-kill on abort/timeout.
 //
@@ -27,23 +33,35 @@ const runClaudeProcess = function ({ cwd, args, timeoutMs, timeoutMessage, signa
         let wasAborted = false;
         let didTimeout = false;
 
-        // SIGTERM the child's whole process group; fall back to the direct child if the group is already gone.
-        const killTree = function () {
+        // Signal the child's whole process group; fall back to the direct child if the group is already gone.
+        const killTree = function (signalName) {
             try {
-                process.kill(-child.pid, 'SIGTERM');
+                process.kill(-child.pid, signalName);
             } catch {
-                child.kill('SIGTERM');
+                child.kill(signalName);
+            }
+        };
+
+        // SIGTERM first, then SIGKILL after the grace period unless 'close' fires and cleanup() disarms it - the
+        // standard term-then-kill pattern (what child_process's own `timeout` option and process managers do).
+        let escalationTimer = null;
+        const requestKill = function () {
+            killTree('SIGTERM');
+            if (escalationTimer === null) {
+                escalationTimer = setTimeout(function () {
+                    killTree('SIGKILL');
+                }, KILL_ESCALATION_GRACE_MS);
             }
         };
 
         const timer = setTimeout(function () {
             didTimeout = true;
-            killTree();
+            requestKill();
         }, timeoutMs);
 
         const onAbort = function () {
             wasAborted = true;
-            killTree();
+            requestKill();
         };
         if (signal) {
             signal.addEventListener('abort', onAbort, { once: true });
@@ -51,6 +69,9 @@ const runClaudeProcess = function ({ cwd, args, timeoutMs, timeoutMessage, signa
 
         const cleanup = function () {
             clearTimeout(timer);
+            if (escalationTimer !== null) {
+                clearTimeout(escalationTimer);
+            }
             if (signal) {
                 signal.removeEventListener('abort', onAbort);
             }
