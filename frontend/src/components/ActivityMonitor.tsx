@@ -5,6 +5,7 @@ import Select from 'react-select';
 
 import { type Job, type JobKind, type JobStatus, useActivityQueue } from '../activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
+import { useDismissablePopup } from '../useDismissablePopup.ts';
 import { AiIcon, ChevronIcon, EditIcon, FilterIcon, ListIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, SpecIcon, StopIcon, TaskIcon } from './Icons.tsx';
 
 import styles from './ActivityMonitor.module.css';
@@ -124,27 +125,7 @@ const NotificationSettingsMenu = function () {
     const [open, setOpen] = useState(false);
     const wrapReference = useRef<HTMLDivElement>(null);
 
-    useEffect(function () {
-        if (!open) {
-            return undefined;
-        }
-        const handlePointerDown = function (event: MouseEvent) {
-            if (wrapReference.current !== null && !wrapReference.current.contains(event.target as Node)) {
-                setOpen(false);
-            }
-        };
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handlePointerDown);
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('mousedown', handlePointerDown);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [open]);
+    useDismissablePopup(open, function () { setOpen(false); }, wrapReference);
 
     return (
         <div className={styles.settingsWrap} ref={wrapReference}>

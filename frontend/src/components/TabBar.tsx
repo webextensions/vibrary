@@ -1,8 +1,9 @@
 import cx from 'classnames';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { CloseIcon, MoreIcon } from './Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
+import { useDismissablePopup } from '../useDismissablePopup.ts';
 import { useMediaQuery } from '../useMediaQuery.ts';
 
 import styles from './TabBar.module.css';
@@ -26,26 +27,8 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
     const [menuPath, setMenuPath] = useState<string | null>(null);
 
     // Close the open context menu on any click outside it, or on Escape; the menu's own buttons close it themselves
-    // before acting.
-    useEffect(function () {
-        if (menuPath === null) {
-            return undefined;
-        }
-        const handleDocumentClick = function () {
-            setMenuPath(null);
-        };
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setMenuPath(null);
-            }
-        };
-        document.addEventListener('click', handleDocumentClick);
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('click', handleDocumentClick);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [menuPath]);
+    // before acting, and stop propagation so their clicks never reach the document listener.
+    useDismissablePopup(menuPath !== null, function () { setMenuPath(null); });
 
     if (isMobile) {
         return (

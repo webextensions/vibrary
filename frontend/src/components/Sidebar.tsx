@@ -5,6 +5,7 @@ import { AccordionSection } from './AccordionSection.tsx';
 import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { buildFileTree, collectFolderPaths, type TreeNode } from '../fileTree.ts';
+import { useDismissablePopup } from '../useDismissablePopup.ts';
 import { type FileCount } from '../useFileCounts.ts';
 
 import styles from './Sidebar.module.css';
@@ -317,25 +318,7 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
     // Close the open menu on any click outside it, or on Escape. The menu's own buttons stop propagation, so the click
     // listener only fires for clicks elsewhere; the toggle button also stops propagation so opening one menu does not
     // immediately re-close it.
-    useEffect(function () {
-        if (openMenuPath === null) {
-            return undefined;
-        }
-        const handleDocumentClick = function () {
-            setOpenMenuPath(null);
-        };
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setOpenMenuPath(null);
-            }
-        };
-        document.addEventListener('click', handleDocumentClick);
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('click', handleDocumentClick);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [openMenuPath]);
+    useDismissablePopup(openMenuPath !== null, function () { setOpenMenuPath(null); });
 
     // Escape clears the file selection, matching the app's established Escape-to-dismiss convention for other
     // transient list-scoped state (the row "More" menu above, SpecsEditor's own entry selection). Skipped while a row

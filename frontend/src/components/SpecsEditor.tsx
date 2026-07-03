@@ -4,6 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { useActivityQueue } from '../activityQueue.ts';
+import { useDismissablePopup } from '../useDismissablePopup.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
@@ -163,74 +164,10 @@ const SpecsEditor = function (
     const [aiDialogOpen, setAiDialogOpen] = useState(false);
     const speedDialReference = useRef<HTMLDivElement>(null);
 
-    // While the speed-dial menu is open, collapse it on an outside click or Escape so it behaves like a popup.
-    useEffect(function () {
-        if (!menuOpen) {
-            return undefined;
-        }
-        const handlePointerDown = function (event: MouseEvent) {
-            if (!speedDialReference.current?.contains(event.target as Node)) {
-                setMenuOpen(false);
-            }
-        };
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setMenuOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handlePointerDown);
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('mousedown', handlePointerDown);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [menuOpen]);
-
-    // While the Actions popup is open, dismiss it on an outside click or Escape.
-    useEffect(function () {
-        if (!actionsOpen) {
-            return undefined;
-        }
-        const handlePointerDown = function (event: MouseEvent) {
-            if (!actionsReference.current?.contains(event.target as Node)) {
-                setActionsOpen(false);
-            }
-        };
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setActionsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handlePointerDown);
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('mousedown', handlePointerDown);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [actionsOpen]);
-
-    // While the Operations popup is open, dismiss it on an outside click or Escape.
-    useEffect(function () {
-        if (!operationsOpen) {
-            return undefined;
-        }
-        const handlePointerDown = function (event: MouseEvent) {
-            if (!operationsReference.current?.contains(event.target as Node)) {
-                setOperationsOpen(false);
-            }
-        };
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setOperationsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handlePointerDown);
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('mousedown', handlePointerDown);
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [operationsOpen]);
+    // While the speed-dial menu / Actions popup / Operations popup is open, dismiss it on an outside press or Escape.
+    useDismissablePopup(menuOpen, function () { setMenuOpen(false); }, speedDialReference);
+    useDismissablePopup(actionsOpen, function () { setActionsOpen(false); }, actionsReference);
+    useDismissablePopup(operationsOpen, function () { setOperationsOpen(false); }, operationsReference);
 
     // Escape clears the entry selection, matching the app's established Escape-to-dismiss convention for other
     // transient list-scoped state (the popups above, Sidebar's file selection below). Skipped while one of those
