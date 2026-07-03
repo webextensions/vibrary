@@ -136,4 +136,24 @@ const emitUserPrompt = function (onLine, prompt) {
     onLine(JSON.stringify({ type: 'user_prompt', text: prompt }));
 };
 
-export { CLAUDE_STREAM_FLAGS, emitUserPrompt, spawnClaudeAsync, spawnClaudeStreamAsync };
+// The one recipe every streamed agent action runs on: echo the prompt as the activity's first bubble (unless the
+// caller seeds the transcript itself, e.g. a chat resume where the message is already shown optimistically), then
+// stream "claude -p <prompt> [extraArguments]" with the stream-json flags. All UI-triggered runs execute with
+// --dangerously-skip-permissions ON PURPOSE: a headless run has no way to surface a permission prompt to the browser,
+// so a gated run would simply hang - the trade-off is that prompt text is effectively code, and the docs disclose it.
+// Centralized here so the flag, its rationale, and any future run-recipe change (flags, env, kill policy) live once.
+const runStreamedAgentAsync = function ({ cwd, prompt, extraArguments = [], timeoutMs, timeoutMessage, signal, onLine, echoPrompt = true }) {
+    if (echoPrompt) {
+        emitUserPrompt(onLine, prompt);
+    }
+    return spawnClaudeStreamAsync({
+        cwd,
+        args: ['-p', prompt, ...extraArguments, ...CLAUDE_STREAM_FLAGS, '--dangerously-skip-permissions'],
+        timeoutMs,
+        timeoutMessage,
+        signal,
+        onLine
+    });
+};
+
+export { runStreamedAgentAsync, spawnClaudeAsync };
