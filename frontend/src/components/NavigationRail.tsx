@@ -40,7 +40,9 @@ const NavigationRail = function ({ active, onSelect, badges, onClose }: { active
                         key={view}
                         type="button"
                         className={cx(styles.railButton, active === view && styles.active)}
-                        aria-label={label}
+                        // The badge below is a bare number over the icon; fold it into the accessible name so the
+                        // count reaches screen readers too.
+                        aria-label={count > 0 ? `${label} (${count} active)` : label}
                         aria-pressed={active === view}
                         title={label}
                         onClick={function () {
