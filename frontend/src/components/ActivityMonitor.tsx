@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
-import { type Job, type JobKind, type JobStatus, useActivityQueue } from '../activityQueue.ts';
+import { type Job, type JobKind, type JobStatus, useActivityQueueActions, useActivityQueueState } from '../activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
 import { useDismissablePopup } from '../useDismissablePopup.ts';
 import { FINISHED_STATUSES, formatDuration, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
@@ -164,7 +164,8 @@ const NotificationSettingsMenu = function () {
 // The "Activity monitor" body: a queue-wide control row over the list of jobs (running first as they sit mid-list,
 // queued after, finished history above). Reads everything from the shared activity queue.
 const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: string, title: string) => void }) {
-    const { jobs, paused, pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished } = useActivityQueue();
+    const { jobs, paused } = useActivityQueueState();
+    const { pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished } = useActivityQueueActions();
 
     // Kind/status filters for the job list, mirroring SpecsEditor's own filter row - useful once the queue's history
     // accumulates every run/apply/generate/chat-continuation job across a session. An empty selection filters nothing,

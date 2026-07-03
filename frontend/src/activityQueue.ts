@@ -38,10 +38,16 @@ type Job = {
     run: JobRun
 };
 
-type ActivityQueue = {
+// The queue's context is split in two so consumers subscribe to only what they use: STATE changes on every queue
+// transition and re-renders its consumers, while the ACTIONS bundle is referentially stable for the provider's whole
+// life - a card that only enqueues (every SpecCard) never re-renders because some other job started or finished.
+type ActivityQueueState = {
     jobs: Job[];
     paused: boolean;
-    monitorOpen: boolean;
+    monitorOpen: boolean
+};
+
+type ActivityQueueActions = {
     setMonitorOpen: (isOpen: boolean) => void;
     enqueue: (spec: JobSpec) => Promise<string>;
     pause: () => void;
@@ -76,12 +82,21 @@ type ActivityQueue = {
     setDraft: (jobId: string, text: string) => void
 };
 
-const ActivityQueueContext = createContext<ActivityQueue | null>(null);
+const ActivityQueueStateContext = createContext<ActivityQueueState | null>(null);
+const ActivityQueueActionsContext = createContext<ActivityQueueActions | null>(null);
 
-const useActivityQueue = function (): ActivityQueue {
-    const value = use(ActivityQueueContext);
+const useActivityQueueState = function (): ActivityQueueState {
+    const value = use(ActivityQueueStateContext);
     if (value === null) {
-        throw new Error('useActivityQueue must be used within an ActivityQueueProvider');
+        throw new Error('useActivityQueueState must be used within an ActivityQueueProvider');
+    }
+    return value;
+};
+
+const useActivityQueueActions = function (): ActivityQueueActions {
+    const value = use(ActivityQueueActionsContext);
+    if (value === null) {
+        throw new Error('useActivityQueueActions must be used within an ActivityQueueProvider');
     }
     return value;
 };
@@ -89,7 +104,7 @@ const useActivityQueue = function (): ActivityQueue {
 // Subscribe to one job's live transcript. Backed by useSyncExternalStore so only the activity tab re-renders as tokens
 // arrive; the store returns a stable array reference until that job's transcript actually changes.
 const useJobEvents = function (jobId: string): TranscriptItem[] {
-    const { subscribeEvents, getEvents } = useActivityQueue();
+    const { subscribeEvents, getEvents } = useActivityQueueActions();
     const subscribe = useCallback(function (callback: () => void) {
         return subscribeEvents(jobId, callback);
     }, [subscribeEvents, jobId]);
@@ -99,4 +114,4 @@ const useJobEvents = function (jobId: string): TranscriptItem[] {
     return useSyncExternalStore(subscribe, getSnapshot);
 };
 
-export { type ActivityQueue, ActivityQueueContext, type Job, type JobKind, type JobSpec, type JobStatus, useActivityQueue, useJobEvents };
+export { type ActivityQueueActions, ActivityQueueActionsContext, type ActivityQueueState, ActivityQueueStateContext, type Job, type JobKind, type JobSpec, type JobStatus, useActivityQueueActions, useActivityQueueState, useJobEvents };

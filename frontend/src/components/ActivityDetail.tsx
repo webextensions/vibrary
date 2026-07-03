@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
 
-import { useActivityQueue, useJobEvents } from '../activityQueue.ts';
+import { useActivityQueueActions, useActivityQueueState, useJobEvents } from '../activityQueue.ts';
 import { type TranscriptItem } from '../activityStream.ts';
 
 import { formatDuration, STATUS_LABEL } from './activityPresentation.ts';
@@ -168,7 +168,8 @@ const TranscriptBlock = function ({ item, isPending, onCancel }: { item: Transcr
 // Reads the job's metadata from the queue and its live transcript from useJobEvents (which re-renders only this tab as
 // tokens arrive).
 const ActivityDetail = function ({ jobId }: { jobId: string }) {
-    const { jobs, abortCurrent, retryJob, sendMessage, cancelPendingMessage, isMessagePending, getDraft, setDraft: storeDraft } = useActivityQueue();
+    const { jobs } = useActivityQueueState();
+    const { abortCurrent, retryJob, sendMessage, cancelPendingMessage, isMessagePending, getDraft, setDraft: storeDraft } = useActivityQueueActions();
     const job = jobs.find(function (candidate) { return candidate.id === jobId; }) ?? null;
     const items = useJobEvents(jobId);
 

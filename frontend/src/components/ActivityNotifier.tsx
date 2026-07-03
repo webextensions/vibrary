@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 
-import { useActivityQueue } from '../activityQueue.ts';
+import { useActivityQueueState } from '../activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
 import { KIND_META } from './activityPresentation.ts';
 
@@ -10,7 +10,7 @@ import { KIND_META } from './activityPresentation.ts';
 // context, so the queue has no toast/settings dependency. Each job id is toasted at most once (tracked in a ref) - the
 // effect re-runs on every jobs change, so a queued->running transition fires exactly once.
 const ActivityNotifier = function () {
-    const { jobs } = useActivityQueue();
+    const { jobs } = useActivityQueueState();
     const { isKindEnabled } = useSettings();
     const notifiedReference = useRef(new Set<string>());
 

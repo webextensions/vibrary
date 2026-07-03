@@ -1,7 +1,7 @@
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useMemo, useRef, useState } from 'react';
 
 import { chatContinue } from './api.ts';
-import { type ActivityQueue, ActivityQueueContext, type Job, type JobSpec, type JobStatus } from './activityQueue.ts';
+import { type ActivityQueueActions, ActivityQueueActionsContext, type ActivityQueueState, ActivityQueueStateContext, type Job, type JobSpec, type JobStatus } from './activityQueue.ts';
 import { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, removeItem, type TranscriptItem, type TranscriptState } from './activityStream.ts';
 import { randomId } from './vibraryXml.ts';
 
@@ -401,38 +401,57 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         }
     };
 
-    const value: ActivityQueue = {
-        jobs,
-        paused,
-        monitorOpen,
-        setMonitorOpen,
-        enqueue,
-        pause,
-        resume,
-        abortCurrent,
-        removeJob,
-        moveJob,
-        retryJob,
-        retryAllFailed,
-        sendMessage,
-        cancelPendingMessage,
-        isMessagePending,
-        clearFinished,
-        subscribeEvents,
-        getEvents,
-        getDraft: function (jobId: string) {
-            return draftsReference.current.get(jobId) ?? '';
-        },
-        setDraft: function (jobId: string, text: string) {
-            if (text === '') {
-                draftsReference.current.delete(jobId);
-            } else {
-                draftsReference.current.set(jobId, text);
-            }
+    const getDraft = function (jobId: string) {
+        return draftsReference.current.get(jobId) ?? '';
+    };
+
+    const setDraft = function (jobId: string, text: string) {
+        if (text === '') {
+            draftsReference.current.delete(jobId);
+        } else {
+            draftsReference.current.set(jobId, text);
         }
     };
 
-    return <ActivityQueueContext value={value}>{children}</ActivityQueueContext>;
+    // The actions bundle is created ONCE (useState initializer) and stays referentially stable for the provider's
+    // life. Freezing the first render's closures is safe by construction: every function above reads live queue
+    // state through the refs (jobsReference, pausedReference, ...), never through captured state variables - the
+    // same design that lets the pump run from async callbacks. Stability is the point: action-only consumers (each
+    // SpecCard's enqueue) subscribe to this context and never re-render on queue churn, and useJobEvents' memoized
+    // subscribe/getSnapshot stop being invalidated by every provider render.
+    const [actions] = useState<ActivityQueueActions>(function () {
+        return {
+            setMonitorOpen,
+            enqueue,
+            pause,
+            resume,
+            abortCurrent,
+            removeJob,
+            moveJob,
+            retryJob,
+            retryAllFailed,
+            sendMessage,
+            cancelPendingMessage,
+            isMessagePending,
+            clearFinished,
+            subscribeEvents,
+            getEvents,
+            getDraft,
+            setDraft
+        };
+    });
+
+    const state = useMemo(function (): ActivityQueueState {
+        return { jobs, paused, monitorOpen };
+    }, [jobs, paused, monitorOpen]);
+
+    return (
+        <ActivityQueueStateContext value={state}>
+            <ActivityQueueActionsContext value={actions}>
+                {children}
+            </ActivityQueueActionsContext>
+        </ActivityQueueStateContext>
+    );
 };
 
 export { ActivityQueueProvider };

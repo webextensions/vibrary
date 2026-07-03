@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
-import { useActivityQueue } from '../activityQueue.ts';
+import { useActivityQueueActions } from '../activityQueue.ts';
 import { useDismissablePopup } from '../useDismissablePopup.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
@@ -101,7 +101,7 @@ const SpecsEditor = function (
         return new Set();
     });
 
-    const { enqueue } = useActivityQueue();
+    const { enqueue } = useActivityQueueActions();
 
     // Id of the entry briefly ring-highlighted after the file was opened from a Search result; cleared on a timer.
     const [highlightId, setHighlightId] = useState<string | null>(null);

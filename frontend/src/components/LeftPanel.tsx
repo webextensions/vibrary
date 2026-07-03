@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 import { Resizable } from 're-resizable';
 
-import { useActivityQueue } from '../activityQueue.ts';
+import { useActivityQueueState } from '../activityQueue.ts';
 import { type FileCount } from '../useFileCounts.ts';
 import { type TreeNode } from '../fileTree.ts';
 import { useMediaQuery } from '../useMediaQuery.ts';
@@ -107,7 +107,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
     const [activeView, setActiveView] = useState<LeftView>('explorer');
     // Running+queued job count, surfaced as a badge on the Activity monitor rail icon so new activity is visible from
     // any view.
-    const { jobs } = useActivityQueue();
+    const { jobs } = useActivityQueueState();
     const activeCount = useMemo(function () {
         return jobs.filter(function (job) {
             return job.status === 'running' || job.status === 'queued';

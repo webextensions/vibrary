@@ -28,7 +28,8 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 - `frontend/` - React 19 + TypeScript + Vite + CSS modules. `App.tsx` composes layout and owns file CRUD handlers;
   `useOpenTabs.ts` owns tab state (per-tab unsaved edits survive switching); `ActivityQueueProvider.tsx` owns the
   in-memory job queue (strictly one `claude -p` job at a time; per-job transcripts live in refs surfaced via
-  `useSyncExternalStore` so token streams re-render only the open detail tab); `api.ts` is the fetch layer
+  `useSyncExternalStore` so token streams re-render only the open detail tab; the context is split into a volatile
+  state half and a referentially-stable actions half - consume the narrowest one); `api.ts` is the fetch layer
   (JSON envelope + NDJSON streaming).
 - `frontend/src/vibraryXmlCore.js` - the deliberately untyped, framework-free, isomorphic core (parse/serialize/
   hash/approval-state). It must keep working in the browser AND under plain node: `scripts/canonicalize-vibrary.js`

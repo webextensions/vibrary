@@ -1,7 +1,7 @@
 import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useActivityQueue } from './activityQueue.ts';
+import { useActivityQueueActions } from './activityQueue.ts';
 import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, generateSpecs, getFilesSummary, getWorkspace, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
@@ -107,7 +107,7 @@ const App = function () {
 
     const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab } =
         useOpenTabs();
-    const { enqueue } = useActivityQueue();
+    const { enqueue } = useActivityQueueActions();
 
     // Live tallies use each open, parsed tab's in-memory model; loading tabs fall through to the cached count.
     const openTabsForCounts = tabs

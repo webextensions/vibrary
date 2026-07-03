@@ -4,7 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
-import { useActivityQueue } from '../activityQueue.ts';
+import { useActivityQueueActions } from '../activityQueue.ts';
 import { populateTitle } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
@@ -117,7 +117,7 @@ const Chips = function (
 
 const SpecCard = function ({ value, index, mode, highlighted = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect }: SpecCardProperties) {
     const isEditing = mode === 'edit';
-    const { enqueue } = useActivityQueue();
+    const { enqueue } = useActivityQueueActions();
     const [expanded, setExpanded] = useState(false);
     const [populating, setPopulating] = useState(false);
 

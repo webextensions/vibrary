@@ -1,7 +1,7 @@
 import type { RJSFSchema } from '@rjsf/utils';
 import { lazy, Suspense, useMemo, useState } from 'react';
 
-import { useActivityQueue } from '../activityQueue.ts';
+import { useActivityQueueActions, useActivityQueueState } from '../activityQueue.ts';
 import { applySpec, runTask } from '../api.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
 import { promptDialog } from '../promptDialog.ts';
@@ -32,7 +32,10 @@ type RunActionSectionProperties = {
 // task options, seeded from remembered settings; the in-flight/custom-instructions flags) is entirely its own concern,
 // never written back to the entry.
 const RunActionSection = function ({ value, schemas }: RunActionSectionProperties) {
-    const { enqueue, jobs } = useActivityQueue();
+    const { enqueue } = useActivityQueueActions();
+    // State subscription is deliberate here: the button mirrors this entry's live queue status (review the
+    // activeJob derivation below), so re-rendering on queue transitions is exactly what it needs.
+    const { jobs } = useActivityQueueState();
     const { loaded: settingsLoaded, getTaskOptions, setTaskOptions, resetTaskOptions } = useSettings();
     // True only while the custom-instructions prompt is open - NOT while the run itself executes (the card hands the
     // job to the activity monitor and returns); the button's queued/running state is derived from the queue below.
