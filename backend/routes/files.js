@@ -17,6 +17,10 @@ import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js
 
 // Upper bound on specs generated in one request, guarding against a runaway agent run.
 const MAX_GENERATE_COUNT = 50;
+// Upper bound on entries applied in one batch run. Generous - its job is only to catch a pathological
+// select-everything-in-a-huge-file request before the single-argv prompt hits OS limits (Linux caps one argument
+// around 128 KiB) or the model's context; normal batches are far smaller.
+const MAX_APPLY_BATCH_COUNT = 50;
 
 const createFilesRouter = function ({ cwd }) {
     const router = Router();
@@ -381,6 +385,9 @@ const createFilesRouter = function ({ cwd }) {
         const { entries, instructions } = request.body || {};
         if (!Array.isArray(entries) || entries.length === 0) {
             return sendErrorResponse(response, 400, 'Expected a non-empty "entries" array');
+        }
+        if (entries.length > MAX_APPLY_BATCH_COUNT) {
+            return sendErrorResponse(response, 400, `Expected at most ${MAX_APPLY_BATCH_COUNT} entries per batch`);
         }
         const valid = entries.every(function (entry) {
             return entry !== null && typeof entry === 'object' &&
