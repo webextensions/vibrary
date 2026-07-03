@@ -27,11 +27,12 @@ type Job = {
     kind: JobKind;
     label: string;
     status: JobStatus;
-    createdAt: number;
     startedAt: number | null;
     endedAt: number | null;
-    output: string | null;
     error: string | null;
+    // The concise prompt seeded as the activity's first user bubble at enqueue time; kept on the job so a retry
+    // (a fresh row with a fresh, empty transcript) can seed the same bubble again. Null for kinds with none.
+    prompt: string | null;
     // Claude's session id, captured from the run's stream (early, at the init event). Present enables continuing the
     // activity as a chat (via sendMessage); null when the run ended before emitting an init event.
     sessionId: string | null;

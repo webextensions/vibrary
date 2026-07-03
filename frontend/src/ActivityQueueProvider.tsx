@@ -153,9 +153,14 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             return;
         }
         const sessionId = target.sessionId;
+        // The message is dequeued on the thunk's FIRST execution (not at arm time, so cancelPendingMessage can still
+        // retract it while queued) and cached for any re-execution: retryJob re-runs this same thunk after a failed
+        // turn, when the pending queue no longer holds the message - without the cache a retry would send '' and be
+        // rejected by the backend, making every chat-turn retry fail.
+        let dequeuedMessage: string | null = null;
         const run: Job['run'] = function (signal, onEvent) {
-            const message = pendingReference.current.get(jobId)?.shift()?.text ?? '';
-            return chatContinue({ message, sessionId }, { signal, onEvent });
+            dequeuedMessage ??= pendingReference.current.get(jobId)?.shift()?.text ?? '';
+            return chatContinue({ message: dequeuedMessage, sessionId }, { signal, onEvent });
         };
         settlersReference.current.set(jobId, { resolve() {}, reject() {} });
         updateJobs(function (previous) {
@@ -202,7 +207,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
                     appendEvent(job.id, event);
                 });
                 settle(job.id, 'resolve', output);
-                finish({ status: 'success', output });
+                finish({ status: 'success' });
             } catch (error) {
                 settle(job.id, 'reject', error);
                 finish({ status: controller.signal.aborted ? 'aborted' : 'error', error: errorMessage(error) });
@@ -222,11 +227,10 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             kind: spec.kind,
             label: spec.label,
             status: 'queued',
-            createdAt: Date.now(),
             startedAt: null,
             endedAt: null,
-            output: null,
             error: null,
+            prompt: spec.prompt !== undefined && spec.prompt !== '' ? spec.prompt : null,
             sessionId: null,
             run: spec.run
         };
@@ -312,7 +316,8 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             return;
         }
         try {
-            await enqueue({ kind: target.kind, label: target.label, run: target.run });
+            // Pass the original prompt through so the retried row's fresh transcript seeds the same initial bubble.
+            await enqueue({ kind: target.kind, label: target.label, prompt: target.prompt ?? undefined, run: target.run });
         } catch {
             // The re-run's result is shown on its own row; nothing here consumes it.
         }
