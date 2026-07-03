@@ -1,7 +1,7 @@
 import cx from 'classnames';
 import { type FormEvent, useState } from 'react';
 
-import { ENTRY_TYPE_BY_FAMILY, type EntryType } from '../vibraryXml.ts';
+import { ENTRY_TYPE_BY_FAMILY, type EntryType } from '../xml/vibraryXml.ts';
 
 import { ResponsiveDialog } from './ResponsiveDialog.tsx';
 

@@ -1,7 +1,7 @@
 import type { RJSFSchema } from '@rjsf/utils';
 
 import { getFile, getSchemaFile } from './api.ts';
-import { parseVibraryXml, type Spec } from './vibraryXml.ts';
+import { parseVibraryXml, type Spec } from './xml/vibraryXml.ts';
 
 // Resolved per-run option form schemas for one open file, keyed by the entry's full formSchemaRef ("<file>#<id>"), so a
 // SpecCard looks its schema up directly by value.formSchemaRef. Empty for files whose entries declare no form.

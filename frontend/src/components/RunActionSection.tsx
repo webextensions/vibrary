@@ -6,7 +6,7 @@ import { applySpec, runTask } from '../api.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
 import { useSettings } from '../settingsContext.ts';
-import { type Spec } from '../vibraryXml.ts';
+import { type Spec } from '../xml/vibraryXml.ts';
 
 import { optionsToPrompt, schemaDefaults } from './taskOptions.ts';
 

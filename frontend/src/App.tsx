@@ -10,7 +10,7 @@ import { TabBar } from './components/TabBar.tsx';
 import { SpecsEditor, type Option } from './components/SpecsEditor.tsx';
 import { confirmDialog } from './confirmDialog.ts';
 import { loadVibraryFile } from './loadVibraryFile.ts';
-import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './vibraryXml.ts';
+import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './useFileCounts.ts';
 import { useFileOperations } from './useFileOperations.ts';
 import { useSessionRestore } from './useSessionRestore.ts';

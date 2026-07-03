@@ -8,7 +8,7 @@ import { useActivityQueueActions } from '../activityQueue.ts';
 import { populateTitle } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
-import { AGENTS, hashContent, normalizeTitle, type Spec } from '../vibraryXml.ts';
+import { AGENTS, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
 import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, PlusIcon, RemoveIcon, TypeIcon } from './Icons.tsx';

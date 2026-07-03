@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 
 import { type FileSummary } from './api.ts';
-import { countApprovedSpecs, type Spec } from './vibraryXml.ts';
+import { countApprovedSpecs, type Spec } from './xml/vibraryXml.ts';
 
 // Per-file approved/total tally shown in the sidebar; 'loading' until the workspace summary arrives, 'error' for a
 // file the server could not read/parse.
