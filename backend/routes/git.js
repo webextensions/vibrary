@@ -95,13 +95,15 @@ const createGitRouter = function ({ cwd }) {
         }
     });
 
+    // Push changes the sync state (ahead count, and publishing sets the upstream), so answer with the refreshed
+    // status like commit/pull do - otherwise the panel keeps rendering the pre-push arrows until a manual refresh.
     router.post('/git/push', async function (request, response) {
         try {
             if (!(await requireRepo(response))) {
                 return undefined;
             }
-            const output = await pushAsync(cwd);
-            return sendSuccessResponse(response, { output });
+            await pushAsync(cwd);
+            return sendSuccessResponse(response, await statusAsync(cwd));
         } catch (error) {
             return sendErrorResponse(response, 500, error.message);
         }

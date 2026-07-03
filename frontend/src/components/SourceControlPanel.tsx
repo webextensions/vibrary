@@ -250,7 +250,7 @@ const SourceControlPanel = function () {
         setActionError(null);
         setNotice(null);
         try {
-            await pushChanges();
+            setStatus(await pushChanges());
             setNotice('Pushed.');
         } catch (error) {
             setActionError((error as Error).message);

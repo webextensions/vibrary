@@ -350,10 +350,10 @@ const commitChanges = function (message: { summary: string; body: string }): Pro
     });
 };
 
-// Push the current branch; rejects with git's stderr on failure. The panel only needs success/failure, so the push
-// result is not returned.
-const pushChanges = async function (): Promise<void> {
-    await request<{ output: unknown }>('/api/git/push', { method: 'POST' });
+// Push the current branch, resolving with the refreshed status (the ahead count drops, and publishing a branch sets
+// its upstream); rejects with git's stderr on failure.
+const pushChanges = function (): Promise<GitStatus> {
+    return request<GitStatus>('/api/git/push', { method: 'POST' });
 };
 
 // Pull the current branch, resolving with the refreshed status (a pull can change the working tree).
