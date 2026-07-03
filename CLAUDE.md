@@ -56,8 +56,3 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 - Every agent invocation runs `claude -p ... --dangerously-skip-permissions` (a headless run cannot answer
   permission prompts); treat prompt text as code.
 - Commits: imperative summary, detailed prose body (wrapped ~72 cols) explaining why and how it was verified.
-
-## Active work
-
-`docs/code-reviews/` holds numbered review findings being implemented one commit at a time; each implementation
-commit deletes (or narrows) its review file. Keep this file truthful as those changes land.
