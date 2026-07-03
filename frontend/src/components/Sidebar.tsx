@@ -14,6 +14,8 @@ import styles from './Sidebar.module.css';
 type SidebarProperties = {
     files: string[];
     hasVibraryInclude: boolean;
+    // The empty state's one-click bootstrap: writes a starter .vibraryinclude and refreshes the listing.
+    onCreateInclude: () => void;
     selected: string | null;
     refreshing: boolean;
     countForFile: (name: string) => FileCount;
@@ -281,7 +283,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, se
     });
 };
 
-const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onDelete, onRename, onDuplicate, onNewFile, onSelectTab, onCloseTab, onBulkDelete }: SidebarProperties) {
+const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onCreateInclude, onDelete, onRename, onDuplicate, onNewFile, onSelectTab, onCloseTab, onBulkDelete }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -468,11 +470,21 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
             >
                 {files.length === 0 ?
                     (
-                        <p className={styles.empty}>
+                        <div className={styles.empty}>
                             {hasVibraryInclude ?
-                                'No reviews / specs / tasks / ideas files match the patterns in .vibraryinclude.' :
-                                'No .vibraryinclude file found. Add one with gitignore-style patterns (e.g. "specs*.xml") to choose which reviews / specs / tasks / ideas files to show; prefix a pattern with "!" to re-exclude.'}
-                        </p>
+                                <p>No reviews / specs / tasks / ideas files match the patterns in .vibraryinclude.</p> :
+                                (
+                                    <>
+                                        <p>
+                                            No .vibraryinclude file found. It chooses which reviews / specs / tasks /
+                                            ideas files are shown, with gitignore-style patterns ("!" re-excludes).
+                                        </p>
+                                        <button type="button" className={styles.emptyAction} onClick={onCreateInclude}>
+                                            Create .vibraryinclude
+                                        </button>
+                                    </>
+                                )}
+                        </div>
                     ) :
                     (
                         <>

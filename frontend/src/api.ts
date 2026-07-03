@@ -134,6 +134,12 @@ const getSchemaFile = async function (name: string): Promise<string> {
     return output.content;
 };
 
+// Write the starter .vibraryinclude (create-only on the server; 409 if one exists). Backs the explorer empty state's
+// one-click bootstrap for a folder that has no include file yet.
+const createVibraryInclude = async function (): Promise<void> {
+    await request<Record<string, never>>('/api/vibrary-include', { method: 'POST' });
+};
+
 // Create a new, empty specs file (create-only on the server: it refuses to overwrite an existing file). The caller
 // refreshes the file list and opens the new file once this resolves.
 const createFile = async function (name: string): Promise<void> {
@@ -381,4 +387,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, type GitFileDiff, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileListing, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, type GitFileDiff, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

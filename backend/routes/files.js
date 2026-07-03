@@ -17,6 +17,18 @@ import { sendErrorResponse, sendSuccessResponse } from '../utils/sendResponse.js
 
 // Upper bound on specs generated in one request, guarding against a runaway agent run.
 const MAX_GENERATE_COUNT = 50;
+// The starter .vibraryinclude the empty state's one-click bootstrap writes: gitignore-style patterns (a pattern
+// without a slash matches at every depth, so these cover nested folders too), showing every vibrary family. Users
+// narrow it by editing the file; "!" re-excludes.
+const VIBRARY_INCLUDE_TEMPLATE = [
+    '# Which vibrary files the app shows and edits, as gitignore-style patterns ("!" re-excludes a match).',
+    'ideas*.xml',
+    'reviews*.xml',
+    'specs*.xml',
+    'tasks*.xml',
+    ''
+].join('\n');
+
 // Upper bound on entries applied in one batch run. Generous - its job is only to catch a pathological
 // select-everything-in-a-huge-file request before the single-argv prompt hits OS limits (Linux caps one argument
 // around 128 KiB) or the model's context; normal batches are far smaller.
@@ -65,6 +77,22 @@ const createFilesRouter = function ({ cwd }) {
         } catch (error) {
             console.error('Failed to summarize vibrary files:', error);
             return sendErrorResponse(response, 500, 'Unable to summarize files');
+        }
+    });
+
+    // Bootstrap for the explorer's empty state: without a .vibraryinclude NOTHING is included, so even the app's own
+    // "+" button dead-ends with a 400 - this gives the first run a one-click way out. Create-only ('wx'), so it can
+    // never clobber patterns the user already wrote.
+    router.post('/vibrary-include', async function (request, response) {
+        try {
+            await writeFile(path.resolve(cwd, '.vibraryinclude'), VIBRARY_INCLUDE_TEMPLATE, { encoding: 'utf8', flag: 'wx' });
+            return sendSuccessResponse(response, {});
+        } catch (error) {
+            if (error.code === 'EEXIST') {
+                return sendErrorResponse(response, 409, 'A .vibraryinclude already exists');
+            }
+            console.error('Failed to create .vibraryinclude:', error);
+            return sendErrorResponse(response, 500, 'Unable to create .vibraryinclude');
         }
     });
 

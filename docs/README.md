@@ -20,6 +20,20 @@ The server starts on port 3000 and advances to the next free port if it is busy.
 `127.0.0.1` (this machine only); `--host 0.0.0.0` exposes it to the network, which gives everyone on that network
 the same powers the UI has - including agent runs (see below) - so only do it on networks you trust.
 
+## The .vibraryinclude file
+
+A `.vibraryinclude` at the folder root chooses which vibrary files the app lists and edits - nothing is shown (or
+creatable) without one. Patterns are gitignore-style, matched by the `ignore` library: a pattern without a slash
+applies at every depth (`specs*.xml` matches `docs/specs-auth.xml` too), and a `!` prefix re-excludes an earlier
+match. The explorer's empty state offers a one-click **Create .vibraryinclude** that writes a starter file including
+all four families; narrow it by editing the file - changes take effect on the next request, no restart needed.
+
+```gitignore
+# Show only specs, except the archived ones
+specs*.xml
+!specs-archive*.xml
+```
+
 ## Agent runs and permissions
 
 The AI actions ("Apply this spec", "Run this task", "Create entries with AI", chat follow-ups) run the Claude CLI

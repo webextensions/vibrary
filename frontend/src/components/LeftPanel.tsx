@@ -72,6 +72,7 @@ type LeftPanelProperties = {
     // Explorer (file tree) props, forwarded straight to Sidebar.
     files: string[];
     hasVibraryInclude: boolean;
+    onCreateInclude: () => void;
     selected: string | null;
     refreshing: boolean;
     countForFile: (name: string) => FileCount;
@@ -144,6 +145,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
             <Sidebar
                 files={properties.files}
                 hasVibraryInclude={properties.hasVibraryInclude}
+                onCreateInclude={properties.onCreateInclude}
                 selected={properties.selected}
                 refreshing={properties.refreshing}
                 countForFile={properties.countForFile}

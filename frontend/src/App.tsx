@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useActivityQueue } from './activityQueue.ts';
-import { createFile, deleteFile, duplicateFile, type FileSummary, generateSpecs, getFilesSummary, getWorkspace, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
+import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, generateSpecs, getFilesSummary, getWorkspace, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
@@ -417,6 +417,20 @@ const App = function () {
         }
     }, [openOrFocus, refreshListing]);
 
+    // The explorer empty state's one-click bootstrap: write the starter .vibraryinclude, then refresh so the newly
+    // included files (or the still-empty-but-now-configured state) appear. Without an include file NOTHING is
+    // included - even "+" dead-ends - so this is the first-run way out.
+    const handleCreateInclude = useCallback(async function () {
+        try {
+            await createVibraryInclude();
+            if (await refreshListing()) {
+                setLoadError(null);
+            }
+        } catch (error) {
+            setLoadError(`Failed to create .vibraryinclude: ${(error as Error).message}`);
+        }
+    }, [refreshListing]);
+
     // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
     // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
     // server validates the vibrary naming convention, mirroring handleAddFile.
@@ -646,6 +660,7 @@ const App = function () {
                 }}
                 onRefresh={handleRefresh}
                 onAddFile={handleAddFile}
+                onCreateInclude={handleCreateInclude}
                 onDelete={handleDelete}
                 onRename={handleRename}
                 onDuplicate={handleDuplicate}
