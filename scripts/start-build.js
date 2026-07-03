@@ -26,8 +26,11 @@ const announce = function () {
 
 if (values.watch) {
     // In watch mode, build() resolves with a watcher; announce on each completed rebuild (and clear the marker while
-    // one is in progress, so the server side never mistakes a mid-rebuild dist for a finished one)
-    const watcher = await build({ configFile, build: { watch: {} } });
+    // one is in progress, so the server side never mistakes a mid-rebuild dist for a finished one). vite's return
+    // type is a union it does not export narrowing helpers for, so describe just the watcher surface used here.
+    const watcher = /** @type {{ on: (name: 'event', listener: (watchEvent: { code: string }) => void) => void }} */ (
+        /** @type {unknown} */ (await build({ configFile, build: { watch: {} } }))
+    );
     watcher.on('event', function (watchEvent) {
         if (watchEvent.code === 'START') {
             clearMarker();

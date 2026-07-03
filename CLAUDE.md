@@ -8,7 +8,8 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 ## Commands
 
 - `node --run lint` - eslint (flat config, eslint-config-ironplate presets)
-- `node --run typecheck` - `tsc --noEmit -p frontend`
+- `node --run typecheck` - `tsc --noEmit -p frontend` plus a checkJs pass over `backend`/`bin`/`scripts`
+  (`tsconfig.node.json`) - cross-module arity/shape drift against the shared core fails here
 - `node --run test` - `node --test` over `*.test.js`/`*.test.ts` in `frontend/src`, `backend`, and `scripts`
   (TypeScript tests run via Node's built-in type stripping - hence `engines` requiring Node >= 22.18)
 - `node --run build` - vite build into `dist/` (served by the Express server)

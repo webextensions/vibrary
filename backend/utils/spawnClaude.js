@@ -88,7 +88,7 @@ const runClaudeProcess = function ({ cwd, args, timeoutMs, timeoutMessage, signa
             stderr += chunk.toString();
         });
 
-        child.on('error', function (error) {
+        child.on('error', function (/** @type {NodeJS.ErrnoException} */ error) {
             cleanup();
             if (wasAborted) {
                 reject(new Error('Aborted by user'));
