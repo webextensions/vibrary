@@ -48,6 +48,15 @@ const main = function () {
         { encoding: 'utf8' }
     );
 
+    // A spawn failure (diff not on PATH) leaves status null and stdout empty - without this check the driver would
+    // exit 0 showing NOTHING for a file with real differences, silently hiding changes. Fail loudly instead: git
+    // surfaces the stderr and reports the driver's death.
+    if (result.error) {
+        process.stderr.write(`vibrary-diff: could not run diff (${result.error.message})\n`);
+        process.exitCode = 2;
+        return;
+    }
+
     if (result.stdout) {
         process.stdout.write(result.stdout);
     }
