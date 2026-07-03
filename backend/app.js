@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import compression from 'compression';
 import express from 'express';
 
-import { createFilesRouter } from './routes/files.js';
+import { createFilesRouter } from './files/files.js';
 import { createGitRouter } from './routes/git.js';
 import { createSearchRouter } from './routes/search.js';
 import { createSettingsRouter } from './routes/settings.js';

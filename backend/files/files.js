@@ -5,14 +5,14 @@ import { Router } from 'express';
 
 import { countApprovedSpecs, ENTRY_TYPES, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
-import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from '../utils/vibraryFiles.js';
+import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from './vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
-import { applySpecAsync } from '../utils/runClaudeApply.js';
-import { applySpecsAsync } from '../utils/runClaudeApplyBatch.js';
-import { generateSpecsAsync } from '../utils/runClaudeGenerate.js';
-import { runChatAsync } from '../utils/runClaudeChat.js';
-import { runTaskAsync } from '../utils/runClaudeRunTask.js';
-import { generateTitleAsync } from '../utils/runClaudeTitle.js';
+import { applySpecAsync } from './runClaudeApply.js';
+import { applySpecsAsync } from './runClaudeApplyBatch.js';
+import { generateSpecsAsync } from './runClaudeGenerate.js';
+import { runChatAsync } from './runClaudeChat.js';
+import { runTaskAsync } from './runClaudeRunTask.js';
+import { generateTitleAsync } from './runClaudeTitle.js';
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
 // Upper bound on specs generated in one request, guarding against a runaway agent run.
