@@ -39,6 +39,12 @@ export default [
         languageOptions: {
             // Node.js ESM globals (process, console, URL, etc.); excludes CommonJS-only globals like __dirname
             globals: { ...globals.nodeBuiltin }
+        },
+        rules: {
+            // The ironplate node preset pins these rules to Node >=20; this package requires >=22.18 (package.json
+            // engines), so judge syntax and built-ins (e.g. global fetch) against the real floor.
+            'n/no-unsupported-features/es-syntax': ['error', { version: '>=22.18.0' }],
+            'n/no-unsupported-features/node-builtins': ['error', { version: '>=22.18.0' }]
         }
     },
 
