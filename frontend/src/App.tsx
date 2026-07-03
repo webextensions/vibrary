@@ -3,18 +3,17 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from './activityQueue.ts';
-import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, generateSpecs, getFilesSummary, getWorkspace, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
+import { generateSpecs, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
-import { collectFilePaths, type TreeNode } from './fileTree.ts';
 import { TabBar } from './components/TabBar.tsx';
 import { SpecsEditor, type Option } from './components/SpecsEditor.tsx';
 import { confirmDialog } from './confirmDialog.ts';
-import { promptDialog } from './promptDialog.ts';
 import { loadVibraryFile } from './loadVibraryFile.ts';
-import { readSessionTabs, writeSessionTabs } from './sessionTabs.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './vibraryXml.ts';
 import { useFileCounts } from './useFileCounts.ts';
+import { useFileOperations } from './useFileOperations.ts';
+import { useSessionRestore } from './useSessionRestore.ts';
 import { useOpenTabs } from './useOpenTabs.ts';
 
 import styles from './App.module.css';
@@ -39,44 +38,7 @@ const SIDEBAR_STORAGE_KEY = 'vibrary:sidebar-collapsed';
 // Below this width the sidebar is an off-canvas drawer; above it, an inline panel that collapses in place.
 const MOBILE_QUERY = '(max-width: 700px)';
 
-// Build the title -> file index from the workspace summary: first occurrence wins for a duplicated title, and the
-// summary lists files in listing order, so which file wins is deterministic across refreshes.
-const deriveTitleIndex = function (files: FileSummary[]): TitleIndexEntry[] {
-    const seen = new Set<string>();
-    const index: TitleIndexEntry[] = [];
-    const add = function (title: string, path: string) {
-        if (seen.has(title)) {
-            return;
-        }
-        seen.add(title);
-        index.push({ title, path });
-    };
-    for (const file of files) {
-        for (const title of file.titles) {
-            add(title, file.name);
-        }
-    }
-    return index.toSorted(function (a, b) {
-        return a.title.localeCompare(b.title);
-    });
-};
-
 const App = function () {
-    const [files, setFiles] = useState<string[]>([]);
-    // The workspace summary the listing fetch returns: per-file titles and approved/total tallies, feeding both the
-    // title index and useFileCounts without any per-file re-downloads.
-    const [fileSummaries, setFileSummaries] = useState<FileSummary[]>([]);
-    // Whether a ".vibraryinclude" file exists at all, so the explorer's empty state can tell "nothing included yet
-    // because no .vibraryinclude exists" apart from "a .vibraryinclude exists but its patterns match nothing".
-    const [hasVibraryInclude, setHasVibraryInclude] = useState(true);
-    // Every entry title across every vibrary file, paired with which file it lives in - backs both the "Relates to"
-    // option list (title only, see allTitles below) and resolving a clicked "Relates to" chip to its target file.
-    const [titleIndex, setTitleIndex] = useState<TitleIndexEntry[]>([]);
-    const allTitles = titleIndex.map(function (entry) {
-        return entry.title;
-    });
-    // Errors from loading the file list or titles (not tied to any one open tab), shown as a banner above the editor.
-    const [loadError, setLoadError] = useState<string | null>(null);
     // Desktop: whether the inline sidebar is collapsed (persisted). Seed from storage so the first paint already
     // matches, avoiding an expand-then-collapse flash. localStorage can throw when blocked, so fall back to expanded.
     const [sidebarCollapsed, setSidebarCollapsed] = useState(function (): boolean {
@@ -89,7 +51,6 @@ const App = function () {
     // Mobile: whether the off-canvas drawer is open. Ephemeral and always starts closed, independent of the desktop
     // preference above.
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
-    const [refreshing, setRefreshing] = useState<boolean>(false);
     // Filter-dropdown visibility and the selected status and entry-type filters for the structured editor. UI-only and
     // shared across tabs, so they live here rather than per-tab; the toolbar Filter button toggles the dropdown and
     // shows a dot badge while any filter is applied.
@@ -97,10 +58,6 @@ const App = function () {
     const [statusFilter, setStatusFilter] = useState<Option[]>([]);
     const [typeFilter, setTypeFilter] = useState<Option[]>([]);
     const [labelFilter, setLabelFilter] = useState<Option[]>([]);
-    // The served folder, used to scope which tabs are remembered across reloads. sessionReady gates persistence until
-    // the one-time restore has run, so the initial empty tab list never overwrites a stored session.
-    const [workspaceCwd, setWorkspaceCwd] = useState<string | null>(null);
-    const [sessionReady, setSessionReady] = useState<boolean>(false);
     // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
@@ -109,6 +66,26 @@ const App = function () {
     const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab } =
         useOpenTabs();
     const { enqueue } = useActivityQueueActions();
+
+    // Open a file from the sidebar (or after creating one): focus its tab if already open, otherwise create one and
+    // fetch its content, then close the mobile drawer (the desktop collapse is left untouched).
+    const handleOpen = useCallback(function (name: string) {
+        openOrFocus(name);
+        setDrawerOpen(false);
+    }, [openOrFocus]);
+
+    const {
+        files, fileSummaries, hasVibraryInclude, titleIndex, loadError, clearLoadError, reportLoadError,
+        refreshing, listingLoaded, refreshListing,
+        handleRefresh, handleAddFile, handleNewFile, handleCreateInclude,
+        handleDelete, handleBulkDelete, handleRename, handleDuplicate
+    } = useFileOperations({ tabs, closeTab, openOrFocus, onFileOpened: handleOpen });
+
+    useSessionRestore({ files, listingLoaded, tabs, activePath, openOrFocus, setActive, reportError: reportLoadError });
+
+    const allTitles = titleIndex.map(function (entry) {
+        return entry.title;
+    });
 
     // Live tallies use each open, parsed tab's in-memory model; loading tabs fall through to the cached count.
     const openTabsForCounts = tabs
@@ -135,83 +112,6 @@ const App = function () {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, [anyDirty]);
-
-    useEffect(function () {
-        const loadAsync = async function () {
-            try {
-                const [summary, cwd] = await Promise.all([getFilesSummary(), getWorkspace()]);
-                const names = summary.files.map(function (file) { return file.name; });
-                setFiles(names);
-                setFileSummaries(summary.files);
-                setHasVibraryInclude(summary.hasVibraryInclude);
-                setTitleIndex(deriveTitleIndex(summary.files));
-                setWorkspaceCwd(cwd);
-                // Reopen the folder's previously open tabs, skipping any that no longer exist (deleted, or stored under
-                // a folder that happens to share this one's key). openOrFocus fetches each tab's content on its own.
-                const record = readSessionTabs(cwd);
-                if (record !== null) {
-                    const present = new Set(names);
-                    const toRestore = record.paths.filter(function (path) { return present.has(path); });
-                    for (const path of toRestore) {
-                        openOrFocus(path);
-                    }
-                    if (record.activePath !== null && present.has(record.activePath)) {
-                        setActive(record.activePath);
-                    }
-                }
-                setSessionReady(true);
-            } catch (error) {
-                setLoadError(`Failed to load the workspace: ${(error as Error).message}`);
-            }
-        };
-        void loadAsync();
-    }, [openOrFocus, setActive]);
-
-    // Persist the open set and active tab whenever they change, so a reload can restore them. The effect keys on a
-    // signature of just the open paths, so per-tab edits (dirty/status/reloadNonce) that rebuild the tabs array do not
-    // trigger redundant writes. Closing the last tab stores an empty set, which correctly restores to an empty editor.
-    // Only file tabs are persisted; activity tabs are in-memory (their job lives in the queue, lost on refresh).
-    const openSignature = tabs.filter(function (tab) { return tab.kind === 'file'; }).map(function (tab) { return tab.path; }).join('\n');
-    useEffect(function () {
-        if (!sessionReady || workspaceCwd === null) {
-            return;
-        }
-        const paths = openSignature === '' ? [] : openSignature.split('\n');
-        const persistedActive = activePath !== null && paths.includes(activePath) ? activePath : null;
-        writeSessionTabs(workspaceCwd, { paths, activePath: persistedActive });
-    }, [openSignature, activePath, sessionReady, workspaceCwd]);
-
-    // Re-fetch the workspace summary - one request carrying the listing, every file's titles, and the badge tallies -
-    // so the explorer reflects what is actually on disk. Every file-mutation handler funnels through here - including
-    // after FAILED mutations (from a finally): a partial bulk delete has already removed some files, and keeping them
-    // listed as ghosts until a manual Refresh misleads worse than the error itself. Never throws; a listing failure
-    // lands in the banner and reports false so callers know not to clear an earlier, more specific error.
-    const refreshListing = useCallback(async function (): Promise<boolean> {
-        try {
-            const summary = await getFilesSummary();
-            setFiles(summary.files.map(function (file) { return file.name; }));
-            setFileSummaries(summary.files);
-            setHasVibraryInclude(summary.hasVibraryInclude);
-            setTitleIndex(deriveTitleIndex(summary.files));
-            return true;
-        } catch (error) {
-            setLoadError(`Failed to load the file listing: ${(error as Error).message}`);
-            return false;
-        }
-    }, []);
-
-    // The sidebar's refresh button: reload the file list and every spec title from disk, picking up files added or
-    // changed outside the app.
-    const handleRefresh = useCallback(async function () {
-        setRefreshing(true);
-        try {
-            if (await refreshListing()) {
-                setLoadError(null);
-            }
-        } finally {
-            setRefreshing(false);
-        }
-    }, [refreshListing]);
 
     // Close tabs from the tab bar or the Open Editors list, confirming first when any of them has unsaved edits -
     // closing is how those edits get discarded, so it should never happen silently. Delete/rename close tabs via
@@ -252,210 +152,6 @@ const App = function () {
             return tab.path;
         }));
     }, [tabs, requestCloseTabs]);
-
-    // Open a file from the sidebar: focus its tab if already open, otherwise create one and fetch its content, then
-    // close the mobile drawer (the desktop collapse is left untouched).
-    const handleOpen = useCallback(function (name: string) {
-        openOrFocus(name);
-        setDrawerOpen(false);
-    }, [openOrFocus]);
-
-    // The sidebar's add button: prompt for a name, create the empty file on the server, then refresh the list and open
-    // it. The name must match the vibrary naming convention (<family>.xml or <family>-<name>.xml, where family is
-    // reviews/specs/tasks/ideas); the server validates and surfaces any problem (bad name, already exists) as the
-    // load-error banner.
-    const handleAddFile = useCallback(async function () {
-        const name = await promptDialog({
-            message: 'New file name (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):',
-            placeholder: 'specs-<name>.xml',
-            confirmLabel: 'Create'
-        });
-        if (name === null) {
-            return;
-        }
-        try {
-            await createFile(name);
-            if (await refreshListing()) {
-                setLoadError(null);
-            }
-            openOrFocus(name);
-            setDrawerOpen(false);
-        } catch (error) {
-            setLoadError(`Failed to create "${name}": ${(error as Error).message}`);
-        }
-    }, [openOrFocus, refreshListing]);
-
-    // The explorer "More" menu's Delete action. Folders have no on-disk entity (they are derived from file paths), so
-    // deleting one removes every file beneath it; a file deletes just itself. Warn before the irreversible delete, then
-    // remove the files, close any open tabs for them, and refresh the list and title pool.
-    const handleDelete = useCallback(async function (node: TreeNode) {
-        const paths = collectFilePaths(node);
-        const target = node.kind === 'folder' ?
-            `folder "${node.path}" and its ${paths.length} file${paths.length === 1 ? '' : 's'}` :
-            `"${node.path}"`;
-        const confirmed = await confirmDialog(`Delete ${target}? This cannot be undone.`, 'Delete');
-        if (!confirmed) {
-            return;
-        }
-        try {
-            for (const path of paths) {
-                try {
-                    await deleteFile(path);
-                } catch (error) {
-                    // Name the failing file: a folder delete may have already removed earlier files, and the raw
-                    // server message alone does not say which one stopped the run.
-                    setLoadError(`Failed to delete "${path}": ${(error as Error).message}`);
-                    return;
-                }
-                closeTab(path);
-            }
-            setLoadError(null);
-        } finally {
-            // Refresh even after a failure: files deleted before the error are really gone.
-            await refreshListing();
-        }
-    }, [closeTab, refreshListing]);
-
-    // The Explorer's bulk-select footer Delete button: same warn-then-delete-then-refresh shape as handleDelete above,
-    // but over an arbitrary multi-file selection instead of one node's subtree. Resolves whether the user confirmed, so
-    // the sidebar knows whether to clear its selection (kept intact on cancel).
-    const handleBulkDelete = useCallback(async function (paths: string[]): Promise<boolean> {
-        if (paths.length === 0) {
-            return false;
-        }
-        const confirmed = await confirmDialog(`Delete ${paths.length} file${paths.length === 1 ? '' : 's'}? This cannot be undone.`, 'Delete');
-        if (!confirmed) {
-            return false;
-        }
-        try {
-            for (const path of paths) {
-                try {
-                    await deleteFile(path);
-                } catch (error) {
-                    setLoadError(`Failed to delete "${path}": ${(error as Error).message}`);
-                    return true;
-                }
-                closeTab(path);
-            }
-            setLoadError(null);
-        } finally {
-            // Refresh even after a failure: files deleted before the error are really gone.
-            await refreshListing();
-        }
-        return true;
-    }, [closeTab, refreshListing]);
-
-    // The explorer "More" menu's Rename action. A file renames (or moves - the new name may point into another folder)
-    // just itself; a folder renames every file beneath it, since folders have no on-disk entity of their own. Open tabs
-    // are keyed by path, so affected tabs are closed and the file reopened under its new name - which drops unsaved
-    // edits, hence the extra confirmation when any affected tab is dirty.
-    const handleRename = useCallback(async function (node: TreeNode) {
-        const isFolder = node.kind === 'folder';
-        const entered = await promptDialog({
-            message: isFolder ? `Rename folder "${node.path}" to:` : `Rename "${node.path}" to:`,
-            confirmLabel: 'Rename',
-            initialValue: node.path
-        });
-        if (entered === null || entered === node.path) {
-            return;
-        }
-        const renames = isFolder ?
-            collectFilePaths(node).map(function (path) {
-                return { from: path, to: `${entered}${path.slice(node.path.length)}` };
-            }) :
-            [{ from: node.path, to: entered }];
-        const anyDirtyAffected = renames.some(function ({ from }) {
-            return tabs.some(function (tab) {
-                return tab.path === from && tab.dirty;
-            });
-        });
-        if (anyDirtyAffected) {
-            const confirmed = await confirmDialog('Renaming reopens the file from disk, so its unsaved changes will be lost. Continue?', 'Rename');
-            if (!confirmed) {
-                return;
-            }
-        }
-        try {
-            for (const { from, to } of renames) {
-                try {
-                    await renameFile(from, to);
-                } catch (error) {
-                    setLoadError(`Failed to rename "${from}" to "${to}": ${(error as Error).message}`);
-                    return;
-                }
-                closeTab(from);
-            }
-            setLoadError(null);
-            if (!isFolder) {
-                openOrFocus(entered);
-            }
-        } finally {
-            // Refresh even after a failure: a folder rename may have already moved earlier files.
-            await refreshListing();
-        }
-    }, [tabs, closeTab, openOrFocus, refreshListing]);
-
-    // The explorer "More" menu's Duplicate action: copy a file's on-disk content under a new name, leaving the source
-    // untouched, then open the copy. Files only - folders have no single on-disk entity to copy (unlike rename/delete,
-    // which recurse over every file beneath a folder).
-    const handleDuplicate = useCallback(async function (node: TreeNode) {
-        const entered = await promptDialog({
-            message: `Duplicate "${node.path}" as:`,
-            confirmLabel: 'Duplicate',
-            initialValue: node.path
-        });
-        if (entered === null || entered === node.path) {
-            return;
-        }
-        try {
-            await duplicateFile(node.path, entered);
-            if (await refreshListing()) {
-                setLoadError(null);
-            }
-            openOrFocus(entered);
-        } catch (error) {
-            setLoadError(`Failed to duplicate "${node.path}": ${(error as Error).message}`);
-        }
-    }, [openOrFocus, refreshListing]);
-
-    // The explorer empty state's one-click bootstrap: write the starter .vibraryinclude, then refresh so the newly
-    // included files (or the still-empty-but-now-configured state) appear. Without an include file NOTHING is
-    // included - even "+" dead-ends - so this is the first-run way out.
-    const handleCreateInclude = useCallback(async function () {
-        try {
-            await createVibraryInclude();
-            if (await refreshListing()) {
-                setLoadError(null);
-            }
-        } catch (error) {
-            setLoadError(`Failed to create .vibraryinclude: ${(error as Error).message}`);
-        }
-    }, [refreshListing]);
-
-    // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
-    // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
-    // server validates the vibrary naming convention, mirroring handleAddFile.
-    const handleNewFile = useCallback(async function (folderPath: string) {
-        const name = await promptDialog({
-            message: `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):`,
-            placeholder: 'specs-<name>.xml',
-            confirmLabel: 'Create'
-        });
-        if (name === null) {
-            return;
-        }
-        const fullName = `${folderPath}/${name}`;
-        try {
-            await createFile(fullName);
-            if (await refreshListing()) {
-                setLoadError(null);
-            }
-            openOrFocus(fullName);
-            setDrawerOpen(false);
-        } catch (error) {
-            setLoadError(`Failed to create "${fullName}": ${(error as Error).message}`);
-        }
-    }, [openOrFocus, refreshListing]);
 
     // The toolbar's reload button: re-read the active tab's file from disk, picking up edits made outside the app.
     // Unsaved local edits would be overwritten, so confirm before discarding them.
@@ -715,9 +411,7 @@ const App = function () {
                         className={styles.loadErrorDismiss}
                         aria-label="Dismiss error"
                         title="Dismiss"
-                        onClick={function () {
-                            setLoadError(null);
-                        }}
+                        onClick={clearLoadError}
                     >
                         <CloseIcon />
                     </button>
