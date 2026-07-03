@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { commitChanges, discardPaths, generateCommitMessage, getGitDiff, getGitStatus, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listStashes, pullChanges, pushChanges, stagePaths, stashAction, stashChanges, unstagePaths } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
@@ -13,6 +13,10 @@ import styles from './SourceControlPanel.module.css';
 
 // One hover-revealed button on a changed-file row (stage, unstage, discard, ...), like VS Code's SCM list.
 type FileAction = { label: string; Icon: () => ReactNode; onAction: () => void };
+
+// The per-file diff dialog's state: which file and which variant of its diff (staged / worktree / untracked full
+// content) is shown; content null while the fetch is in flight.
+type DiffView = { path: string; staged: boolean; untracked: boolean; content: string | null; error: string | null };
 
 // A single changed-file row: the status letter, the path (basename emphasized via title), and its action buttons.
 const FileRow = function (
@@ -51,6 +55,68 @@ const FileRow = function (
     );
 };
 
+// One header button acting on a whole group (unstage all, discard all, ...). `ariaLabel` spells out the target
+// ("Unstage all staged files") while `title` stays the shorter hover text ("Unstage all").
+type GroupAction = { ariaLabel: string; title: string; Icon: () => ReactNode; onAction: () => void };
+
+// One changed-file group (Staged / Changes / Untracked): a header with its count and group-wide actions, then a row
+// per file. The three groups differ only in data - which status column to show, which diff variant a row opens, and
+// which actions apply - so they share this single rendering.
+const FileGroup = function (
+    { name, files, disabled, groupActions, statusCharFor, onView, rowActionsFor }:
+    {
+        name: string;
+        files: GitFileStatus[];
+        disabled: boolean;
+        groupActions: GroupAction[];
+        statusCharFor: (file: GitFileStatus) => string;
+        onView: (file: GitFileStatus) => void;
+        rowActionsFor: (file: GitFileStatus) => FileAction[]
+    }
+) {
+    if (files.length === 0) {
+        return null;
+    }
+    return (
+        <section className={styles.group}>
+            <div className={styles.groupHeader}>
+                <p className={styles.groupTitle}>{name} ({files.length})</p>
+                {groupActions.map(function ({ ariaLabel, title, Icon, onAction }) {
+                    return (
+                        <button
+                            key={ariaLabel}
+                            type="button"
+                            className={styles.groupAction}
+                            aria-label={ariaLabel}
+                            title={title}
+                            disabled={disabled}
+                            onClick={onAction}
+                        >
+                            <Icon />
+                        </button>
+                    );
+                })}
+            </div>
+            <ul className={styles.fileList}>
+                {files.map(function (file) {
+                    return (
+                        <FileRow
+                            key={file.path}
+                            file={file}
+                            statusChar={statusCharFor(file)}
+                            disabled={disabled}
+                            onView={function () {
+                                onView(file);
+                            }}
+                            actions={rowActionsFor(file)}
+                        />
+                    );
+                })}
+            </ul>
+        </section>
+    );
+};
+
 // The Source Control view: current branch, changed files grouped into Staged / Changes / Untracked (each with per-file
 // and per-group stage / unstage / discard actions), a stash section (save, apply, pop, drop), and a commit box with a
 // "Generate with Claude" drafting button plus Commit, Push and Pull. Loads fresh each time the view is shown (it is
@@ -72,6 +138,15 @@ const SourceControlPanel = function () {
     const [commitOpen, setCommitOpen] = useState(true);
 
     const [generating, setGenerating] = useState(false);
+    // The in-flight "Generate with Claude" request's controller. The panel unmounts whenever the user switches away
+    // from the Source Control view, and without an abort the backend's claude run would keep going (and billing time)
+    // for up to its full timeout - the server only kills the child when the client's fetch actually aborts.
+    const generateControllerReference = useRef<AbortController | null>(null);
+    useEffect(function () {
+        return function () {
+            generateControllerReference.current?.abort();
+        };
+    }, []);
     const [committing, setCommitting] = useState(false);
     const [pushing, setPushing] = useState(false);
     const [pulling, setPulling] = useState(false);
@@ -83,19 +158,27 @@ const SourceControlPanel = function () {
     // The per-file diff dialog: which file is being viewed and what came back. Discard and Delete are irreversible,
     // so the rows offer a look at what would be lost before the confirm ("what did the agent actually change?" is
     // the most common question here); content: null renders the loading state.
-    const [diffView, setDiffView] = useState<{ path: string; untracked: boolean; content: string | null; error: string | null } | null>(null);
+    const [diffView, setDiffView] = useState<DiffView | null>(null);
 
     const openDiffView = function (path: string, options: { staged?: boolean; untracked?: boolean }) {
-        setDiffView({ path, untracked: options.untracked === true, content: null, error: null });
+        const isStaged = options.staged === true;
+        const isUntracked = options.untracked === true;
+        // The stale-response guard must match the full request identity, not just the path: a file edited after
+        // staging ("MM") has a row in both Staged and Changes, and quickly viewing one then the other races two
+        // fetches for the same path whose responses show different content.
+        const isSameRequest = function (previous: DiffView | null): previous is DiffView {
+            return previous !== null && previous.path === path && previous.staged === isStaged && previous.untracked === isUntracked;
+        };
+        setDiffView({ path, staged: isStaged, untracked: isUntracked, content: null, error: null });
         void (async function () {
             try {
                 const result = await getGitDiff(path, options);
                 setDiffView(function (previous) {
-                    return previous !== null && previous.path === path ? { ...previous, content: result.diff } : previous;
+                    return isSameRequest(previous) ? { ...previous, content: result.diff } : previous;
                 });
             } catch (error) {
                 setDiffView(function (previous) {
-                    return previous !== null && previous.path === path ? { ...previous, error: (error as Error).message } : previous;
+                    return isSameRequest(previous) ? { ...previous, error: (error as Error).message } : previous;
                 });
             }
         })();
@@ -226,16 +309,22 @@ const SourceControlPanel = function () {
     };
 
     const handleGenerate = async function () {
+        const controller = new AbortController();
+        generateControllerReference.current = controller;
         setGenerating(true);
         setActionError(null);
         setNotice(null);
         try {
-            const message = await generateCommitMessage();
+            const message = await generateCommitMessage(controller.signal);
             setSummary(message.summary);
             setBody(message.body);
         } catch (error) {
-            setActionError((error as Error).message);
+            // An unmount abort is not a failure; and there is no panel left to show the error in anyway.
+            if (!controller.signal.aborted) {
+                setActionError((error as Error).message);
+            }
         } finally {
+            generateControllerReference.current = null;
             setGenerating(false);
         }
     };
@@ -383,198 +472,158 @@ const SourceControlPanel = function () {
             >
                 {totalChanged === 0 && <p className={styles.message}>No changes.</p>}
 
-                {staged.length > 0 &&
-                <section className={styles.group}>
-                    <div className={styles.groupHeader}>
-                        <p className={styles.groupTitle}>Staged ({staged.length})</p>
-                        <button
-                            type="button"
-                            className={styles.groupAction}
-                            aria-label="Unstage all staged files"
-                            title="Unstage all"
-                            disabled={busy}
-                            onClick={function () {
+                <FileGroup
+                    name="Staged"
+                    files={staged}
+                    disabled={busy}
+                    groupActions={[{
+                        ariaLabel: 'Unstage all staged files',
+                        title: 'Unstage all',
+                        Icon: RemoveIcon,
+                        onAction: function () {
+                            void runStatusAction(function () {
+                                return unstagePaths(staged.map(function (file) {
+                                    return file.path;
+                                }));
+                            });
+                        }
+                    }]}
+                    statusCharFor={function (file) {
+                        return file.index;
+                    }}
+                    onView={function (file) {
+                        openDiffView(file.path, { staged: true });
+                    }}
+                    rowActionsFor={function (file) {
+                        return [{
+                            label: 'Unstage',
+                            Icon: RemoveIcon,
+                            onAction: function () {
                                 void runStatusAction(function () {
-                                    return unstagePaths(staged.map(function (file) {
-                                        return file.path;
-                                    }));
+                                    return unstagePaths([file.path]);
                                 });
-                            }}
-                        >
-                            <RemoveIcon />
-                        </button>
-                    </div>
-                    <ul className={styles.fileList}>
-                        {staged.map(function (file) {
-                            return (
-                                <FileRow
-                                    key={file.path}
-                                    file={file}
-                                    statusChar={file.index}
-                                    disabled={busy}
-                                    onView={function () {
-                                        openDiffView(file.path, { staged: true });
-                                    }}
-                                    actions={[{
-                                        label: 'Unstage',
-                                        Icon: RemoveIcon,
-                                        onAction: function () {
-                                            void runStatusAction(function () {
-                                                return unstagePaths([file.path]);
-                                            });
-                                        }
-                                    }]}
-                                />
-                            );
-                        })}
-                    </ul>
-                </section>}
+                            }
+                        }];
+                    }}
+                />
 
-                {changes.length > 0 &&
-                <section className={styles.group}>
-                    <div className={styles.groupHeader}>
-                        <p className={styles.groupTitle}>Changes ({changes.length})</p>
-                        <button
-                            type="button"
-                            className={styles.groupAction}
-                            aria-label="Discard all changes"
-                            title="Discard all changes"
-                            disabled={busy}
-                            onClick={function () {
+                <FileGroup
+                    name="Changes"
+                    files={changes}
+                    disabled={busy}
+                    groupActions={[
+                        {
+                            ariaLabel: 'Discard all changes',
+                            title: 'Discard all changes',
+                            Icon: DiscardIcon,
+                            onAction: function () {
                                 void confirmAndDiscard(
                                     changes.map(function (file) {
                                         return file.path;
                                     }),
                                     `Discard changes in ${changes.length} file${changes.length === 1 ? '' : 's'}? This cannot be undone.`
                                 );
-                            }}
-                        >
-                            <DiscardIcon />
-                        </button>
-                        <button
-                            type="button"
-                            className={styles.groupAction}
-                            aria-label="Stage all changes"
-                            title="Stage all"
-                            disabled={busy}
-                            onClick={function () {
+                            }
+                        },
+                        {
+                            ariaLabel: 'Stage all changes',
+                            title: 'Stage all',
+                            Icon: PlusIcon,
+                            onAction: function () {
                                 void runStatusAction(function () {
                                     return stagePaths(changes.map(function (file) {
                                         return file.path;
                                     }));
                                 });
-                            }}
-                        >
-                            <PlusIcon />
-                        </button>
-                    </div>
-                    <ul className={styles.fileList}>
-                        {changes.map(function (file) {
-                            return (
-                                <FileRow
-                                    key={file.path}
-                                    file={file}
-                                    statusChar={file.working_dir}
-                                    disabled={busy}
-                                    onView={function () {
-                                        openDiffView(file.path, {});
-                                    }}
-                                    actions={[
-                                        {
-                                            label: 'Discard changes',
-                                            Icon: DiscardIcon,
-                                            onAction: function () {
-                                                void confirmAndDiscard([file.path], `Discard changes in "${file.path}"? This cannot be undone.`);
-                                            }
-                                        },
-                                        {
-                                            label: 'Stage',
-                                            Icon: PlusIcon,
-                                            onAction: function () {
-                                                void runStatusAction(function () {
-                                                    return stagePaths([file.path]);
-                                                });
-                                            }
-                                        }
-                                    ]}
-                                />
-                            );
-                        })}
-                    </ul>
-                </section>}
+                            }
+                        }
+                    ]}
+                    statusCharFor={function (file) {
+                        return file.working_dir;
+                    }}
+                    onView={function (file) {
+                        openDiffView(file.path, {});
+                    }}
+                    rowActionsFor={function (file) {
+                        return [
+                            {
+                                label: 'Discard changes',
+                                Icon: DiscardIcon,
+                                onAction: function () {
+                                    void confirmAndDiscard([file.path], `Discard changes in "${file.path}"? This cannot be undone.`);
+                                }
+                            },
+                            {
+                                label: 'Stage',
+                                Icon: PlusIcon,
+                                onAction: function () {
+                                    void runStatusAction(function () {
+                                        return stagePaths([file.path]);
+                                    });
+                                }
+                            }
+                        ];
+                    }}
+                />
 
-                {untracked.length > 0 &&
-                <section className={styles.group}>
-                    <div className={styles.groupHeader}>
-                        <p className={styles.groupTitle}>Untracked ({untracked.length})</p>
-                        <button
-                            type="button"
-                            className={styles.groupAction}
-                            aria-label="Delete all untracked files"
-                            title="Delete all untracked files"
-                            disabled={busy}
-                            onClick={function () {
+                <FileGroup
+                    name="Untracked"
+                    files={untracked}
+                    disabled={busy}
+                    groupActions={[
+                        {
+                            ariaLabel: 'Delete all untracked files',
+                            title: 'Delete all untracked files',
+                            Icon: RemoveIcon,
+                            onAction: function () {
                                 void confirmAndDiscard(
                                     untracked.map(function (file) {
                                         return file.path;
                                     }),
                                     `Delete ${untracked.length} untracked file${untracked.length === 1 ? '' : 's'}? This cannot be undone.`
                                 );
-                            }}
-                        >
-                            <RemoveIcon />
-                        </button>
-                        <button
-                            type="button"
-                            className={styles.groupAction}
-                            aria-label="Stage all untracked files"
-                            title="Stage all"
-                            disabled={busy}
-                            onClick={function () {
+                            }
+                        },
+                        {
+                            ariaLabel: 'Stage all untracked files',
+                            title: 'Stage all',
+                            Icon: PlusIcon,
+                            onAction: function () {
                                 void runStatusAction(function () {
                                     return stagePaths(untracked.map(function (file) {
                                         return file.path;
                                     }));
                                 });
-                            }}
-                        >
-                            <PlusIcon />
-                        </button>
-                    </div>
-                    <ul className={styles.fileList}>
-                        {untracked.map(function (file) {
-                            return (
-                                <FileRow
-                                    key={file.path}
-                                    file={file}
-                                    statusChar="?"
-                                    disabled={busy}
-                                    onView={function () {
-                                        openDiffView(file.path, { untracked: true });
-                                    }}
-                                    actions={[
-                                        {
-                                            label: 'Delete',
-                                            Icon: RemoveIcon,
-                                            onAction: function () {
-                                                void confirmAndDiscard([file.path], `Delete untracked file "${file.path}"? This cannot be undone.`);
-                                            }
-                                        },
-                                        {
-                                            label: 'Stage',
-                                            Icon: PlusIcon,
-                                            onAction: function () {
-                                                void runStatusAction(function () {
-                                                    return stagePaths([file.path]);
-                                                });
-                                            }
-                                        }
-                                    ]}
-                                />
-                            );
-                        })}
-                    </ul>
-                </section>}
+                            }
+                        }
+                    ]}
+                    statusCharFor={function () {
+                        return '?';
+                    }}
+                    onView={function (file) {
+                        openDiffView(file.path, { untracked: true });
+                    }}
+                    rowActionsFor={function (file) {
+                        return [
+                            {
+                                label: 'Delete',
+                                Icon: RemoveIcon,
+                                onAction: function () {
+                                    void confirmAndDiscard([file.path], `Delete untracked file "${file.path}"? This cannot be undone.`);
+                                }
+                            },
+                            {
+                                label: 'Stage',
+                                Icon: PlusIcon,
+                                onAction: function () {
+                                    void runStatusAction(function () {
+                                        return stagePaths([file.path]);
+                                    });
+                                }
+                            }
+                        ];
+                    }}
+                />
             </AccordionSection>
 
             {diffView !== null &&
