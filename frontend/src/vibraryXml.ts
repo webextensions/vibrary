@@ -21,7 +21,7 @@ type Agent = 'Human' | 'AI';
 type ApprovalState = 'none' | 'current' | 'stale';
 
 // The kinds of entry the app understands, carried per <entry type>. A file is just a container and may hold any mix;
-// only a 'spec' entry shows the "Apply this spec" action.
+// only 'spec' and 'task' entries have a headless-agent run action ("Apply this spec" / "Run this task").
 type EntryType = 'spec' | 'review' | 'task' | 'idea';
 
 type Spec = {

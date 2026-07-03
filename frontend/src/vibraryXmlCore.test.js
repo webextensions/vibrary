@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { approvalState, countApprovedSpecs, hashContent, parseVibraryXml, serializeVibraryXml } from './vibraryXmlCore.js';
+import { approvalState, countApprovedSpecs, emptySpec, hashContent, parseVibraryXml, serializeVibraryXml } from './vibraryXmlCore.js';
 
 // Drop the client-only `id` field before comparing parsed entries: parseVibraryXml assigns a fresh randomId() on every
 // call by design (ids are never serialized), so two parses of the same document never agree on it.
@@ -177,6 +177,32 @@ describe('approvalState', function () {
             const [reloaded] = parseVibraryXml(serializeVibraryXml([spec]));
             assert.equal(approvalState(reloaded), 'current', `content ${JSON.stringify(content)} went ${approvalState(reloaded)}`);
         }
+    });
+});
+
+// The typed wrapper (vibraryXml.ts) pins this untyped core's signatures with `as` casts - unchecked promises that
+// TypeScript cannot verify. These asserts turn silent cast drift into a red test: the canonicalize script once broke
+// exactly this way, assuming parseVibraryXml returned { type, entries } and serializeVibraryXml took two arguments.
+describe('core API shapes the vibraryXml.ts casts promise', function () {
+    it('parseVibraryXml returns a plain array of entries', function () {
+        assert.equal(Array.isArray(parseVibraryXml('')), true);
+        assert.equal(Array.isArray(parseVibraryXml('<root><entries><entry><title>t</title></entry></entries></root>')), true);
+    });
+
+    it('serializeVibraryXml takes a single entries argument and returns a string', function () {
+        assert.equal(serializeVibraryXml.length, 1);
+        assert.equal(typeof serializeVibraryXml([]), 'string');
+    });
+
+    it('emptySpec honors its optional type argument and defaults to spec', function () {
+        assert.equal(emptySpec().type, 'spec');
+        assert.equal(emptySpec('task').type, 'task');
+    });
+
+    it('hashContent and approvalState accept the documented spec-shaped inputs', function () {
+        const hash = hashContent({ content: 'x' });
+        assert.equal(typeof hash, 'string');
+        assert.equal(approvalState({ content: 'x', approved: hash }), 'current');
     });
 });
 
