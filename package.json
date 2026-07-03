@@ -13,7 +13,7 @@
         "dist"
     ],
     "engines": {
-        "node": "^20.19.0 || >=22.12.0"
+        "node": ">=22.18.0"
     },
     "overrides": {
         "node-notifier": {
@@ -33,7 +33,7 @@
         "start:build:do-not-watch": "node scripts/start-build.js",
         "start:build:watch": "node scripts/start-build.js --watch",
         "start:server": "node --watch scripts/start-server.js",
-        "test": "node --test frontend/src/**/*.test.js backend/**/*.test.js scripts/**/*.test.js",
+        "test": "node --test frontend/src/**/*.test.js frontend/src/**/*.test.ts backend/**/*.test.js scripts/**/*.test.js",
         "typecheck": "tsc --noEmit -p frontend"
     },
     "repository": {
