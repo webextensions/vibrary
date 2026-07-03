@@ -1,39 +1,71 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { parseVibraryXml } from '../../frontend/src/vibraryXmlCore.js';
 import { listVibraryFiles } from './vibraryFiles.js';
 
 // Bound the response so a broad query against a large folder cannot return an unbounded payload; the UI notes when a
 // result set was truncated.
 const MAX_TOTAL_MATCHES = 500;
 const MAX_MATCHES_PER_FILE = 50;
-// Keep snippet lines short so the results list stays scannable.
+// Keep snippets short so the results list stays scannable.
 const MAX_SNIPPET_LENGTH = 200;
 // A one-character query is too broad to be useful and scans every included file for nothing; the frontend's
 // SearchPanel enforces the same floor before sending, so the UI never hits this branch.
 const MIN_QUERY_LENGTH = 2;
 
-// Collect up to `limit` line matches for `needle` within one file's content. Kept as its own function so the line scan's
-// early break is not a break inside a nested loop.
-const collectMatchesInFile = function (content, needle, limit) {
-    const matches = [];
-    for (const [lineIndex, line] of content.split('\n').entries()) {
-        if (!line.toLowerCase().includes(needle)) {
-            continue;
-        }
-        matches.push({ line: lineIndex + 1, text: line.trim().slice(0, MAX_SNIPPET_LENGTH) });
-        if (matches.length >= limit) {
-            break;
-        }
+// The entry fields a match can live in, in the order the snippet prefers them.
+const SEARCH_FIELDS = ['title', 'content', 'notes'];
+
+// The trimmed, length-capped line around the needle's first occurrence in `text`, or null when it does not occur.
+const buildSnippet = function (text, needle) {
+    const at = text.toLowerCase().indexOf(needle);
+    if (at === -1) {
+        return null;
     }
-    return matches;
+    const lineStart = text.lastIndexOf('\n', at) + 1;
+    const lineEndRaw = text.indexOf('\n', at);
+    const lineEnd = lineEndRaw === -1 ? text.length : lineEndRaw;
+    return text.slice(lineStart, lineEnd).trim().slice(0, MAX_SNIPPET_LENGTH);
 };
 
-// Case-insensitive substring search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary
-// files), so Search and Explorer always agree on scope. Returns per-file line matches; a file with no match is skipped
-// without reading its body twice. `truncated` flags that a cap was hit so the UI can say results are incomplete.
-// `options.files`, when non-empty, narrows the scope to just those file names (an empty/absent list imposes no
-// constraint - "search everywhere" - matching how the editor's own status/type filters treat an empty selection).
+// The first field of `entry` containing the needle, with its snippet - or null for a non-matching entry.
+const matchEntry = function (entry, needle) {
+    for (const field of SEARCH_FIELDS) {
+        const snippet = buildSnippet(entry[field], needle);
+        if (snippet !== null) {
+            return { field, snippet };
+        }
+    }
+    return null;
+};
+
+// Collect up to `limit` entry matches within one file's parsed entries. Kept as its own function so the scan's
+// early break is not a break inside a nested loop.
+const collectMatchesInFile = function (entries, needle, limit) {
+    const matches = [];
+    for (const [entryIndex, entry] of entries.entries()) {
+        const match = matchEntry(entry, needle);
+        if (match === null) {
+            continue;
+        }
+        if (matches.length >= limit) {
+            return { matches, hitLimit: true };
+        }
+        matches.push({ entryIndex, title: entry.title, field: match.field, snippet: match.snippet });
+    }
+    return { matches, hitLimit: false };
+};
+
+// Case-insensitive ENTRY search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary
+// files), so Search and Explorer always agree on scope. A match is an entry whose title/content/notes contain the
+// query - one match per entry, however many times the query occurs - and carries the entry's index within its file,
+// so a clicked result addresses the editor's parsed entries directly (both sides parse the same file). Searching the
+// parsed fields rather than the raw XML also keeps markup out of the results: a query like "task" no longer floods
+// the panel with <entry type="task"> lines. A file that cannot be read OR parsed is skipped (its entries are not
+// addressable); `truncated` flags that a cap was hit so the UI can say results are incomplete. `options.files`, when
+// non-empty, narrows the scope to just those file names (an empty/absent list imposes no constraint - "search
+// everywhere" - matching how the editor's own status/type filters treat an empty selection).
 const searchVibrary = async function (cwd, query, options = {}) {
     // The needle is the trimmed query: surrounding whitespace is meaningless here (the emptiness/floor checks already
     // treat it that way), so a padded direct API call searches for the same thing the UI would send.
@@ -57,25 +89,22 @@ const searchVibrary = async function (cwd, query, options = {}) {
             isTruncated = true;
             break;
         }
-        let content;
+        let entries;
         try {
-            content = await readFile(path.join(cwd, name), 'utf8');
+            entries = parseVibraryXml(await readFile(path.join(cwd, name), 'utf8'));
         } catch {
-            continue;
-        }
-        if (!content.toLowerCase().includes(needle)) {
             continue;
         }
         // Never collect more than this file's per-file cap, nor more than the overall budget still has room for.
         const limit = Math.min(MAX_MATCHES_PER_FILE, MAX_TOTAL_MATCHES - total);
-        const matches = collectMatchesInFile(content, needle, limit);
+        const { matches, hitLimit } = collectMatchesInFile(entries, needle, limit);
+        if (hitLimit) {
+            isTruncated = true;
+        }
         if (matches.length === 0) {
             continue;
         }
         total += matches.length;
-        if (matches.length >= limit) {
-            isTruncated = true;
-        }
         results.push({ path: name, matches });
     }
 

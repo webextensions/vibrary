@@ -285,8 +285,9 @@ type GitStash = { index: number; message: string; date: string };
 // Status plus stash list, returned by every stash mutation since each changes at least one of the two.
 type GitStashResult = { status: GitStatus; stashes: GitStash[] };
 
-// One line match inside a file; `line` is 1-based and `text` is the trimmed, length-capped line.
-type SearchMatch = { line: number; text: string };
+// One matching ENTRY inside a file: its index within the file's parsed entries (what a clicked result hands the
+// editor to highlight), its title, the field the match was found in, and a trimmed, length-capped snippet line.
+type SearchMatch = { entryIndex: number; title: string; field: 'title' | 'content' | 'notes'; snippet: string };
 type SearchFileResult = { path: string; matches: SearchMatch[] };
 type SearchResult = { results: SearchFileResult[]; truncated: boolean };
 

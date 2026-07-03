@@ -101,11 +101,14 @@
     background: #f3f4f6;
 }
 
-.line-number {
+.match-entry-title {
     flex-shrink: 0;
-    color: #656d76;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1f2328;
+    font-weight: 600;
 }
 
 .match-text {

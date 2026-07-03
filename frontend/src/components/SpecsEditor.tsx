@@ -106,23 +106,25 @@ const SpecsEditor = function (
     // Id of the entry briefly ring-highlighted after the file was opened from a Search result; cleared on a timer.
     const [highlightId, setHighlightId] = useState<string | null>(null);
 
-    // The id of the entry at highlightMatchIndex among those whose title/content/notes contain the search query, or
-    // null when there is no query or no match. An index past the last match clamps to the last one, so a stale index
-    // (entries changed since the search ran) still lands somewhere sensible rather than nowhere. Drives both the
-    // scroll-to target and keeping that entry visible even under an active filter.
+    // The id of the entry a clicked search result points at, or null when there is no query or no match. The index
+    // addresses the file's entries DIRECTLY (the backend's search is entry-aware, and both sides parse the same
+    // file), clamped for staleness; if the addressed entry no longer contains the query (edited since the search
+    // ran), fall back to the first entry that does. Drives both the scroll-to target and keeping that entry visible
+    // even under an active filter.
     const highlightMatchId = useMemo(function () {
         const needle = highlightQuery?.trim().toLowerCase();
-        if (!needle) {
+        if (!needle || specs.length === 0) {
             return null;
         }
-        const matches = specs.filter(function (spec) {
+        const matchesNeedle = function (spec: Spec) {
             return `${spec.title}\n${spec.content}\n${spec.notes}`.toLowerCase().includes(needle);
-        });
-        if (matches.length === 0) {
-            return null;
+        };
+        const indexed = specs[Math.min(highlightMatchIndex ?? 0, specs.length - 1)];
+        if (matchesNeedle(indexed)) {
+            return indexed.id;
         }
-        const index = Math.min(highlightMatchIndex ?? 0, matches.length - 1);
-        return matches[index].id;
+        const fallback = specs.find(function (spec) { return matchesNeedle(spec); });
+        return fallback === undefined ? null : fallback.id;
     }, [highlightQuery, highlightMatchIndex, specs]);
 
     // When a match is found, scroll its card into view and ring-highlight it for a couple of seconds so the user can

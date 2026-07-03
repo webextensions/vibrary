@@ -40,10 +40,10 @@ const highlight = function (text: string, query: string): ReactNode {
     return parts;
 };
 
-// Full-text search across the included vibrary files. Results are grouped by file; clicking a match opens the file and
-// asks the editor to scroll to / highlight the corresponding entry (see App's searchTarget wiring). The match's index
-// within its file's result list is passed along, so distinct matches in the same file resolve to distinct entries
-// instead of every match landing on whichever entry happens to match first.
+// Entry search across the included vibrary files. Results are grouped by file, one row per matching ENTRY (title +
+// snippet); clicking a row opens the file and asks the editor to scroll to / highlight that entry (see App's
+// searchTarget wiring). The backend reports each match's index within the file's parsed entries, so the editor
+// addresses the entry directly instead of re-deriving which one matched.
 const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, query: string, matchIndex: number) => void }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchFileResult[]>([]);
@@ -192,18 +192,19 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                         <li key={file.path} className={styles.fileGroup}>
                             <p className={styles.filePath} title={file.path}>{file.path}</p>
                             <ul className={styles.matchList}>
-                                {file.matches.map(function (match, matchIndex) {
+                                {file.matches.map(function (match) {
                                     return (
-                                        <li key={match.line}>
+                                        <li key={match.entryIndex}>
                                             <button
                                                 type="button"
                                                 className={styles.matchRow}
+                                                title={`Open ${match.title || 'this entry'} (match in ${match.field})`}
                                                 onClick={function () {
-                                                    onOpenMatch(file.path, searchedQuery, matchIndex);
+                                                    onOpenMatch(file.path, searchedQuery, match.entryIndex);
                                                 }}
                                             >
-                                                <span className={styles.lineNumber}>{match.line}</span>
-                                                <span className={styles.matchText}>{highlight(match.text, searchedQuery)}</span>
+                                                <span className={styles.matchEntryTitle}>{highlight(match.title || '(untitled)', searchedQuery)}</span>
+                                                <span className={styles.matchText}>{highlight(match.snippet, searchedQuery)}</span>
                                             </button>
                                         </li>
                                     );
