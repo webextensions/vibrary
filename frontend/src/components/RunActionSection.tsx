@@ -3,8 +3,8 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 
 import { useActivityQueueActions, useActivityQueueState } from '../activityQueue.ts';
 import { applySpec, runTask } from '../api.ts';
+import { promptForCustomInstructions } from './customInstructions.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
-import { promptDialog } from '../promptDialog.ts';
 import { useSettings } from '../settingsContext.ts';
 import { type Spec } from '../vibraryXml.ts';
 
@@ -117,11 +117,7 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
         let instructions = '';
         if (useCustomInstructions) {
             setPrompting(true);
-            const entered = await promptDialog({
-                message: 'Custom one-time instructions for this run:',
-                placeholder: 'e.g. focus on the backend only, skip tests',
-                confirmLabel: runAction.label
-            });
+            const entered = await promptForCustomInstructions(runAction.label);
             setPrompting(false);
             if (entered === null) {
                 return;
@@ -144,7 +140,7 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
         // does not surface again as an unhandled rejection.
         try {
             await enqueue({
-                kind: value.type === 'task' ? 'run-task' : 'apply-spec',
+                kind: runAction.kind,
                 label: value.title,
                 prompt: promptParts.join('\n'),
                 run: function (signal, onEvent) {
