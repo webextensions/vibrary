@@ -102,6 +102,10 @@ const ResponsiveDialog = function ({
     const fullScreen = useMediaQuery({ query: FULLSCREEN_MEDIA_QUERY });
     const panelReference = useRef<HTMLDivElement>(null);
     const titleId = useId();
+    // closable is the single source of truth for EVERY dismissal path - the close button, Escape, and a backdrop
+    // click - so a dialog rendered as not-closable (false or 'disabled') can never be dismissed out from under an
+    // in-flight operation by a keyboard/mouse route the caller forgot to guard.
+    const canDismiss = closable === undefined || closable === true;
 
     useBodyScrollLock(open);
     useFocusTrap(open, panelReference);
@@ -112,7 +116,9 @@ const ResponsiveDialog = function ({
         }
         const handleKeyDown = function (event: KeyboardEvent) {
             if (event.key === 'Escape') {
-                onClose();
+                if (canDismiss) {
+                    onClose();
+                }
                 return;
             }
             // Keep Tab/Shift+Tab cycling within the panel instead of escaping to background content.
@@ -142,7 +148,7 @@ const ResponsiveDialog = function ({
         return function () {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [open, onClose]);
+    }, [open, onClose, canDismiss]);
 
     if (!open) {
         return null;
@@ -159,7 +165,7 @@ const ResponsiveDialog = function ({
     const isDraggable = Boolean(draggable && !fullScreen);
 
     const handleBackdropMouseDown = function (event: MouseEvent<HTMLDivElement>) {
-        if (event.target === event.currentTarget) {
+        if (canDismiss && event.target === event.currentTarget) {
             onClose();
         }
     };

@@ -55,13 +55,10 @@ const CreateEntriesDialog = function ({ onClose, defaultEntryType, onGenerate }:
     return (
         <ResponsiveDialog
             open
-            onClose={function () {
-                // A run edits files on disk, so block dismissal until it finishes rather than leaving it orphaned.
-                if (!generating) {
-                    onClose();
-                }
-            }}
+            onClose={onClose}
             title="Create entries with AI"
+            // A run edits files on disk, so block dismissal (button, Escape, backdrop) until it finishes rather than
+            // leaving it orphaned; ResponsiveDialog gates every dismissal path on this prop.
             closable={generating ? 'disabled' : true}
             draggable
             noPrimaryButton
