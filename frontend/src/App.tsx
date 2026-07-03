@@ -215,12 +215,28 @@ const App = function () {
         }
     }, [activeTab, patchTab, markCounted, refreshListing]);
 
-    // Ctrl+S / Cmd+S saves the active file, matching every other text editor. Prevents the browser's own "Save Page
-    // As" first, so it never fires even when there is nothing to save. Mirrors the toolbar Save button's own guard
-    // (dirty, not already saving, no parse error) so the shortcut cannot double-save or "succeed" on a broken file.
+    // App-wide keyboard shortcuts. Ctrl+S / Cmd+S saves the active file, matching every other text editor - PLAIN
+    // Ctrl+S only: Ctrl+Shift+S and Ctrl+Alt+S belong to the browser or the user's own tools, and an editor treating
+    // them as Save would hijack them for no benefit. The browser's "Save Page As" is prevented even when there is
+    // nothing to save; the save guard mirrors the toolbar button's (dirty, not already saving, no parse error) so the
+    // shortcut cannot double-save or "succeed" on a broken file. Ctrl+Shift+T / Cmd+Shift+T reopens the last closed
+    // tab - the keyboard twin of the toolbar button, and the binding every browser/editor user tries first (the
+    // natural companion to the tab strip's middle-click close); default is prevented only when there is something to
+    // reopen, so the browser's own reopen-tab stays reachable otherwise.
     useEffect(function () {
         const handleKeyDown = function (event: KeyboardEvent) {
-            if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') {
+            if (!(event.ctrlKey || event.metaKey)) {
+                return;
+            }
+            const key = event.key.toLowerCase();
+            if (event.shiftKey && !event.altKey && key === 't') {
+                if (closedTabCount > 0) {
+                    event.preventDefault();
+                    reopenClosedTab();
+                }
+                return;
+            }
+            if (event.shiftKey || event.altKey || key !== 's') {
                 return;
             }
             event.preventDefault();
@@ -233,7 +249,7 @@ const App = function () {
         return function () {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [activeTab, onSave]);
+    }, [activeTab, onSave, closedTabCount, reopenClosedTab]);
 
     // Generate entries of the chosen type with the backend AI agent, then refresh the editor from disk. The agent reads
     // the file from disk, so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile).

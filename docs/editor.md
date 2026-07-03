@@ -78,3 +78,15 @@ you can see it, and saving is disabled until the file is fixed (edit it outside 
 
 The **Save** button (or Ctrl+S / Cmd+S from anywhere in the app) writes the file. It always serializes the Structured
 model to XML (see [vibrary-file-format.md](vibrary-file-format.md)), regardless of which tab is active.
+
+## Keyboard and mouse shortcuts
+
+- Ctrl+Enter / Cmd+Enter - send the chat composer's message in an activity tab.
+- Ctrl+S / Cmd+S - save the active file (plain Ctrl+S only; a no-op when there is nothing to save, with the browser's
+  own save dialog suppressed).
+- Ctrl+Shift+T / Cmd+Shift+T - reopen the most recently closed tab (same as the toolbar button; falls through to the
+  browser when there is nothing to reopen).
+- Escape - closes the open popup, menu, or dialog first; with none open, clears the entry or file selection.
+- Middle-click a tab - close it.
+- Right-click a tab - open its context menu (Close / Close Others / Close All); menus support
+  ArrowUp/ArrowDown/Home/End navigation.
