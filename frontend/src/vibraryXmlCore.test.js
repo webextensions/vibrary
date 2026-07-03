@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { approvalState, countApprovedSpecs, emptySpec, hashContent, normalizeTitle, parseVibraryXml, serializeVibraryXml } from './vibraryXmlCore.js';
+import { approvalState, countApprovedSpecs, emptySpec, entryTypeFromName, hashContent, normalizeTitle, parseVibraryXml, serializeVibraryXml } from './vibraryXmlCore.js';
 
 // Drop the client-only `id` field before comparing parsed entries: parseVibraryXml assigns a fresh randomId() on every
 // call by design (ids are never serialized), so two parses of the same document never agree on it.
@@ -150,6 +150,22 @@ describe('hashContent', function () {
         // padStart(13, '0') guarantees a floor, not a ceiling - the combined 53-bit value can need up to 14 hex digits.
         assert.match(hashContent({ content: '' }), /^[0-9a-f]{13,14}$/);
         assert.match(hashContent({ content: 'some longer content to hash' }), /^[0-9a-f]{13,14}$/);
+    });
+});
+
+describe('entryTypeFromName', function () {
+    it('maps each family prefix (flat or nested, plain or suffixed) to its singular entry type', function () {
+        assert.equal(entryTypeFromName('reviews.xml'), 'review');
+        assert.equal(entryTypeFromName('specs-auth.xml'), 'spec');
+        assert.equal(entryTypeFromName('docs/api/tasks-2026.q1.xml'), 'task');
+        assert.equal(entryTypeFromName('ideas.xml'), 'idea');
+    });
+
+    it('defaults to "spec" for names outside the four families', function () {
+        assert.equal(entryTypeFromName('notes.xml'), 'spec');
+        assert.equal(entryTypeFromName(''), 'spec');
+        // The family must be the whole first dash/dot-delimited segment, not a prefix of it.
+        assert.equal(entryTypeFromName('tasksarchive.xml'), 'spec');
     });
 });
 
