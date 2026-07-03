@@ -5,9 +5,9 @@ import compression from 'compression';
 import express from 'express';
 
 import { createFilesRouter } from './files/files.js';
-import { createGitRouter } from './routes/git.js';
-import { createSearchRouter } from './routes/search.js';
-import { createSettingsRouter } from './routes/settings.js';
+import { createGitRouter } from './git/git.js';
+import { createSearchRouter } from './search/search.js';
+import { createSettingsRouter } from './settings/settings.js';
 import { sendErrorResponse } from './shared/sendResponse.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));

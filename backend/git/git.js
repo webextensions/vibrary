@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { Router } from 'express';
 
 import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
-import { generateCommitMessageAsync } from '../utils/runClaudeCommitMessage.js';
+import { generateCommitMessageAsync } from './runClaudeCommitMessage.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
-import { commitAsync, diffAsync, discardAsync, isGitRepoAsync, pullAsync, pushAsync, removeUntrackedAsync, stageAsync, stashApplyAsync, stashDropAsync, stashListAsync, stashPopAsync, stashSaveAsync, statusAsync, unstageAsync } from '../utils/runGit.js';
+import { commitAsync, diffAsync, discardAsync, isGitRepoAsync, pullAsync, pushAsync, removeUntrackedAsync, stageAsync, stashApplyAsync, stashDropAsync, stashListAsync, stashPopAsync, stashSaveAsync, statusAsync, unstageAsync } from './runGit.js';
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
 const createGitRouter = function ({ cwd }) {
