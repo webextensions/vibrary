@@ -56,7 +56,10 @@ const commitAsync = function (cwd, { summary, body }) {
 };
 
 // Push the current branch. A branch with no upstream would make a bare `git push` fail with "no upstream branch", so
-// that case publishes the branch instead (push -u to the first remote), matching what a UI user expects Push to do.
+// that case publishes the branch instead (push -u), matching what a UI user expects Push to do. The publish target
+// prefers "origin" - git's own conventional default and what `git push` itself would pick - over whichever remote
+// happens to be first in config order, which with several remotes (a fork setup's upstream, a deploy target) could
+// silently publish somewhere surprising.
 const pushAsync = async function (cwd) {
     const git = gitFor(cwd);
     const status = await git.status();
@@ -65,8 +68,9 @@ const pushAsync = async function (cwd) {
         if (remotes.length === 0) {
             throw new Error('No remote is configured to push to');
         }
+        const remote = remotes.find(function (candidate) { return candidate.name === 'origin'; }) ?? remotes[0];
         // Via raw (like unstageAsync) because unicorn/no-return-array-push mistakes push-with-arguments for Array#push.
-        return git.raw(['push', '--set-upstream', remotes[0].name, status.current]);
+        return git.raw(['push', '--set-upstream', remote.name, status.current]);
     }
     return git.push();
 };
