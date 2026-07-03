@@ -10,8 +10,8 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 - `node --run lint` - eslint (flat config, eslint-config-ironplate presets)
 - `node --run typecheck` - `tsc --noEmit -p frontend` plus a checkJs pass over `backend`/`bin`/`scripts`
   (`tsconfig.node.json`) - cross-module arity/shape drift against the shared core fails here
-- `node --run test` - `node --test` over `*.test.js`/`*.test.ts` in `frontend/src`, `backend`, and `scripts`
-  (TypeScript tests run via Node's built-in type stripping - hence `engines` requiring Node >= 22.18)
+- `node --run test` - `node --test` over `*.test.js`/`*.test.ts` in `shared`, `frontend/src`, `backend`, and
+  `scripts` (TypeScript tests run via Node's built-in type stripping - hence `engines` requiring Node >= 22.18)
 - `node --run build` - vite build into `dist/` (served by the Express server)
 - `npm start` - concurrently: build watcher + server with auto-reload (see `scripts/start-*.js`)
 - `node --run dev` - vite dev server alone, proxying `/api` to a separately running server on port 3000
@@ -20,26 +20,31 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 ## Architecture
 
 - `bin/` - `vibrary` (commander CLI, `backend/cli.js`) and `vibrary-server` (starts `backend/server.js` directly).
-- `backend/` - plain-JS ESM Express app (`app.js`); routers in `routes/` (files, git, search, settings) are
-  factories taking `{ cwd }`. `utils/` holds the workers: `spawnClaude.js` (process lifecycle: stream-json flags,
-  timeouts, abort -> process-group kill), one `runClaude*.js` per agent action (prompt builder + timeout each),
-  `runGit.js` (simple-git wrappers), `vibraryFiles.js` (name validation - the path-traversal defense - and
-  `.vibraryinclude` gating), `searchVibrary.js` (entry-aware: matches parsed title/content/notes and returns
-  per-entry indexes that the editor's highlight addresses directly as `specs[entryIndex]` - keep the two sides
-  parsing the same file), `sendResponse.js` (the `{ status, output|errorMessage }` envelope).
-- `frontend/` - React 19 + TypeScript + Vite + CSS modules. `App.tsx` composes the layout; single-concern hooks own
-  the state: `useOpenTabs.ts` (tab state - per-tab unsaved edits survive switching), `useFileOperations.ts` (the
-  listing/summary plus every explorer file mutation and the error banner), `useSessionRestore.ts` (per-folder
-  which-tabs-were-open persistence); `ActivityQueueProvider.tsx` owns the in-memory job queue (strictly one
-  `claude -p` job at a time; per-job transcripts live in refs surfaced via
+- `backend/` - plain-JS ESM Express app (`app.js`); grouped by feature, each folder bundling its `{ cwd }`-factory
+  router, its workers, and its tests: `files/` (CRUD router `files.js`, the streaming agent router `agents.js` with
+  the NDJSON `streamClaudeRoute` helper, one `runClaude*.js` per agent action (prompt builder + timeout each), and
+  `vibraryFiles.js` - name validation, the path-traversal defense, and `.vibraryinclude` gating), `git/` (router,
+  `runGit.js` simple-git wrappers, `runClaudeCommitMessage.js`), `search/` (router plus `searchVibrary.js` -
+  entry-aware: matches parsed title/content/notes and returns per-entry indexes that the editor's highlight
+  addresses directly as `specs[entryIndex]` - keep the two sides parsing the same file), `settings/` (router).
+  `shared/` holds the cross-feature plumbing: `spawnClaude.js` (process lifecycle: stream-json flags, timeouts,
+  abort -> process-group kill), `sendResponse.js` (the `{ status, output|errorMessage }` envelope),
+  `abortOnDisconnect.js`, `resolveWithinCwd.js`, and the route test harness `testHelpers.js`.
+- `frontend/` - React 19 + TypeScript + Vite + CSS modules, `src/` grouped by feature (components, CSS, hooks, and
+  tests colocated): `xml/` (the type layer `vibraryXml.ts`), `activity/` (`ActivityQueueProvider.tsx` owns the
+  in-memory job queue - strictly one `claude -p` job at a time; per-job transcripts live in refs surfaced via
   `useSyncExternalStore` so token streams re-render only the open detail tab; the context is split into a volatile
   state half and a referentially-stable actions half - consume the narrowest one, and any NEW queue action must read
-  live state through the refs, never captured state variables: the actions bundle freezes first-render closures);
-  `api.ts` is the fetch layer (JSON envelope + NDJSON streaming).
+  live state through the refs, never captured state variables: the actions bundle freezes first-render closures),
+  `editor/` (SpecsEditor/SpecCard and the spec-run UI), `explorer/` (LeftPanel/Sidebar plus `useFileOperations.ts` -
+  the listing/summary, every explorer file mutation, and the error banner), `git/` (source control panel), `tabs/`
+  (`useOpenTabs.ts` - tab state, per-tab unsaved edits survive switching - and `useSessionRestore.ts`, per-folder
+  which-tabs-were-open persistence), `settings/`, and `shared/` (dialogs, icons, generic hooks). At the root,
+  `App.tsx` composes the layout and `api.ts` is the fetch layer (JSON envelope + NDJSON streaming).
 - `shared/vibraryXmlCore.js` - the deliberately untyped, framework-free, isomorphic core (parse/serialize/
   hash/approval-state, plus the single `normalizeTitle` rule and the guarded `randomId`). It must keep working in
   the browser AND under plain node: `scripts/canonicalize-vibrary.js` (the git diff driver's canonicalizer) and the
-  backend import it. `vibraryXml.ts` is its hand-maintained type layer (`as`-cast re-exports).
+  backend import it. `frontend/src/xml/vibraryXml.ts` is its hand-maintained type layer (`as`-cast re-exports).
 - `.vibraryinclude` (gitignore-style patterns, `ignore` library) gates EVERYTHING: listing, create, read, save,
   rename, delete all check it.
 - `scripts/` - dev launchers (`start-server.js`, `start-build.js`, `notifier.js`) and the reorder-insensitive git
