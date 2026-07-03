@@ -20,6 +20,9 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
     // Mirrors `settings` for the mutators, which fold updates off the latest snapshot without re-reading async state.
     const latestReference = useRef<AppSettings>(settings);
     const saveTimerReference = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // The snapshot an armed debounce timer would save, so a pagehide/unmount can FLUSH it rather than discard it - a
+    // toggle followed by a quick reload otherwise silently reverted despite the UI having shown it as applied.
+    const pendingSaveReference = useRef<AppSettings | null>(null);
 
     useEffect(function () {
         let isCancelled = false;
@@ -43,11 +46,32 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
         };
     }, []);
 
+    // Flush any pending debounced save at pagehide (reload/close - keepalive lets the request outlive the page) and
+    // on unmount, instead of dropping it with the timer. Failures are swallowed: the page is going away, so there is
+    // nowhere left to surface them.
     useEffect(function () {
-        return function () {
+        const flushPendingSave = function () {
+            const snapshot = pendingSaveReference.current;
+            if (snapshot === null) {
+                return;
+            }
+            pendingSaveReference.current = null;
             if (saveTimerReference.current !== null) {
                 clearTimeout(saveTimerReference.current);
+                saveTimerReference.current = null;
             }
+            void (async function () {
+                try {
+                    await saveSettings(snapshot, { keepalive: true });
+                } catch {
+                    // Intentionally ignored; see above.
+                }
+            })();
+        };
+        window.addEventListener('pagehide', flushPendingSave);
+        return function () {
+            window.removeEventListener('pagehide', flushPendingSave);
+            flushPendingSave();
         };
     }, []);
 
@@ -55,11 +79,13 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
         const next = updater(latestReference.current);
         latestReference.current = next;
         setSettings(next);
+        pendingSaveReference.current = next;
         if (saveTimerReference.current !== null) {
             clearTimeout(saveTimerReference.current);
         }
         saveTimerReference.current = setTimeout(function () {
             saveTimerReference.current = null;
+            pendingSaveReference.current = null;
             void (async function () {
                 try {
                     await saveSettings(next);

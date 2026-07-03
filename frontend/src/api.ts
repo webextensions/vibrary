@@ -244,11 +244,14 @@ const getSettings = async function (): Promise<unknown> {
 };
 
 // Persist the per-project UI preferences, writing the whole settings object to `.vibrary/settings.local.json`.
-const saveSettings = async function (settings: AppSettings): Promise<void> {
+// `keepalive` lets a flush at pagehide outlive the page (the payload is a small settings object, well under the
+// browser's ~64 KiB keepalive budget).
+const saveSettings = async function (settings: AppSettings, options?: { keepalive?: boolean }): Promise<void> {
     await request<Record<string, never>>('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings })
+        body: JSON.stringify({ settings }),
+        keepalive: options?.keepalive === true
     });
 };
 
