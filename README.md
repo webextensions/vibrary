@@ -1,0 +1,36 @@
+# vibrary
+
+Browse and edit vibrary files - `reviews`, `specs`, `tasks`, and `ideas` XML files
+(`<family>.xml` / `<family>-*.xml`) in a folder - through a small local web UI. Entries can be created, edited,
+approved, searched, and related to each other; `spec` and `task` entries can additionally be handed to a headless
+[Claude Code](https://claude.com/claude-code) agent to apply or run against the folder's codebase.
+
+## Install
+
+```bash
+npm install -g vibrary
+```
+
+## Quick start
+
+```bash
+cd your-project
+vibrary-server            # start the server in the current folder (auto-opens the browser)
+vibrary server --port 4000 --no-open
+vibrary --help
+```
+
+The server starts on port 3000 and advances to the next free port if it is busy. Which files are shown is chosen by
+a `.vibraryinclude` file in the folder (gitignore-style patterns, e.g. `specs*.xml`; prefix a pattern with `!` to
+re-exclude).
+
+## Documentation
+
+- [docs/README.md](docs/README.md) - overview, running, and development setup (including reorder-insensitive git
+  diffs for vibrary files)
+- [docs/editor.md](docs/editor.md) - the editor UI: the Structured and Raw tabs and how each field is edited
+- [docs/vibrary-file-format.md](docs/vibrary-file-format.md) - the XML schema and what each field means
+
+## License
+
+MIT

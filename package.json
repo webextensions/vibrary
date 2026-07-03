@@ -40,8 +40,16 @@
         "type": "git",
         "url": "git+https://github.com/webextensions/vibrary.git"
     },
-    "keywords": [],
-    "author": "",
+    "keywords": [
+        "claude",
+        "editor",
+        "ideas",
+        "local",
+        "reviews",
+        "specs",
+        "tasks",
+        "xml"
+    ],
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/webextensions/vibrary/issues"
