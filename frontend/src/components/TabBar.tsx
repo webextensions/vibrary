@@ -2,6 +2,7 @@ import cx from 'classnames';
 import { useState } from 'react';
 
 import { CloseIcon, MoreIcon } from './Icons.tsx';
+import { MenuPanel } from './MenuPanel.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { useDismissablePopup } from '../useDismissablePopup.ts';
 import { useMediaQuery } from '../useMediaQuery.ts';
@@ -123,7 +124,7 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
                             <CloseIcon />
                         </button>
                         {menuPath === tab.path && (
-                            <div className={styles.tabMenu} role="menu">
+                            <MenuPanel className={styles.tabMenu}>
                                 <button
                                     type="button"
                                     role="menuitem"
@@ -158,7 +159,7 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
                                 >
                                     Close All
                                 </button>
-                            </div>
+                            </MenuPanel>
                         )}
                     </div>
                 );

@@ -2,6 +2,7 @@ import cx from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AccordionSection } from './AccordionSection.tsx';
+import { MenuPanel } from './MenuPanel.tsx';
 import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { buildFileTree, collectFolderPaths, type TreeNode } from '../fileTree.ts';
@@ -112,7 +113,7 @@ const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onRename, onDu
                 <MoreIcon />
             </button>
             {isOpen && (
-                <div className={styles.moreMenu} role="menu">
+                <MenuPanel className={styles.moreMenu}>
                     {node.kind === 'folder' && (
                         <button
                             type="button"
@@ -166,7 +167,7 @@ const RowMore = function ({ node, isOpen, onToggleMenu, onDelete, onRename, onDu
                         <RemoveIcon />
                         Delete
                     </button>
-                </div>
+                </MenuPanel>
             )}
         </div>
     );
