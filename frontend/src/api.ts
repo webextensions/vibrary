@@ -24,6 +24,17 @@ const request = async function <T>(url: string, init?: RequestInit): Promise<T> 
     return body.output;
 };
 
+// Send a JSON payload and parse the JSON envelope back - the shape shared by every non-streaming mutation. `init`
+// carries the rare per-call extras (an abort signal, keepalive for the pagehide flush).
+const requestJson = function <T>(url: string, method: 'POST' | 'PUT', payload: unknown, init?: Pick<RequestInit, 'signal' | 'keepalive'>): Promise<T> {
+    return request<T>(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        ...init
+    });
+};
+
 // POST `body` and consume the backend's newline-delimited JSON stream (claude's own stream-json lines plus a terminal
 // {"type":"_exit"} line). Each parsed claude event is handed to onEvent; the final "result" event's text is returned.
 // A validation failure comes back as the JSON error envelope (not a stream), surfaced as a thrown Error.
@@ -143,19 +154,11 @@ const createVibraryInclude = async function (): Promise<void> {
 // Create a new, empty specs file (create-only on the server: it refuses to overwrite an existing file). The caller
 // refreshes the file list and opens the new file once this resolves.
 const createFile = async function (name: string): Promise<void> {
-    await request<{ name: string }>('/api/files', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-    });
+    await requestJson<{ name: string }>('/api/files', 'POST', { name });
 };
 
 const saveFile = async function (name: string, content: string): Promise<void> {
-    await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content })
-    });
+    await requestJson<{ name: string }>(`/api/files/${encodeURIComponent(name)}`, 'PUT', { content });
 };
 
 // Delete a specs file. The caller (the explorer's "More" menu) confirms with the user first, then refreshes the file
@@ -167,21 +170,13 @@ const deleteFile = async function (name: string): Promise<void> {
 // Rename (or move - the new name may live in another folder) a specs file. The server refuses to overwrite an
 // existing target; the caller refreshes the file list and reopens the file under its new name once this resolves.
 const renameFile = async function (name: string, newName: string): Promise<void> {
-    await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}/rename`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newName })
-    });
+    await requestJson<{ name: string }>(`/api/files/${encodeURIComponent(name)}/rename`, 'POST', { newName });
 };
 
 // Duplicate a specs file under a new name (a copy - the source is untouched). The server refuses to overwrite an
 // existing target; the caller refreshes the file list and opens the copy once this resolves.
 const duplicateFile = async function (name: string, newName: string): Promise<void> {
-    await request<{ name: string }>(`/api/files/${encodeURIComponent(name)}/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newName })
-    });
+    await requestJson<{ name: string }>(`/api/files/${encodeURIComponent(name)}/duplicate`, 'POST', { newName });
 };
 
 // Runs the backend's headless AI agent to append `count` new specs to the file, streaming its activity through
@@ -225,12 +220,7 @@ const chatContinue = function (body: { message: string; sessionId: string }, opt
 // Runs the backend's headless AI agent to derive a hyphenated title from a spec's content, backing the editor's
 // "Populate" button. Resolves with the slugified title the agent produced.
 const populateTitle = async function (content: string, signal?: AbortSignal): Promise<string> {
-    const output = await request<{ title: string }>('/api/title', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-        signal
-    });
+    const output = await requestJson<{ title: string }>('/api/title', 'POST', { content }, { signal });
     return output.title;
 };
 
@@ -245,12 +235,7 @@ const getSettings = async function (): Promise<unknown> {
 // `keepalive` lets a flush at pagehide outlive the page (the payload is a small settings object, well under the
 // browser's ~64 KiB keepalive budget).
 const saveSettings = async function (settings: AppSettings, options?: { keepalive?: boolean }): Promise<void> {
-    await request<Record<string, never>>('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings }),
-        keepalive: options?.keepalive === true
-    });
+    await requestJson<Record<string, never>>('/api/settings', 'PUT', { settings }, { keepalive: options?.keepalive === true });
 };
 
 // One entry title paired with the file it lives in.
@@ -306,28 +291,16 @@ const getGitStatus = function (): Promise<GitStatus> {
 
 // Stage / unstage the given paths, resolving with the refreshed status so the panel can re-render in one round trip.
 const stagePaths = function (paths: string[]): Promise<GitStatus> {
-    return request<GitStatus>('/api/git/stage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths })
-    });
+    return requestJson<GitStatus>('/api/git/stage', 'POST', { paths });
 };
 
 const unstagePaths = function (paths: string[]): Promise<GitStatus> {
-    return request<GitStatus>('/api/git/unstage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths })
-    });
+    return requestJson<GitStatus>('/api/git/unstage', 'POST', { paths });
 };
 
 // Commit the staged changes with a summary and optional extended body, resolving with the refreshed status.
 const commitChanges = function (message: { summary: string; body: string }): Promise<GitStatus> {
-    return request<GitStatus>('/api/git/commit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message)
-    });
+    return requestJson<GitStatus>('/api/git/commit', 'POST', message);
 };
 
 // Push the current branch, resolving with the refreshed status (the ahead count drops, and publishing a branch sets
@@ -353,11 +326,7 @@ const pullChanges = function (): Promise<GitStatus> {
 // Discard working-tree changes: tracked paths are restored from the index/HEAD, untracked paths are deleted.
 // Destructive - callers confirm with the user first.
 const discardPaths = function (paths: string[]): Promise<GitStatus> {
-    return request<GitStatus>('/api/git/discard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths })
-    });
+    return requestJson<GitStatus>('/api/git/discard', 'POST', { paths });
 };
 
 const listStashes = function (): Promise<GitStash[]> {
@@ -366,20 +335,12 @@ const listStashes = function (): Promise<GitStash[]> {
 
 // Stash all current changes (staged + unstaged + untracked) under an optional message.
 const stashChanges = function (message?: string): Promise<GitStashResult> {
-    return request<GitStashResult>('/api/git/stash', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(message === undefined ? {} : { message })
-    });
+    return requestJson<GitStashResult>('/api/git/stash', 'POST', message === undefined ? {} : { message });
 };
 
 // Apply / pop / drop a stash by its stash@{N} position.
 const stashAction = function (action: 'apply' | 'pop' | 'drop', index: number): Promise<GitStashResult> {
-    return request<GitStashResult>(`/api/git/stash/${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ index })
-    });
+    return requestJson<GitStashResult>(`/api/git/stash/${action}`, 'POST', { index });
 };
 
 // Draft a commit summary + extended body from the staged diff via the backend's headless agent (buffered, like
@@ -388,4 +349,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileListing, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, type GitFileDiff, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
