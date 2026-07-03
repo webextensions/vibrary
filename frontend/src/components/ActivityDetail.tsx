@@ -2,20 +2,13 @@ import cx from 'classnames';
 import { useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
 
-import { type JobStatus, useActivityQueue, useJobEvents } from '../activityQueue.ts';
+import { useActivityQueue, useJobEvents } from '../activityQueue.ts';
 import { type TranscriptItem } from '../activityStream.ts';
 
+import { formatDuration, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, RefreshIcon, StopIcon } from './Icons.tsx';
 
 import styles from './ActivityDetail.module.css';
-
-const STATUS_LABEL: Record<JobStatus, string> = {
-    queued: 'Queued',
-    running: 'Running',
-    success: 'Done',
-    error: 'Failed',
-    aborted: 'Aborted'
-};
 
 // The initial-prompt bubble shows a concise view by default and the exact prompt sent to claude on demand. The last
 // chosen view is persisted (mirroring RawXmlView's line-wrap idiom) so it becomes the default for the next such bubble.
@@ -36,14 +29,6 @@ const writePromptView = function (view: PromptView) {
     } catch {
         // ignore persistence failures; the toggle still works for this session
     }
-};
-
-// mm:ss for an elapsed span; the running job ticks live, finished jobs show their final duration.
-const formatDuration = function (milliseconds: number): string {
-    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, '0')}`;
 };
 
 // A tool-use card: the tool's name plus its input (pretty-printed json once the turn finalizes, raw partial json while

@@ -1,36 +1,17 @@
 import cx from 'classnames';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { type Job, type JobKind, type JobStatus, useActivityQueue } from '../activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
 import { useDismissablePopup } from '../useDismissablePopup.ts';
-import { AiIcon, ChevronIcon, EditIcon, FilterIcon, ListIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, SpecIcon, StopIcon, TaskIcon } from './Icons.tsx';
+import { FINISHED_STATUSES, formatDuration, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
+import { ChevronIcon, FilterIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from './Icons.tsx';
 
 import styles from './ActivityMonitor.module.css';
 
 type Option = { value: string; label: string };
-
-// The glyph and human label shown per job kind, so a row reads at a glance which action it is.
-const KIND_META: Record<JobKind, { label: string; Icon: () => ReactNode }> = {
-    'run-task': { label: 'Run task', Icon: TaskIcon },
-    'apply-spec': { label: 'Apply spec', Icon: SpecIcon },
-    'apply-batch': { label: 'Apply batch', Icon: ListIcon },
-    'generate': { label: 'Generate', Icon: AiIcon },
-    'title': { label: 'Title', Icon: EditIcon }
-};
-
-// Statuses for a job that has finished running, in one place so the row logic and queue-wide checks agree.
-const FINISHED_STATUSES = new Set<JobStatus>(['success', 'error', 'aborted']);
-
-const STATUS_LABEL: Record<JobStatus, string> = {
-    queued: 'Queued',
-    running: 'Running',
-    success: 'Done',
-    error: 'Failed',
-    aborted: 'Aborted'
-};
 
 // One filter option per job kind/status, mirroring SpecsEditor's FILTER_OPTIONS/TYPE_FILTER_OPTIONS pattern - the
 // option value is the kind/status itself, so a selection maps straight back for filtering.
@@ -40,14 +21,6 @@ const KIND_FILTER_OPTIONS: Option[] = (Object.keys(KIND_META) as JobKind[]).map(
 const STATUS_FILTER_OPTIONS: Option[] = (Object.keys(STATUS_LABEL) as JobStatus[]).map(function (status) {
     return { value: status, label: STATUS_LABEL[status] };
 });
-
-// mm:ss for an elapsed span; the running job ticks live, finished jobs show their final duration.
-const formatDuration = function (milliseconds: number): string {
-    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, '0')}`;
-};
 
 type JobRowProperties = {
     job: Job;
@@ -343,4 +316,4 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
     );
 };
 
-export { ActivityMonitor, KIND_META };
+export { ActivityMonitor };

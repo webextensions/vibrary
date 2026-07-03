@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 
 import { useActivityQueue } from '../activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
-import { KIND_META } from './ActivityMonitor.tsx';
+import { KIND_META } from './activityPresentation.ts';
 
 // Renders nothing; watches the job queue and pops a top-right toast the moment a job starts running, for the kinds the
 // user has enabled in the settings popover. Decoupled from the queue itself: it reads jobs and notification prefs from
