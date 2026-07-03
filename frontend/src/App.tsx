@@ -7,9 +7,9 @@ import { generateSpecs, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { TabBar } from './tabs/TabBar.tsx';
-import { SpecsEditor, type Option } from './components/SpecsEditor.tsx';
+import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
 import { confirmDialog } from './shared/confirmDialog.ts';
-import { loadVibraryFile } from './loadVibraryFile.ts';
+import { loadVibraryFile } from './editor/loadVibraryFile.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './useFileCounts.ts';
 import { useFileOperations } from './useFileOperations.ts';
@@ -21,7 +21,7 @@ import styles from './App.module.css';
 // Load the Raw tab's syntax highlighter on demand: prism/refractor is a sizeable chunk that most sessions (which stay
 // on the Structured tab) never need. lazy() wants a default export, so wrap the module's named export.
 const RawXmlView = lazy(async function () {
-    const { RawXmlView: component } = await import('./components/RawXmlView.tsx');
+    const { RawXmlView: component } = await import('./editor/RawXmlView.tsx');
     return { default: component };
 });
 

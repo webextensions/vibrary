@@ -7,7 +7,7 @@ import CreatableSelect from 'react-select/creatable';
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
 import { populateTitle } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
-import { type SchemaMap } from '../loadVibraryFile.ts';
+import { type SchemaMap } from './loadVibraryFile.ts';
 import { AGENTS, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';

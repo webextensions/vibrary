@@ -8,7 +8,7 @@ import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
-import { type SchemaMap } from '../loadVibraryFile.ts';
+import { type SchemaMap } from './loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 

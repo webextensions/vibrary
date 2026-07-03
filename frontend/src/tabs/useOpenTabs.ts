@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { loadVibraryFile, type SchemaMap } from '../loadVibraryFile.ts';
+import { loadVibraryFile, type SchemaMap } from '../editor/loadVibraryFile.ts';
 import { type Spec } from '../xml/vibraryXml.ts';
 
 type TabStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };

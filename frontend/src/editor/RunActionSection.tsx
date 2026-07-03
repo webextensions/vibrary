@@ -4,7 +4,7 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { useActivityQueueActions, useActivityQueueState } from '../activity/activityQueue.ts';
 import { applySpec, runTask } from '../api.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
-import { type SchemaMap } from '../loadVibraryFile.ts';
+import { type SchemaMap } from './loadVibraryFile.ts';
 import { useSettings } from '../settings/settingsContext.ts';
 import { type Spec } from '../xml/vibraryXml.ts';
 
