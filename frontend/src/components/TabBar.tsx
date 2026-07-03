@@ -32,6 +32,8 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
     useDismissablePopup(menuPath !== null, function () { setMenuPath(null); });
 
     if (isMobile) {
+        const activeTab = tabs.find(function (tab) { return tab.path === activePath; });
+        const activeLabel = activeTab === undefined ? 'tab' : tabLabel(activeTab);
         return (
             <div className={styles.tabSwitcher}>
                 <select
@@ -52,8 +54,8 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
                 <button
                     type="button"
                     className={styles.tabClose}
-                    aria-label="Close file"
-                    title="Close file"
+                    aria-label={`Close ${activeLabel}`}
+                    title={`Close ${activeLabel}`}
                     onClick={function () {
                         onClose(activePath);
                     }}
@@ -64,8 +66,43 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
         );
     }
 
+    // The ARIA tabs keyboard pattern for the tablist role claimed below: Left/Right/Home/End move between tabs with
+    // selection following focus, and the roving tabindex (only the active tab is a Tab stop) keeps the strip one stop
+    // in the page's Tab order. The handler lives on the strip and finds the rendered tab buttons by role, so it needs
+    // no per-tab refs.
+    const handleTabListKeyDown = function (keyEvent: React.KeyboardEvent<HTMLDivElement>) {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(keyEvent.key)) {
+            return;
+        }
+        // Only when focus is on a tab itself: the strip also contains each tab's More/Close buttons and the open
+        // context menu, and arrow keys there must not hijack tab selection.
+        if (!(keyEvent.target instanceof HTMLElement) || keyEvent.target.getAttribute('role') !== 'tab') {
+            return;
+        }
+        const index = tabs.findIndex(function (tab) { return tab.path === activePath; });
+        if (index === -1) {
+            return;
+        }
+        let next;
+        if (keyEvent.key === 'ArrowLeft') {
+            next = (index + (tabs.length - 1)) % tabs.length;
+        } else if (keyEvent.key === 'ArrowRight') {
+            next = (index + 1) % tabs.length;
+        } else if (keyEvent.key === 'Home') {
+            next = 0;
+        } else {
+            next = tabs.length - 1;
+        }
+        keyEvent.preventDefault();
+        if (next === index) {
+            return;
+        }
+        onSelect(tabs[next].path);
+        keyEvent.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+    };
+
     return (
-        <div className={styles.tabStrip} role="tablist">
+        <div className={styles.tabStrip} role="tablist" onKeyDown={handleTabListKeyDown}>
             {tabs.map(function (tab) {
                 return (
                     <div
@@ -81,6 +118,10 @@ const TabBar = function ({ tabs, activePath, onSelect, onClose, onCloseOthers, o
                             className={styles.tabLabel}
                             role="tab"
                             aria-selected={tab.path === activePath}
+                            tabIndex={tab.path === activePath ? 0 : -1}
+                            // The dirty dot below is visual-only (aria-hidden), so the unsaved state must live in the
+                            // accessible name for screen readers to announce it.
+                            aria-label={`${tabLabel(tab)}${tab.dirty ? ' (unsaved changes)' : ''}`}
                             title={tab.label ?? tab.path}
                             onClick={function () {
                                 onSelect(tab.path);
