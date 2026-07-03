@@ -3,14 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Resizable } from 're-resizable';
 
 import { useActivityQueueState } from '../activity/activityQueue.ts';
-import { type FileCount } from '../useFileCounts.ts';
-import { type TreeNode } from '../fileTree.ts';
+import { type FileCount } from './useFileCounts.ts';
+import { type TreeNode } from './fileTree.ts';
 import { useMediaQuery } from '../shared/useMediaQuery.ts';
 import { ActivityPanel } from '../activity/ActivityPanel.tsx';
 import { type LeftView, NavigationRail } from './NavigationRail.tsx';
 import { SearchPanel } from './SearchPanel.tsx';
 import { Sidebar } from './Sidebar.tsx';
-import { SourceControlPanel } from './SourceControlPanel.tsx';
+import { SourceControlPanel } from '../git/SourceControlPanel.tsx';
 import { type TabInfo } from '../tabs/tabLabel.ts';
 
 import styles from './LeftPanel.module.css';

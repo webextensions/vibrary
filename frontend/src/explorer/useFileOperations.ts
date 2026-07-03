@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, getFilesSummary, renameFile, type TitleIndexEntry } from './api.ts';
-import { confirmDialog } from './shared/confirmDialog.ts';
+import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, getFilesSummary, renameFile, type TitleIndexEntry } from '../api.ts';
+import { confirmDialog } from '../shared/confirmDialog.ts';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
-import { promptDialog } from './shared/promptDialog.ts';
+import { promptDialog } from '../shared/promptDialog.ts';
 
 // Build the title -> file index from the workspace summary: first occurrence wins for a duplicated title, and the
 // summary lists files in listing order, so which file wins is deterministic across refreshes.
