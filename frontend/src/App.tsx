@@ -153,23 +153,39 @@ const App = function () {
         writeSessionTabs(workspaceCwd, { paths, activePath: persistedActive });
     }, [openSignature, activePath, sessionReady, workspaceCwd]);
 
-    // The sidebar's refresh button: reload the file list and every spec title from disk, picking up files added or
-    // changed outside the app. Counts refresh on their own, since useFileCounts reloads whenever the files array
-    // changes identity, which setFiles does.
-    const handleRefresh = useCallback(async function () {
-        setRefreshing(true);
+    // Re-fetch the file listing (and, unless skipped, the title index) so the explorer reflects what is actually on
+    // disk. Every file-mutation handler funnels through here - including after FAILED mutations (from a finally):
+    // a partial bulk delete has already removed some files, and keeping them listed as ghosts until a manual Refresh
+    // misleads worse than the error itself. Never throws; a listing failure lands in the banner and reports false so
+    // callers know not to clear an earlier, more specific error. Counts refresh on their own, since useFileCounts
+    // reloads whenever the files array changes identity, which setFiles does.
+    const refreshListing = useCallback(async function ({ withTitles = true }: { withTitles?: boolean } = {}): Promise<boolean> {
         try {
             const listing = await listFiles();
             setFiles(listing.files);
             setHasVibraryInclude(listing.hasVibraryInclude);
-            setTitleIndex(await loadTitleIndex());
-            setLoadError(null);
+            if (withTitles) {
+                setTitleIndex(await loadTitleIndex());
+            }
+            return true;
         } catch (error) {
             setLoadError((error as Error).message);
+            return false;
+        }
+    }, []);
+
+    // The sidebar's refresh button: reload the file list and every spec title from disk, picking up files added or
+    // changed outside the app.
+    const handleRefresh = useCallback(async function () {
+        setRefreshing(true);
+        try {
+            if (await refreshListing()) {
+                setLoadError(null);
+            }
         } finally {
             setRefreshing(false);
         }
-    }, []);
+    }, [refreshListing]);
 
     // Close tabs from the tab bar or the Open Editors list, confirming first when any of them has unsaved edits -
     // closing is how those edits get discarded, so it should never happen silently. Delete/rename close tabs via
@@ -233,16 +249,15 @@ const App = function () {
         }
         try {
             await createFile(name);
-            const listing = await listFiles();
-            setFiles(listing.files);
-            setHasVibraryInclude(listing.hasVibraryInclude);
-            setLoadError(null);
+            if (await refreshListing({ withTitles: false })) {
+                setLoadError(null);
+            }
             openOrFocus(name);
             setDrawerOpen(false);
         } catch (error) {
             setLoadError((error as Error).message);
         }
-    }, [openOrFocus]);
+    }, [openOrFocus, refreshListing]);
 
     // The explorer "More" menu's Delete action. Folders have no on-disk entity (they are derived from file paths), so
     // deleting one removes every file beneath it; a file deletes just itself. Warn before the irreversible delete, then
@@ -258,18 +273,22 @@ const App = function () {
         }
         try {
             for (const path of paths) {
-                await deleteFile(path);
+                try {
+                    await deleteFile(path);
+                } catch (error) {
+                    // Name the failing file: a folder delete may have already removed earlier files, and the raw
+                    // server message alone does not say which one stopped the run.
+                    setLoadError(`Failed to delete "${path}": ${(error as Error).message}`);
+                    return;
+                }
                 closeTab(path);
             }
-            const listing = await listFiles();
-            setFiles(listing.files);
-            setHasVibraryInclude(listing.hasVibraryInclude);
-            setTitleIndex(await loadTitleIndex());
             setLoadError(null);
-        } catch (error) {
-            setLoadError((error as Error).message);
+        } finally {
+            // Refresh even after a failure: files deleted before the error are really gone.
+            await refreshListing();
         }
-    }, [closeTab]);
+    }, [closeTab, refreshListing]);
 
     // The Explorer's bulk-select footer Delete button: same warn-then-delete-then-refresh shape as handleDelete above,
     // but over an arbitrary multi-file selection instead of one node's subtree. Resolves whether the user confirmed, so
@@ -284,19 +303,21 @@ const App = function () {
         }
         try {
             for (const path of paths) {
-                await deleteFile(path);
+                try {
+                    await deleteFile(path);
+                } catch (error) {
+                    setLoadError(`Failed to delete "${path}": ${(error as Error).message}`);
+                    return true;
+                }
                 closeTab(path);
             }
-            const listing = await listFiles();
-            setFiles(listing.files);
-            setHasVibraryInclude(listing.hasVibraryInclude);
-            setTitleIndex(await loadTitleIndex());
             setLoadError(null);
-        } catch (error) {
-            setLoadError((error as Error).message);
+        } finally {
+            // Refresh even after a failure: files deleted before the error are really gone.
+            await refreshListing();
         }
         return true;
-    }, [closeTab]);
+    }, [closeTab, refreshListing]);
 
     // The explorer "More" menu's Rename action. A file renames (or moves - the new name may point into another folder)
     // just itself; a folder renames every file beneath it, since folders have no on-disk entity of their own. Open tabs
@@ -330,21 +351,23 @@ const App = function () {
         }
         try {
             for (const { from, to } of renames) {
-                await renameFile(from, to);
+                try {
+                    await renameFile(from, to);
+                } catch (error) {
+                    setLoadError(`Failed to rename "${from}" to "${to}": ${(error as Error).message}`);
+                    return;
+                }
                 closeTab(from);
             }
-            const listing = await listFiles();
-            setFiles(listing.files);
-            setHasVibraryInclude(listing.hasVibraryInclude);
-            setTitleIndex(await loadTitleIndex());
             setLoadError(null);
             if (!isFolder) {
                 openOrFocus(entered);
             }
-        } catch (error) {
-            setLoadError((error as Error).message);
+        } finally {
+            // Refresh even after a failure: a folder rename may have already moved earlier files.
+            await refreshListing();
         }
-    }, [tabs, closeTab, openOrFocus]);
+    }, [tabs, closeTab, openOrFocus, refreshListing]);
 
     // The explorer "More" menu's Duplicate action: copy a file's on-disk content under a new name, leaving the source
     // untouched, then open the copy. Files only - folders have no single on-disk entity to copy (unlike rename/delete,
@@ -360,16 +383,14 @@ const App = function () {
         }
         try {
             await duplicateFile(node.path, entered);
-            const listing = await listFiles();
-            setFiles(listing.files);
-            setHasVibraryInclude(listing.hasVibraryInclude);
-            setTitleIndex(await loadTitleIndex());
-            setLoadError(null);
+            if (await refreshListing()) {
+                setLoadError(null);
+            }
             openOrFocus(entered);
         } catch (error) {
             setLoadError((error as Error).message);
         }
-    }, [openOrFocus]);
+    }, [openOrFocus, refreshListing]);
 
     // The explorer "More" menu's New File action on a folder: prompt for a name and create it inside that folder. The
     // entered name is the file's basename (or a deeper relative path); it is joined onto the folder path before the
@@ -386,16 +407,15 @@ const App = function () {
         const fullName = `${folderPath}/${name}`;
         try {
             await createFile(fullName);
-            const listing = await listFiles();
-            setFiles(listing.files);
-            setHasVibraryInclude(listing.hasVibraryInclude);
-            setLoadError(null);
+            if (await refreshListing({ withTitles: false })) {
+                setLoadError(null);
+            }
             openOrFocus(fullName);
             setDrawerOpen(false);
         } catch (error) {
             setLoadError((error as Error).message);
         }
-    }, [openOrFocus]);
+    }, [openOrFocus, refreshListing]);
 
     // The toolbar's reload button: re-read the active tab's file from disk, picking up edits made outside the app.
     // Unsaved local edits would be overwritten, so confirm before discarding them.
