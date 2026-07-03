@@ -17,6 +17,15 @@ vibrary --help
 
 The server starts on port 3000 and advances to the next free port if it is busy.
 
+## Agent runs and permissions
+
+The AI actions ("Apply this spec", "Run this task", "Create entries with AI", chat follow-ups) run the Claude CLI
+headlessly with permission prompts disabled (`--dangerously-skip-permissions`): a headless run has no way to surface
+a permission prompt to the browser, so a gated run would simply hang. This means the agent can execute commands and
+edit files as your user without asking - only run vibrary in folders, and on entries, that you trust. Two mitigations
+apply: cancelling a run (or refreshing the page) kills the agent's whole process tree, and every run's exact prompt
+is visible in the Activity monitor via the initial bubble's "Full" view.
+
 ## Development
 
 ### Reorder-insensitive diffs for vibrary XML

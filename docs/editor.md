@@ -33,7 +33,8 @@ Each entry is shown as a card with these controls:
 - **Apply this spec** / **Run this task** - the card's headless-agent run action, shown only on `spec`/`task` entries
   (see above). A **Provide custom one time instructions** checkbox reveals a prompt for free-text guidance specific to
   that one run (for example "focus on the backend only"), folded into the agent's prompt alongside the entry's own
-  content.
+  content. Like every agent action, the run executes with permission prompts disabled - see "Agent runs and
+  permissions" in [README.md](README.md).
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
 entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks / ideas - defaulting to the

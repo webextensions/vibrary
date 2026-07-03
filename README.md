@@ -3,7 +3,9 @@
 Browse and edit vibrary files - `reviews`, `specs`, `tasks`, and `ideas` XML files
 (`<family>.xml` / `<family>-*.xml`) in a folder - through a small local web UI. Entries can be created, edited,
 approved, searched, and related to each other; `spec` and `task` entries can additionally be handed to a headless
-[Claude Code](https://claude.com/claude-code) agent to apply or run against the folder's codebase.
+[Claude Code](https://claude.com/claude-code) agent to apply or run against the folder's codebase. Agent runs execute
+with permission prompts disabled (see "Agent runs and permissions" in [docs/README.md](docs/README.md)), so only use
+vibrary in folders, and on entries, that you trust.
 
 ## Install
 
