@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { AccordionSection } from './AccordionSection.tsx';
 import { MenuPanel } from './MenuPanel.tsx';
@@ -7,6 +7,7 @@ import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, Remo
 import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { buildFileTree, collectFolderPaths, type TreeNode } from '../fileTree.ts';
 import { useDismissablePopup } from '../useDismissablePopup.ts';
+import { useEscapeToClear } from '../useEscapeToClear.ts';
 import { type FileCount } from '../useFileCounts.ts';
 
 import styles from './Sidebar.module.css';
@@ -59,6 +60,9 @@ const OpenEditorRow = function (
                 <button
                     type="button"
                     className={cx(styles.rowButton, active && styles.active)}
+                    // The dirty dot below is visual-only (aria-hidden), so the unsaved state must live in the
+                    // accessible name - same treatment as the tab strip's buttons in TabBar.
+                    aria-label={`${tabLabel(tab)}${tab.dirty ? ' (unsaved changes)' : ''}`}
                     title={tab.label ?? tab.path}
                     onClick={function () {
                         onSelect(tab.path);
@@ -323,23 +327,12 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
     // immediately re-close it.
     useDismissablePopup(openMenuPath !== null, function () { setOpenMenuPath(null); });
 
-    // Escape clears the file selection, matching the app's established Escape-to-dismiss convention for other
-    // transient list-scoped state (the row "More" menu above, SpecsEditor's own entry selection). Skipped while a row
-    // menu is open, so its own Escape handler closes it first rather than also wiping the selection.
-    useEffect(function () {
-        if (selectedPaths.size === 0 || openMenuPath !== null) {
-            return undefined;
-        }
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setRawSelectedPaths(new Set());
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [selectedPaths, openMenuPath]);
+    // Escape clears the file selection (the app-wide convention, shared with SpecsEditor's entry selection via
+    // useEscapeToClear, which also stands down while any dialog is open). Skipped while a row menu is open, so its
+    // own Escape handler closes it first rather than also wiping the selection.
+    useEscapeToClear(selectedPaths.size > 0 && openMenuPath === null, function () {
+        setRawSelectedPaths(new Set());
+    });
 
     const handleToggleMenu = function (path: string) {
         setOpenMenuPath(function (previous) {

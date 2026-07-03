@@ -5,10 +5,11 @@ import Select from 'react-select';
 
 import { useActivityQueueActions } from '../activityQueue.ts';
 import { useDismissablePopup } from '../useDismissablePopup.ts';
+import { useEscapeToClear } from '../useEscapeToClear.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
-import { promptDialog } from '../promptDialog.ts';
+import { promptForCustomInstructions } from './customInstructions.ts';
 import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../vibraryXml.ts';
 
 import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from './Icons.tsx';
@@ -178,23 +179,12 @@ const SpecsEditor = function (
     useDismissablePopup(actionsOpen, function () { setActionsOpen(false); }, actionsReference);
     useDismissablePopup(operationsOpen, function () { setOperationsOpen(false); }, operationsReference);
 
-    // Escape clears the entry selection, matching the app's established Escape-to-dismiss convention for other
-    // transient list-scoped state (the popups above, Sidebar's file selection below). Skipped while one of those
-    // popups is open, so its own Escape handler closes it first rather than also wiping the selection it operates on.
-    useEffect(function () {
-        if (selectedIds.size === 0 || menuOpen || actionsOpen || operationsOpen) {
-            return undefined;
-        }
-        const handleKeyDown = function (event: KeyboardEvent) {
-            if (event.key === 'Escape') {
-                setSelectedIds(new Set());
-            }
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return function () {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [selectedIds, menuOpen, actionsOpen, operationsOpen]);
+    // Escape clears the entry selection (the app-wide convention, shared with Sidebar's file selection via
+    // useEscapeToClear, which also stands down while any dialog is open). Skipped while one of the popups above is
+    // open, so its own Escape handler closes it first rather than also wiping the selection it operates on.
+    useEscapeToClear(selectedIds.size > 0 && !menuOpen && !actionsOpen && !operationsOpen, function () {
+        setSelectedIds(new Set());
+    });
 
     const toggleSelect = function (id: string) {
         setSelectedIds(function (previous) {
@@ -251,6 +241,19 @@ const SpecsEditor = function (
         };
     };
 
+    // After React commits a newly added/duplicated card, bring the whole card into view and focus its content box so
+    // the user can start typing right away. preventScroll keeps focus from fighting the smooth scrollIntoView
+    // positioning; the rAF waits for the card to exist in the DOM.
+    const focusSpecContent = function (id: string) {
+        requestAnimationFrame(function () {
+            const textarea = document.getElementById(`spec-${id}-content`);
+            if (textarea instanceof HTMLTextAreaElement) {
+                textarea.closest('fieldset')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                textarea.focus({ preventScroll: true });
+            }
+        });
+    };
+
     // Duplicate one entry, inserted right after the source, opened in edit mode, scrolled into view and focused - same
     // finishing touches as addSpec.
     const duplicateAt = function (index: number) {
@@ -259,13 +262,7 @@ const SpecsEditor = function (
         setEditingIds(function (previous) {
             return new Set(previous).add(duplicate.id);
         });
-        requestAnimationFrame(function () {
-            const textarea = document.getElementById(`spec-${duplicate.id}-content`);
-            if (textarea instanceof HTMLTextAreaElement) {
-                textarea.closest('fieldset')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                textarea.focus({ preventScroll: true });
-            }
-        });
+        focusSpecContent(duplicate.id);
     };
 
     const addSpec = function () {
@@ -274,15 +271,7 @@ const SpecsEditor = function (
         setEditingIds(function (previous) {
             return new Set(previous).add(spec.id); // a brand-new spec opens directly in edit mode
         });
-        // After React commits the new card, bring the whole card into view and focus its content box so the user can
-        // start typing right away. preventScroll keeps focus from fighting the smooth scrollIntoView positioning.
-        requestAnimationFrame(function () {
-            const textarea = document.getElementById(`spec-${spec.id}-content`);
-            if (textarea instanceof HTMLTextAreaElement) {
-                textarea.closest('fieldset')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                textarea.focus({ preventScroll: true });
-            }
-        });
+        focusSpecContent(spec.id);
     };
 
     // A spec matches when its approval state is among the selected statuses, its type is among the selected types, AND
@@ -389,11 +378,7 @@ const SpecsEditor = function (
         let instructions = '';
         if (useCustomInstructions) {
             setApplyingBatch(true);
-            const entered = await promptDialog({
-                message: 'Custom one-time instructions for this run:',
-                placeholder: 'e.g. focus on the backend only, skip tests',
-                confirmLabel: 'Apply changes'
-            });
+            const entered = await promptForCustomInstructions('Apply changes');
             setApplyingBatch(false);
             if (entered === null) {
                 return;
