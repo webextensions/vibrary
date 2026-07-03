@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
@@ -21,6 +21,12 @@ const MIN_QUERY_LENGTH = 2;
 const highlight = function (text: string, query: string): ReactNode {
     const haystack = text.toLowerCase();
     const needle = query.toLowerCase();
+    // An empty needle would make indexOf return 0 forever - an infinite loop that hangs the tab. Unreachable through
+    // today's callers (results only render for queries at or above the length floor), but that invariant lives far
+    // from this loop, so guard it here rather than trust every future caller.
+    if (needle === '') {
+        return text;
+    }
     const parts: ReactNode[] = [];
     let cursor = 0;
     let found = haystack.indexOf(needle, cursor);
@@ -61,6 +67,16 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
     // searches everywhere, matching how the editor's own status/type filters treat an empty selection.
     const [fileOptions, setFileOptions] = useState<Option[]>([]);
     const [fileFilter, setFileFilter] = useState<Option[]>([]);
+
+    // Focus the query box when the Search view opens (the panel mounts only while its rail view is active), so
+    // switching to Search is immediately typeable - the sidebar-search convention. Skipped on mobile, where an
+    // autofocus would pop the on-screen keyboard over the freshly opened drawer.
+    const inputReference = useRef<HTMLInputElement>(null);
+    useEffect(function () {
+        if (!window.matchMedia('(max-width: 700px)').matches) {
+            inputReference.current?.focus();
+        }
+    }, []);
 
     useEffect(function () {
         let isCancelled = false;
@@ -135,6 +151,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             <div className={styles.searchField}>
                 <SearchIcon />
                 <input
+                    ref={inputReference}
                     type="search"
                     className={styles.searchInput}
                     placeholder="Search files..."
