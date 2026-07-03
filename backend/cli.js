@@ -32,11 +32,18 @@ const buildProgram = function () {
         .option('--host <address>', 'address to bind; 0.0.0.0 exposes the server (and its agent runs) to the network', '127.0.0.1')
         .option('--no-open', 'do not open the browser automatically')
         .action(async function (options) {
-            await startServer({
-                port: options.port,
-                host: options.host,
-                open: options.open
-            });
+            try {
+                await startServer({
+                    port: options.port,
+                    host: options.host,
+                    open: options.open
+                });
+            } catch (error) {
+                // A startup failure (bad bind address, no listenable port) should read as one clear line, not a raw
+                // stack from an unhandled rejection.
+                console.error(`vibrary-server failed to start: ${error.message}`);
+                process.exitCode = 1;
+            }
         });
 
     return program;

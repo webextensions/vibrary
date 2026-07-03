@@ -12,7 +12,7 @@ const startServer = async function ({ port = 3000, host = '127.0.0.1', open: sho
     // Honor the requested port, advancing to the next free one (up to 65535) if it is busy on the requested host
     const resolvedPort = await getPort({ port: portNumbers(port, 65535), host });
 
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
         const server = app.listen(resolvedPort, host, async function () {
             const url = `http://localhost:${resolvedPort}/`;
 
@@ -30,6 +30,11 @@ const startServer = async function ({ port = 3000, host = '127.0.0.1', open: sho
 
             resolve({ server, port: resolvedPort, url });
         });
+
+        // Without this, a failed bind (e.g. losing a race for the port get-port said was free) crashes the process
+        // as an unhandled 'error' event and leaves this promise pending forever; reject instead so callers can
+        // report the failure and exit cleanly. Node's own message already names the address and port.
+        server.on('error', reject);
     });
 };
 
