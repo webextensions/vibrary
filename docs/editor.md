@@ -10,33 +10,38 @@ entry types.
 The Structured tab is a form-based editor over the list of entries in the file. It is authoritative: edits here are what
 get saved, and the Raw tab is generated from this form.
 
-Each entry is shown as a card with these controls:
+Each entry is shown as a card. A card opens in review mode (fields read-only); **Edit** switches it to edit mode, and
+a freshly added or duplicated entry opens in edit mode directly. Collapsed, a card shows its selection checkbox, type
+icon, title, header actions (Remove / Edit / Duplicate / Approve) and content; the chevron at its top-left expands
+the remaining fields and the run action. The controls:
 
-- **Spec title** - text input. On blur it is normalized to a hyphenated form: lowercase, with every run of
+- **Title** - text input in edit mode. On blur it is normalized to a hyphenated form: lowercase, with every run of
   non-alphanumeric characters (whitespace and punctuation alike) collapsed to a single `-` - the same rule the
   AI-derived **Populate** titles use.
-- **Created by** - single-select (`Human` or `AI`), clearable.
-- **Approved by** - a single `Human` checkbox; editable in both review and edit modes. Approving stores a hash of the
-  current content, so the approval can later be detected as stale (see the Approve button below and
-  [vibrary-file-format.md](vibrary-file-format.md)).
-- **Approve button** - the card's top-right one-click action mirrors the checkbox. It reads **Approve** when
-  unapproved, green **Approved** when approved against the current content, and yellow **Reapprove** when the content
-  changed since approval (hover for the hash-mismatch details). Clicking **Reapprove** re-signs against the current
-  text; removing an existing approval is confirmed first.
+- **Approve button** - the card's top-right one-click action. It reads **Approve** when unapproved, green
+  **Approved** when approved against the current content, and yellow **Reapprove** when the content changed since
+  approval (hover for the hash-mismatch details). Clicking **Reapprove** re-signs against the current text; removing
+  an existing approval is confirmed first.
 - **Content** - multi-line textarea.
 - **Notes** - multi-line textarea.
 - **Labels** - freeform creatable multi-select. Type a label and press Enter to add it; any value is allowed. In review
   mode each label renders as a chip; clicking a chip toggles that label into (or out of) the label filter (see
   Filtering below) as a quick "show me more/fewer like this".
-- **Relates to** - searchable multi-select shown at the bottom. Type to filter; options are the titles of all entries
+- **Relates to** - searchable multi-select. Type to filter; options are the titles of all entries
   across every vibrary file in the folder (the current entry's own title is excluded). The option list refreshes
   after a save. In review mode each reference renders as a chip; clicking it opens the target entry's file (switching
   files if needed) and scrolls to / highlights it.
-- **Apply this spec** / **Run this task** - the card's headless-agent run action, shown only on `spec`/`task` entries
-  (see above). A **Provide custom one time instructions** checkbox reveals a prompt for free-text guidance specific to
-  that one run (for example "focus on the backend only"), folded into the agent's prompt alongside the entry's own
-  content. Like every agent action, the run executes with permission prompts disabled - see "Agent runs and
-  permissions" in [README.md](README.md).
+- **Created by** - a `Human` / `AI` radio pair; clicking the selected option again clears it back to unset.
+- **Approved** - reads `Yes` / `No` in review mode; in edit mode a Yes/No radio pair mirroring the Approve button:
+  **Yes** stores a hash of the current content, so the approval can later be detected as stale (see the Approve
+  button above and [vibrary-file-format.md](vibrary-file-format.md)), and **No** clears it (confirmed first, like the
+  button).
+- **Created** / **Updated** / **Updated by** - read-only provenance; the timestamps render in your locale.
+- **Apply this spec** / **Run this task** - the card's headless-agent run action at the bottom of the expanded card,
+  shown only on `spec`/`task` entries (see above). A **Provide custom one time instructions** checkbox reveals a
+  prompt for free-text guidance specific to that one run (for example "focus on the backend only"), folded into the
+  agent's prompt alongside the entry's own content. Like every agent action, the run executes with permission prompts
+  disabled - see "Agent runs and permissions" in [README.md](README.md).
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
 entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks / ideas - defaulting to the
@@ -87,6 +92,8 @@ model to XML (see [vibrary-file-format.md](vibrary-file-format.md)), regardless 
 - Ctrl+Shift+T / Cmd+Shift+T - reopen the most recently closed tab (same as the toolbar button; falls through to the
   browser when there is nothing to reopen).
 - Escape - closes the open popup, menu, or dialog first; with none open, clears the entry or file selection.
+- ArrowLeft/ArrowRight/Home/End on a focused editor tab - switch tabs (wrapping at the ends); the whole strip is a
+  single Tab stop, so keyboarding past it costs one press however many files are open.
 - Middle-click a tab - close it.
 - Right-click a tab - open its context menu (Close / Close Others / Close All); menus support
   ArrowUp/ArrowDown/Home/End navigation.
