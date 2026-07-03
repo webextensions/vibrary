@@ -8,7 +8,8 @@ File names follow four families (`reviews.xml`/`reviews-*.xml`, `specs.xml`/`spe
 default in "Create entries with AI"), not a constraint on what an individual file may contain.
 
 The structure is a single `<root>` element containing an `<entries>` wrapper with zero or more `<entry type="...">`
-elements:
+elements. This schema is also the round-trip contract: the editor's save path regenerates the file from the parsed
+entries, so elements outside it are not preserved - anything else placed in the file is dropped on the next save:
 
 ```xml
 <root>

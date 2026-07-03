@@ -1,7 +1,4 @@
 <root>
-    <metadata>
-        <type>reviews</type>
-    </metadata>
     <entries>
         <entry type="review">
             <title>content-hash-is-a-change-detector-not-security</title>
