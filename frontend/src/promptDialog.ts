@@ -1,5 +1,7 @@
 import { alertDialog } from 'helpmate/dist/dom/alertDialog.js';
 
+import { closeAndRemoveDialog } from './dialogTeardown.ts';
+
 import styles from './promptDialog.module.css';
 
 // A single-line text prompt, built on helpmate's alert-only `alertDialog` the same way `confirmDialog` is: we hand it
@@ -22,6 +24,10 @@ const promptDialog = function (
         const input = document.createElement('input');
         input.type = 'text';
         input.className = styles.promptInput;
+        input.required = !allowEmpty;
+        // The message <p> above is not programmatically associated with the input, so name the field with it -
+        // focus lands here on open, and without this a screen reader announces an unnamed edit field.
+        input.setAttribute('aria-label', message);
         if (placeholder !== undefined) {
             input.placeholder = placeholder;
         }
@@ -50,18 +56,17 @@ const promptDialog = function (
                 return;
             }
             isSettled = true;
-            // helpmate only closes the <dialog> it appends, never removes it; drop the node so repeated prompts do not
-            // accumulate dead dialogs in the DOM.
-            const dialog = container.closest('dialog');
-            dialog?.close();
-            dialog?.remove();
+            closeAndRemoveDialog(container);
             resolve(value);
         };
 
         const submit = function () {
             const trimmed = input.value.trim();
             if (trimmed === '' && !allowEmpty) {
-                finish(null);
+                // Normalize a whitespace-only value to empty so the `required` constraint applies, then surface the
+                // browser's native "please fill out this field" bubble and keep the dialog open awaiting input.
+                input.value = '';
+                input.reportValidity();
                 return;
             }
             finish(trimmed);

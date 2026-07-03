@@ -1,5 +1,7 @@
 import { alertDialog } from 'helpmate/dist/dom/alertDialog.js';
 
+import { closeAndRemoveDialog } from './dialogTeardown.ts';
+
 import styles from './confirmDialog.module.css';
 
 // helpmate's `alertDialog` is alert-only: it renders a modal <dialog> for whatever element it is handed and closes on a
@@ -34,11 +36,7 @@ const confirmDialog = function (message: string, confirmLabel: string): Promise<
                 return;
             }
             isSettled = true;
-            // helpmate only closes the <dialog> it appends, never removes it; drop the node so repeated confirms do not
-            // accumulate dead dialogs in the DOM.
-            const dialog = container.closest('dialog');
-            dialog?.close();
-            dialog?.remove();
+            closeAndRemoveDialog(container);
             resolve(didConfirm);
         };
 
