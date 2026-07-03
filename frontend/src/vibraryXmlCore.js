@@ -208,10 +208,11 @@ const approvalState = function (spec) {
 };
 
 // A spec counts as approved once a human has signed off on its current content. An approval whose stored hash no
-// longer matches the content is stale (the text changed since sign-off) and does not count.
+// longer matches the content is stale (the text changed since sign-off) and does not count - i.e. exactly the
+// 'current' approval state, deferred to approvalState so the rule lives once.
 const countApprovedSpecs = function (specs) {
     return specs.filter(function (spec) {
-        return spec.approved === hashContent(spec);
+        return approvalState(spec) === 'current';
     }).length;
 };
 
