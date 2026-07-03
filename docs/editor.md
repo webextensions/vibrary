@@ -12,7 +12,9 @@ get saved, and the Raw tab is generated from this form.
 
 Each entry is shown as a card with these controls:
 
-- **Spec title** - text input. On blur it is normalized to a hyphenated form (lowercase, whitespace -> `-`).
+- **Spec title** - text input. On blur it is normalized to a hyphenated form: lowercase, with every run of
+  non-alphanumeric characters (whitespace and punctuation alike) collapsed to a single `-` - the same rule the
+  AI-derived **Populate** titles use.
 - **Created by** - single-select (`Human` or `AI`), clearable.
 - **Approved by** - a single `Human` checkbox; editable in both review and edit modes. Approving stores a hash of the
   current content, so the approval can later be detected as stale (see the Approve button below and

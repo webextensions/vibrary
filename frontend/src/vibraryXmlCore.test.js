@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { approvalState, countApprovedSpecs, emptySpec, hashContent, parseVibraryXml, serializeVibraryXml } from './vibraryXmlCore.js';
+import { approvalState, countApprovedSpecs, emptySpec, hashContent, normalizeTitle, parseVibraryXml, serializeVibraryXml } from './vibraryXmlCore.js';
 
 // Drop the client-only `id` field before comparing parsed entries: parseVibraryXml assigns a fresh randomId() on every
 // call by design (ids are never serialized), so two parses of the same document never agree on it.
@@ -150,6 +150,22 @@ describe('hashContent', function () {
         // padStart(13, '0') guarantees a floor, not a ceiling - the combined 53-bit value can need up to 14 hex digits.
         assert.match(hashContent({ content: '' }), /^[0-9a-f]{13,14}$/);
         assert.match(hashContent({ content: 'some longer content to hash' }), /^[0-9a-f]{13,14}$/);
+    });
+});
+
+describe('normalizeTitle', function () {
+    it('lowercases and collapses whitespace and punctuation runs into single hyphens', function () {
+        assert.equal(normalizeTitle('Fix: API (v2)!'), 'fix-api-v2');
+        assert.equal(normalizeTitle('  Sky is   Blue  '), 'sky-is-blue');
+    });
+
+    it('is the identity for an already-normalized title', function () {
+        assert.equal(normalizeTitle('sky-is-blue'), 'sky-is-blue');
+    });
+
+    it('returns an empty string for empty or all-punctuation input', function () {
+        assert.equal(normalizeTitle(''), '');
+        assert.equal(normalizeTitle('!!! ???'), '');
     });
 });
 

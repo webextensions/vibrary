@@ -120,6 +120,18 @@ const nowTimestamp = function () {
     return new Date().toISOString();
 };
 
+// The one rule for hyphenated titles, shared by every gate that normalizes one - the editor's title blur and the
+// backend's AI-derived titles (runClaudeTitle) - so the same conceptual title can never yield different strings
+// depending on which affordance produced it (relatesTo references match titles by exact string). Lowercase, collapse
+// every non-alphanumeric run to a single hyphen, trim edge hyphens. Titles already on disk are untouched:
+// normalization only runs when a title is edited or derived.
+const normalizeTitle = function (text) {
+    return toText(text)
+        .toLowerCase()
+        .replaceAll(/[^a-z0-9]+/g, '-')
+        .replaceAll(/^-+|-+$/g, '');
+};
+
 const toEntryType = function (value) {
     const text = toText(value);
     return ENTRY_TYPES.includes(text) ? text : 'spec';
@@ -243,6 +255,7 @@ export {
     entryTypeFromName,
     hashContent,
     nowTimestamp,
+    normalizeTitle,
     parseVibraryXml,
     randomId,
     serializeVibraryXml

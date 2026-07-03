@@ -8,7 +8,7 @@ import { useActivityQueue } from '../activityQueue.ts';
 import { populateTitle } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
-import { AGENTS, hashContent, type Spec } from '../vibraryXml.ts';
+import { AGENTS, hashContent, normalizeTitle, type Spec } from '../vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
 import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, PlusIcon, RemoveIcon, TypeIcon } from './Icons.tsx';
@@ -252,7 +252,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                                         update({ title: changeEvent.target.value });
                                     }}
                                     onBlur={function (blurEvent) {
-                                        const normalized = blurEvent.target.value.trim().toLowerCase().replaceAll(/\s+/g, '-');
+                                        const normalized = normalizeTitle(blurEvent.target.value);
                                         if (normalized !== value.title) {
                                             update({ title: normalized });
                                         }

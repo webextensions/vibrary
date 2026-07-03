@@ -1,3 +1,4 @@
+import { normalizeTitle } from '../../frontend/src/vibraryXmlCore.js';
 import { spawnClaudeAsync } from './spawnClaude.js';
 
 // Deriving a short title is a quick, read-free task; cap it well under the apply/generate budget so a stall fails fast.
@@ -16,16 +17,13 @@ const buildPrompt = function (content) {
     ].join('\n');
 };
 
-// Reduce the model's stdout to a safe hyphenated-title: take the first non-empty line, lowercase it, and collapse
-// anything that is not a-z/0-9 into single hyphens. Mirrors the editor's own onBlur title normalization.
+// Reduce the model's stdout to a safe hyphenated title: take the first non-empty line and run it through the SAME
+// normalizeTitle rule the editor's onBlur uses, so a derived title and a typed one can never disagree in shape.
 const slugify = function (output) {
     const firstLine = output.split('\n').map(function (line) {
         return line.trim();
     }).find(Boolean) || '';
-    return firstLine
-        .toLowerCase()
-        .replaceAll(/[^a-z0-9]+/g, '-')
-        .replaceAll(/^-+|-+$/g, '');
+    return normalizeTitle(firstLine);
 };
 
 // Run the headless agent to derive a hyphenated title from spec content. Resolves with the slugified title on a clean
