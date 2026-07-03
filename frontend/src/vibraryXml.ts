@@ -1,4 +1,4 @@
-// Runtime lives in the framework-free ./vibraryXmlCore.js so it can be reused outside the browser build (for example by
+// Runtime lives in the framework-free ../../shared/vibraryXmlCore.js so it can be reused outside the browser build (for example by
 // scripts/canonicalize-vibrary.js under plain node). This file is the type layer: it declares Agent/Spec and re-exports
 // the core with precise signatures so all consumers keep full type-checking.
 import {
@@ -12,7 +12,7 @@ import {
     hashContent as hashContentImpl,
     parseVibraryXml as parseVibraryXmlImpl,
     serializeVibraryXml as serializeVibraryXmlImpl
-} from './vibraryXmlCore.js';
+} from '../../shared/vibraryXmlCore.js';
 
 type Agent = 'Human' | 'AI';
 
@@ -88,4 +88,4 @@ export {
 // Pure pass-throughs (no retyping needed), so re-export them straight from the core. randomId is the guarded id
 // minter every call site must use instead of bare crypto.randomUUID, which is undefined over plain HTTP on a LAN
 // address (the phone case); normalizeTitle is the single hyphenated-title rule shared with the backend.
-export { normalizeTitle, nowTimestamp, randomId } from './vibraryXmlCore.js';
+export { normalizeTitle, nowTimestamp, randomId } from '../../shared/vibraryXmlCore.js';

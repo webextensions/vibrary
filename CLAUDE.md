@@ -36,7 +36,7 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
   state half and a referentially-stable actions half - consume the narrowest one, and any NEW queue action must read
   live state through the refs, never captured state variables: the actions bundle freezes first-render closures);
   `api.ts` is the fetch layer (JSON envelope + NDJSON streaming).
-- `frontend/src/vibraryXmlCore.js` - the deliberately untyped, framework-free, isomorphic core (parse/serialize/
+- `shared/vibraryXmlCore.js` - the deliberately untyped, framework-free, isomorphic core (parse/serialize/
   hash/approval-state, plus the single `normalizeTitle` rule and the guarded `randomId`). It must keep working in
   the browser AND under plain node: `scripts/canonicalize-vibrary.js` (the git diff driver's canonicalizer) and the
   backend import it. `vibraryXml.ts` is its hand-maintained type layer (`as`-cast re-exports).
@@ -64,7 +64,7 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 
 ## Packaging
 
-- The tarball ships only `backend`, `bin`, `dist`, and `frontend/src/vibraryXmlCore.js` (the backend imports the
+- The tarball ships only `backend`, `bin`, `dist`, and `shared/vibraryXmlCore.js` (the backend imports the
   core at RUNTIME). A new runtime import outside those paths, or a backend-reachable package left in
   devDependencies, breaks the installed package while everything still works from the repo - this has happened.
   Frontend-only libraries belong in devDependencies (vite prebuilds them into `dist/`); anything the backend or the

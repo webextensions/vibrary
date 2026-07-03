@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { parseVibraryXml } from '../../frontend/src/vibraryXmlCore.js';
+import { parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { listVibraryFiles } from './vibraryFiles.js';
 
 // Bound the response so a broad query against a large folder cannot return an unbounded payload; the UI notes when a

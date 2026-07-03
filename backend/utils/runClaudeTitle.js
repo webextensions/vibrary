@@ -1,4 +1,4 @@
-import { normalizeTitle } from '../../frontend/src/vibraryXmlCore.js';
+import { normalizeTitle } from '../../shared/vibraryXmlCore.js';
 import { spawnClaudeAsync } from './spawnClaude.js';
 
 // Deriving a short title is a quick, read-free task; cap it well under the apply/generate budget so a stall fails fast.

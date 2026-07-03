@@ -9,5 +9,5 @@
         "noUnusedLocals": false,
         "noUnusedParameters": false
     },
-    "include": ["backend", "bin", "scripts"]
+    "include": ["backend", "bin", "scripts", "shared"]
 }

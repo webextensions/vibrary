@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { Router } from 'express';
 
-import { countApprovedSpecs, ENTRY_TYPES, parseVibraryXml } from '../../frontend/src/vibraryXmlCore.js';
+import { countApprovedSpecs, ENTRY_TYPES, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../utils/abortOnDisconnect.js';
 import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from '../utils/vibraryFiles.js';
 import { resolveWithinCwd } from '../utils/resolveWithinCwd.js';

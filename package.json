@@ -11,7 +11,7 @@
         "backend",
         "bin",
         "dist",
-        "frontend/src/vibraryXmlCore.js"
+        "shared/vibraryXmlCore.js"
     ],
     "engines": {
         "node": ">=22.18.0"
@@ -34,7 +34,7 @@
         "start:build:do-not-watch": "node scripts/start-build.js",
         "start:build:watch": "node scripts/start-build.js --watch",
         "start:server": "node --watch scripts/start-server.js",
-        "test": "node --test \"frontend/src/**/*.test.js\" \"frontend/src/**/*.test.ts\" \"backend/**/*.test.js\" \"scripts/**/*.test.js\"",
+        "test": "node --test \"shared/**/*.test.js\" \"frontend/src/**/*.test.ts\" \"backend/**/*.test.js\" \"scripts/**/*.test.js\"",
         "typecheck": "tsc --noEmit -p frontend && tsc --noEmit -p tsconfig.node.json"
     },
     "repository": {

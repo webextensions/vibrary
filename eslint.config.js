@@ -6,6 +6,9 @@ const backendFiles = [
     'bin/**/*.js',
     'backend/**/*.js',
     'scripts/**/*.js',
+    // shared/ is isomorphic (imported by the browser build AND by backend/scripts under plain node); only the node
+    // side is lint-enforced here, so staying browser-safe (e.g. the guarded crypto access) remains a convention.
+    'shared/**/*.js',
     '*.js'
 ];
 
@@ -45,6 +48,16 @@ export default [
             // engines), so judge syntax and built-ins (e.g. global fetch) against the real floor.
             'n/no-unsupported-features/es-syntax': ['error', { version: '>=22.18.0' }],
             'n/no-unsupported-features/node-builtins': ['error', { version: '>=22.18.0' }]
+        }
+    },
+
+    {
+        // The core reads the global `crypto` behind a typeof guard precisely because it may be absent - plain-HTTP
+        // browser contexts and Node <23 alike. The guard, not the version floor, is the contract, so exempt `crypto`
+        // from the availability check instead of raising the floor or rewriting the guard.
+        files: ['shared/**/*.js'],
+        rules: {
+            'n/no-unsupported-features/node-builtins': ['error', { version: '>=22.18.0', ignores: ['crypto'] }]
         }
     },
 

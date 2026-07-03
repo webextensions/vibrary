@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-import { parseVibraryXml, serializeVibraryXml } from '../frontend/src/vibraryXmlCore.js';
+import { parseVibraryXml, serializeVibraryXml } from '../shared/vibraryXmlCore.js';
 
 // Deterministic, locale-independent ordering by code unit.
 const compare = function (a, b) {
