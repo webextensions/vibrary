@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useActivityQueue } from './activityQueue.ts';
-import { createFile, deleteFile, duplicateFile, generateSpecs, getWorkspace, listFiles, loadTitleIndex, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
+import { createFile, deleteFile, duplicateFile, type FileSummary, generateSpecs, getFilesSummary, getWorkspace, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
 import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
@@ -38,8 +38,33 @@ const SIDEBAR_STORAGE_KEY = 'vibrary:sidebar-collapsed';
 // Below this width the sidebar is an off-canvas drawer; above it, an inline panel that collapses in place.
 const MOBILE_QUERY = '(max-width: 700px)';
 
+// Build the title -> file index from the workspace summary: first occurrence wins for a duplicated title, and the
+// summary lists files in listing order, so which file wins is deterministic across refreshes.
+const deriveTitleIndex = function (files: FileSummary[]): TitleIndexEntry[] {
+    const seen = new Set<string>();
+    const index: TitleIndexEntry[] = [];
+    const add = function (title: string, path: string) {
+        if (seen.has(title)) {
+            return;
+        }
+        seen.add(title);
+        index.push({ title, path });
+    };
+    for (const file of files) {
+        for (const title of file.titles) {
+            add(title, file.name);
+        }
+    }
+    return index.toSorted(function (a, b) {
+        return a.title.localeCompare(b.title);
+    });
+};
+
 const App = function () {
     const [files, setFiles] = useState<string[]>([]);
+    // The workspace summary the listing fetch returns: per-file titles and approved/total tallies, feeding both the
+    // title index and useFileCounts without any per-file re-downloads.
+    const [fileSummaries, setFileSummaries] = useState<FileSummary[]>([]);
     // Whether a ".vibraryinclude" file exists at all, so the explorer's empty state can tell "nothing included yet
     // because no .vibraryinclude exists" apart from "a .vibraryinclude exists but its patterns match nothing".
     const [hasVibraryInclude, setHasVibraryInclude] = useState(true);
@@ -92,7 +117,7 @@ const App = function () {
         .map(function (tab) {
             return { path: tab.path, specs: tab.specs, parseError: tab.parseError };
         });
-    const { countForFile, markCounted } = useFileCounts(files, openTabsForCounts);
+    const { countForFile, markCounted } = useFileCounts(fileSummaries, openTabsForCounts);
 
     // Warn before the tab is closed or the page is navigated away while any open tab has unsaved edits. Setting
     // returnValue is what makes the browser show its native "leave site?" confirmation, which lets the user cancel.
@@ -113,15 +138,18 @@ const App = function () {
     useEffect(function () {
         const loadAsync = async function () {
             try {
-                const [loadedListing, cwd] = await Promise.all([listFiles(), getWorkspace()]);
-                setFiles(loadedListing.files);
-                setHasVibraryInclude(loadedListing.hasVibraryInclude);
+                const [summary, cwd] = await Promise.all([getFilesSummary(), getWorkspace()]);
+                const names = summary.files.map(function (file) { return file.name; });
+                setFiles(names);
+                setFileSummaries(summary.files);
+                setHasVibraryInclude(summary.hasVibraryInclude);
+                setTitleIndex(deriveTitleIndex(summary.files));
                 setWorkspaceCwd(cwd);
                 // Reopen the folder's previously open tabs, skipping any that no longer exist (deleted, or stored under
                 // a folder that happens to share this one's key). openOrFocus fetches each tab's content on its own.
                 const record = readSessionTabs(cwd);
                 if (record !== null) {
-                    const present = new Set(loadedListing.files);
+                    const present = new Set(names);
                     const toRestore = record.paths.filter(function (path) { return present.has(path); });
                     for (const path of toRestore) {
                         openOrFocus(path);
@@ -131,7 +159,6 @@ const App = function () {
                     }
                 }
                 setSessionReady(true);
-                setTitleIndex(await loadTitleIndex());
             } catch (error) {
                 setLoadError((error as Error).message);
             }
@@ -153,20 +180,18 @@ const App = function () {
         writeSessionTabs(workspaceCwd, { paths, activePath: persistedActive });
     }, [openSignature, activePath, sessionReady, workspaceCwd]);
 
-    // Re-fetch the file listing (and, unless skipped, the title index) so the explorer reflects what is actually on
-    // disk. Every file-mutation handler funnels through here - including after FAILED mutations (from a finally):
-    // a partial bulk delete has already removed some files, and keeping them listed as ghosts until a manual Refresh
-    // misleads worse than the error itself. Never throws; a listing failure lands in the banner and reports false so
-    // callers know not to clear an earlier, more specific error. Counts refresh on their own, since useFileCounts
-    // reloads whenever the files array changes identity, which setFiles does.
-    const refreshListing = useCallback(async function ({ withTitles = true }: { withTitles?: boolean } = {}): Promise<boolean> {
+    // Re-fetch the workspace summary - one request carrying the listing, every file's titles, and the badge tallies -
+    // so the explorer reflects what is actually on disk. Every file-mutation handler funnels through here - including
+    // after FAILED mutations (from a finally): a partial bulk delete has already removed some files, and keeping them
+    // listed as ghosts until a manual Refresh misleads worse than the error itself. Never throws; a listing failure
+    // lands in the banner and reports false so callers know not to clear an earlier, more specific error.
+    const refreshListing = useCallback(async function (): Promise<boolean> {
         try {
-            const listing = await listFiles();
-            setFiles(listing.files);
-            setHasVibraryInclude(listing.hasVibraryInclude);
-            if (withTitles) {
-                setTitleIndex(await loadTitleIndex());
-            }
+            const summary = await getFilesSummary();
+            setFiles(summary.files.map(function (file) { return file.name; }));
+            setFileSummaries(summary.files);
+            setHasVibraryInclude(summary.hasVibraryInclude);
+            setTitleIndex(deriveTitleIndex(summary.files));
             return true;
         } catch (error) {
             setLoadError((error as Error).message);
@@ -249,7 +274,7 @@ const App = function () {
         }
         try {
             await createFile(name);
-            if (await refreshListing({ withTitles: false })) {
+            if (await refreshListing()) {
                 setLoadError(null);
             }
             openOrFocus(name);
@@ -407,7 +432,7 @@ const App = function () {
         const fullName = `${folderPath}/${name}`;
         try {
             await createFile(fullName);
-            if (await refreshListing({ withTitles: false })) {
+            if (await refreshListing()) {
                 setLoadError(null);
             }
             openOrFocus(fullName);
@@ -471,11 +496,13 @@ const App = function () {
             await saveFile(path, serializeVibraryXml(specs));
             patchTab(path, { status: { kind: 'idle' }, dirty: false });
             markCounted(path, specs);
-            setTitleIndex(await loadTitleIndex());
+            // One summary request refreshes the title options and (eventually) the badges; markCounted above covers
+            // the badge in the meantime.
+            void refreshListing();
         } catch (error) {
             patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
         }
-    }, [activeTab, patchTab, markCounted]);
+    }, [activeTab, patchTab, markCounted, refreshListing]);
 
     // Ctrl+S / Cmd+S saves the active file, matching every other text editor. Prevents the browser's own "Save Page
     // As" first, so it never fires even when there is nothing to save. Mirrors the toolbar Save button's own guard
@@ -532,8 +559,8 @@ const App = function () {
             status: { kind: 'idle' },
             reloadNonce: activeTab.reloadNonce + 1
         });
-        setTitleIndex(await loadTitleIndex());
-    }, [activeTab, enqueue, patchTab]);
+        void refreshListing();
+    }, [activeTab, enqueue, patchTab, refreshListing]);
 
     const onSpecsChange = useCallback(function (next: Spec[]) {
         if (activePath === null) {

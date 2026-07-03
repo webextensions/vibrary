@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { Router } from 'express';
 
-import { ENTRY_TYPES } from '../../frontend/src/vibraryXmlCore.js';
+import { countApprovedSpecs, ENTRY_TYPES, parseVibraryXml } from '../../frontend/src/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../utils/abortOnDisconnect.js';
 import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from '../utils/vibraryFiles.js';
 import { resolveWithinCwd } from '../utils/resolveWithinCwd.js';
@@ -32,6 +32,39 @@ const createFilesRouter = function ({ cwd }) {
         } catch (error) {
             console.error('Failed to list vibrary files:', error);
             return sendErrorResponse(response, 500, 'Unable to list files');
+        }
+    });
+
+    // One-request workspace summary backing the sidebar badges and the "Relates to" title options: for every included
+    // file, its entry titles plus approved/total tallies, computed here in a single pass - previously the frontend
+    // re-downloaded every file's FULL content twice after each change (once for the title index, once per file for
+    // two integers). Files are processed in listing order so downstream title dedup is deterministic. A file that
+    // cannot be read or parsed reports null tallies (its badge renders as errored) without failing the summary.
+    router.get('/files-summary', async function (request, response) {
+        try {
+            const [files, hasVibraryInclude] = await Promise.all([listVibraryFiles(cwd), vibraryIncludeExistsAsync(cwd)]);
+            const summaries = [];
+            for (const name of files) {
+                const target = resolveWithinCwd(cwd, name);
+                if (target === null) {
+                    continue;
+                }
+                try {
+                    const entries = parseVibraryXml(await readFile(target, 'utf8'));
+                    summaries.push({
+                        name,
+                        titles: entries.map(function (entry) { return entry.title; }).filter(function (title) { return title !== ''; }),
+                        approved: countApprovedSpecs(entries),
+                        total: entries.length
+                    });
+                } catch {
+                    summaries.push({ name, titles: [], approved: null, total: null });
+                }
+            }
+            return sendSuccessResponse(response, { files: summaries, hasVibraryInclude });
+        } catch (error) {
+            console.error('Failed to summarize vibrary files:', error);
+            return sendErrorResponse(response, 500, 'Unable to summarize files');
         }
     });
 

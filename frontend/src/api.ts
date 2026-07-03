@@ -1,8 +1,6 @@
 import { type ClaudeStreamEvent } from './activityStream.ts';
 import { type AppSettings } from './settings.ts';
-import { countApprovedSpecs, type EntryType, parseVibraryXml } from './vibraryXml.ts';
-
-type ApprovalCount = { approved: number; total: number };
+import { type EntryType } from './vibraryXml.ts';
 
 type ApiResponse<T> = { status: 'success'; output: T } | { status: 'error'; errorMessage: string };
 
@@ -230,12 +228,6 @@ const populateTitle = async function (content: string, signal?: AbortSignal): Pr
     return output.title;
 };
 
-// Loads a single file and tallies its approved/total spec counts, for the at-a-glance overview in the file list.
-const getApprovalCount = async function (name: string): Promise<ApprovalCount> {
-    const entries = parseVibraryXml(await getFile(name));
-    return { approved: countApprovedSpecs(entries), total: entries.length };
-};
-
 // Read the per-project UI preferences from `.vibrary/settings.local.json`. A missing/corrupt file comes back as `{}`
 // from the backend, which the caller normalizes against the defaults.
 const getSettings = async function (): Promise<unknown> {
@@ -258,33 +250,14 @@ const saveSettings = async function (settings: AppSettings, options?: { keepaliv
 // One entry title paired with the file it lives in.
 type TitleIndexEntry = { title: string; path: string };
 
-// Collects every entry title across all vibrary files in the folder, alongside which file it lives in: backs both the
-// "Relates to" option list (title only) and resolving a clicked "Relates to" chip back to its target file. Files that
-// fail to parse are skipped so one bad file does not break the index. A title duplicated across files keeps whichever
-// file's scan resolves first - titles are meant to be unique identifiers, so this is only an edge case.
-const loadTitleIndex = async function (): Promise<TitleIndexEntry[]> {
-    const { files } = await listFiles();
-    const seen = new Set<string>();
-    const index: TitleIndexEntry[] = [];
+// One-request workspace summary: every included file's name, entry titles, and approved/total tallies, plus whether
+// a .vibraryinclude exists. Replaces the old pattern of re-downloading every file's full content client-side to
+// derive the title index and the sidebar badges. Null tallies mark a file the server could not read/parse.
+type FileSummary = { name: string; titles: string[]; approved: number | null; total: number | null };
+type FilesSummary = { files: FileSummary[]; hasVibraryInclude: boolean };
 
-    await Promise.all(files.map(async function (name) {
-        try {
-            const content = await getFile(name);
-            for (const spec of parseVibraryXml(content)) {
-                if (spec.title === '' || seen.has(spec.title)) {
-                    continue;
-                }
-                seen.add(spec.title);
-                index.push({ title: spec.title, path: name });
-            }
-        } catch {
-            // Skip files that cannot be read or parsed
-        }
-    }));
-
-    return index.toSorted(function (a, b) {
-        return a.title.localeCompare(b.title);
-    });
+const getFilesSummary = function (): Promise<FilesSummary> {
+    return request<FilesSummary>('/api/files-summary');
 };
 
 // One changed file from `git status`, in simple-git's native shape: `index` is the staged (index) column and
@@ -399,4 +372,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, generateCommitMessage, generateSpecs, getApprovalCount, getFile, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, loadTitleIndex, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { applySpec, applySpecs, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
