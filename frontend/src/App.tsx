@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from './activityQueue.ts';
 import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, generateSpecs, getFilesSummary, getWorkspace, renameFile, saveFile, type TitleIndexEntry } from './api.ts';
-import { CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
+import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
 import { TabBar } from './components/TabBar.tsx';
@@ -161,7 +161,7 @@ const App = function () {
                 }
                 setSessionReady(true);
             } catch (error) {
-                setLoadError((error as Error).message);
+                setLoadError(`Failed to load the workspace: ${(error as Error).message}`);
             }
         };
         void loadAsync();
@@ -195,7 +195,7 @@ const App = function () {
             setTitleIndex(deriveTitleIndex(summary.files));
             return true;
         } catch (error) {
-            setLoadError((error as Error).message);
+            setLoadError(`Failed to load the file listing: ${(error as Error).message}`);
             return false;
         }
     }, []);
@@ -281,7 +281,7 @@ const App = function () {
             openOrFocus(name);
             setDrawerOpen(false);
         } catch (error) {
-            setLoadError((error as Error).message);
+            setLoadError(`Failed to create "${name}": ${(error as Error).message}`);
         }
     }, [openOrFocus, refreshListing]);
 
@@ -414,7 +414,7 @@ const App = function () {
             }
             openOrFocus(entered);
         } catch (error) {
-            setLoadError((error as Error).message);
+            setLoadError(`Failed to duplicate "${node.path}": ${(error as Error).message}`);
         }
     }, [openOrFocus, refreshListing]);
 
@@ -453,7 +453,7 @@ const App = function () {
             openOrFocus(fullName);
             setDrawerOpen(false);
         } catch (error) {
-            setLoadError((error as Error).message);
+            setLoadError(`Failed to create "${fullName}": ${(error as Error).message}`);
         }
     }, [openOrFocus, refreshListing]);
 
@@ -707,7 +707,21 @@ const App = function () {
                     </button>
                 </header>
 
-                {loadError !== null && <p className={cx(styles.err, styles.parseError)}>{loadError}</p>}
+                {loadError !== null &&
+                <div className={styles.loadError} role="alert">
+                    <span className={styles.loadErrorText}>{loadError}</span>
+                    <button
+                        type="button"
+                        className={styles.loadErrorDismiss}
+                        aria-label="Dismiss error"
+                        title="Dismiss"
+                        onClick={function () {
+                            setLoadError(null);
+                        }}
+                    >
+                        <CloseIcon />
+                    </button>
+                </div>}
 
                 {activeTab === null && <p className={styles.placeholder}>Select a file to edit.</p>}
 

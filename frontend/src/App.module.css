@@ -151,6 +151,36 @@
     margin: 0 0 12px;
 }
 
+/* The banner for file-operation failures (listing load, create, delete, rename, duplicate): every message names its
+ * action and file, and the X dismisses it - previously a stale error sat until some OTHER operation succeeded. */
+.load-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 6px 10px;
+    border: 1px solid #ff818266;
+    border-radius: 6px;
+    background: #ffebe9;
+    color: #cf222e;
+}
+
+.load-error-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.load-error-dismiss {
+    display: inline-flex;
+    align-items: center;
+    border: none;
+    background: none;
+    padding: 2px;
+    color: inherit;
+    cursor: pointer;
+}
+
 /* Sidebar toggle: collapses the inline sidebar on desktop and opens the off-canvas drawer on small screens. Lifted off
    the tab-bar separator so it sits comfortably while the tabs themselves rest on the line. */
 .menu-toggle {
