@@ -45,6 +45,17 @@ is visible in the Activity monitor via the initial bubble's "Full" view.
 
 ## Development
 
+### Working on vibrary itself
+
+```bash
+npm install     # also wires the git diff driver below (prepare script)
+npm start       # frontend build watcher + server with auto-reload
+node --run dev  # vite dev server alone, proxying /api to a separately started server
+```
+
+Four checks gate every change - `node --run lint`, `node --run typecheck`, `node --run test` and
+`node --run build` - and `prepack` runs them all before publishing.
+
 ### Reorder-insensitive diffs for vibrary XML
 
 Field order inside an `<entry>`, the order of `<entry>` elements, and the order of items inside
