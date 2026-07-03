@@ -33,7 +33,7 @@
         "start:build:do-not-watch": "node scripts/start-build.js",
         "start:build:watch": "node scripts/start-build.js --watch",
         "start:server": "node --watch scripts/start-server.js",
-        "test": "node --test frontend/src/**/*.test.js scripts/**/*.test.js",
+        "test": "node --test frontend/src/**/*.test.js backend/**/*.test.js scripts/**/*.test.js",
         "typecheck": "tsc --noEmit -p frontend"
     },
     "repository": {
