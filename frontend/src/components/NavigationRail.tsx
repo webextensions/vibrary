@@ -1,7 +1,7 @@
 import cx from 'classnames';
 import type { ReactNode } from 'react';
 
-import { ActivityIcon, CloseIcon, ExplorerIcon, SearchIcon, SourceControlIcon } from './Icons.tsx';
+import { ActivityIcon, CloseIcon, ExplorerIcon, SearchIcon, SourceControlIcon } from '../shared/Icons.tsx';
 
 import styles from './NavigationRail.module.css';
 

@@ -1,6 +1,6 @@
 import { type GitStash } from '../api.ts';
-import { AccordionSection } from './AccordionSection.tsx';
-import { PlusIcon } from './Icons.tsx';
+import { AccordionSection } from '../shared/AccordionSection.tsx';
+import { PlusIcon } from '../shared/Icons.tsx';
 
 import styles from './SourceControlPanel.module.css';
 

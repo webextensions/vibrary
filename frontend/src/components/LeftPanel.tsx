@@ -5,7 +5,7 @@ import { Resizable } from 're-resizable';
 import { useActivityQueueState } from '../activityQueue.ts';
 import { type FileCount } from '../useFileCounts.ts';
 import { type TreeNode } from '../fileTree.ts';
-import { useMediaQuery } from '../useMediaQuery.ts';
+import { useMediaQuery } from '../shared/useMediaQuery.ts';
 import { ActivityPanel } from './ActivityPanel.tsx';
 import { type LeftView, NavigationRail } from './NavigationRail.tsx';
 import { SearchPanel } from './SearchPanel.tsx';

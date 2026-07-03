@@ -1,4 +1,4 @@
-import { promptDialog } from '../promptDialog.ts';
+import { promptDialog } from '../shared/promptDialog.ts';
 
 // The "Provide custom one time instructions" prompt, shared by the single-card run/apply flow (RunActionSection) and
 // the batch Actions popup (SpecsEditor) so the two ask with the same wording. Resolves with the entered text, or null

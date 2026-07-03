@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react';
 
 import { ENTRY_TYPE_BY_FAMILY, type EntryType } from '../xml/vibraryXml.ts';
 
-import { ResponsiveDialog } from './ResponsiveDialog.tsx';
+import { ResponsiveDialog } from '../shared/ResponsiveDialog.tsx';
 
 import styles from './SpecsEditor.module.css';
 

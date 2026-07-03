@@ -1,4 +1,4 @@
-import { AccordionSection } from './AccordionSection.tsx';
+import { AccordionSection } from '../shared/AccordionSection.tsx';
 import { ActivityMonitor } from './ActivityMonitor.tsx';
 import { useActivityQueueActions, useActivityQueueState } from '../activityQueue.ts';
 

@@ -4,15 +4,15 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { useActivityQueueActions } from '../activityQueue.ts';
-import { useDismissablePopup } from '../useDismissablePopup.ts';
-import { useEscapeToClear } from '../useEscapeToClear.ts';
+import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
+import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
 import { applySpecs } from '../api.ts';
-import { confirmDialog } from '../confirmDialog.ts';
+import { confirmDialog } from '../shared/confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
-import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from './Icons.tsx';
+import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 

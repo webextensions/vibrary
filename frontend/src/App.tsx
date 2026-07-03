@@ -4,11 +4,11 @@ import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from './activityQueue.ts';
 import { generateSpecs, saveFile } from './api.ts';
-import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './components/Icons.tsx';
+import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
 import { TabBar } from './components/TabBar.tsx';
 import { SpecsEditor, type Option } from './components/SpecsEditor.tsx';
-import { confirmDialog } from './confirmDialog.ts';
+import { confirmDialog } from './shared/confirmDialog.ts';
 import { loadVibraryFile } from './loadVibraryFile.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './useFileCounts.ts';

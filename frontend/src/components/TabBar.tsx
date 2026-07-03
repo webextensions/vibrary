@@ -1,11 +1,11 @@
 import cx from 'classnames';
 import { useState } from 'react';
 
-import { CloseIcon, MoreIcon } from './Icons.tsx';
-import { MenuPanel } from './MenuPanel.tsx';
+import { CloseIcon, MoreIcon } from '../shared/Icons.tsx';
+import { MenuPanel } from '../shared/MenuPanel.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
-import { useDismissablePopup } from '../useDismissablePopup.ts';
-import { useMediaQuery } from '../useMediaQuery.ts';
+import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
+import { useMediaQuery } from '../shared/useMediaQuery.ts';
 
 import styles from './TabBar.module.css';
 

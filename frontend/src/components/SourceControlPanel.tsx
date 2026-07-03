@@ -2,11 +2,11 @@ import cx from 'classnames';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { commitChanges, discardPaths, generateCommitMessage, getGitDiff, getGitStatus, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listStashes, pullChanges, pushChanges, stagePaths, stashAction, stashChanges, unstagePaths } from '../api.ts';
-import { confirmDialog } from '../confirmDialog.ts';
-import { promptDialog } from '../promptDialog.ts';
-import { AccordionSection } from './AccordionSection.tsx';
-import { ResponsiveDialog } from './ResponsiveDialog.tsx';
-import { AiIcon, DiscardIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
+import { confirmDialog } from '../shared/confirmDialog.ts';
+import { promptDialog } from '../shared/promptDialog.ts';
+import { AccordionSection } from '../shared/AccordionSection.tsx';
+import { ResponsiveDialog } from '../shared/ResponsiveDialog.tsx';
+import { AiIcon, DiscardIcon, PlusIcon, RefreshIcon, RemoveIcon } from '../shared/Icons.tsx';
 import { StashSection } from './StashSection.tsx';
 
 import styles from './SourceControlPanel.module.css';

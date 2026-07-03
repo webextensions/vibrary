@@ -4,7 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
-import { SearchIcon } from './Icons.tsx';
+import { SearchIcon } from '../shared/Icons.tsx';
 
 import styles from './SearchPanel.module.css';
 

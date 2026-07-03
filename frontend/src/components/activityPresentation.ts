@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { type JobKind, type JobStatus } from '../activityQueue.ts';
-import { AiIcon, EditIcon, ListIcon, SpecIcon, TaskIcon } from './Icons.tsx';
+import { AiIcon, EditIcon, ListIcon, SpecIcon, TaskIcon } from '../shared/Icons.tsx';
 
 // The activity system's shared presentation vocabulary, in one place so the monitor list, the detail tab, and the
 // start toasts can never drift apart (STATUS_LABEL and formatDuration used to be duplicated per component - invisible

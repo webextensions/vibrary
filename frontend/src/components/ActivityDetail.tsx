@@ -6,7 +6,7 @@ import { useActivityQueueActions, useActivityQueueState, useJobEvents } from '..
 import { type TranscriptItem } from '../activityStream.ts';
 
 import { formatDuration, STATUS_LABEL } from './activityPresentation.ts';
-import { ChevronIcon, RefreshIcon, StopIcon } from './Icons.tsx';
+import { ChevronIcon, RefreshIcon, StopIcon } from '../shared/Icons.tsx';
 
 import styles from './ActivityDetail.module.css';
 

@@ -1,13 +1,13 @@
 import cx from 'classnames';
 import { useMemo, useState } from 'react';
 
-import { AccordionSection } from './AccordionSection.tsx';
-import { MenuPanel } from './MenuPanel.tsx';
-import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
+import { AccordionSection } from '../shared/AccordionSection.tsx';
+import { MenuPanel } from '../shared/MenuPanel.tsx';
+import { ChevronIcon, CloseIcon, EditIcon, MoreIcon, PlusIcon, RefreshIcon, RemoveIcon } from '../shared/Icons.tsx';
 import { type TabInfo, tabLabel } from './tabLabel.ts';
 import { buildFileTree, collectFolderPaths, type TreeNode } from '../fileTree.ts';
-import { useDismissablePopup } from '../useDismissablePopup.ts';
-import { useEscapeToClear } from '../useEscapeToClear.ts';
+import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
+import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
 import { type FileCount } from '../useFileCounts.ts';
 
 import styles from './Sidebar.module.css';
