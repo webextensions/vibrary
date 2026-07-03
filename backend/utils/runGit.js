@@ -23,9 +23,15 @@ const statusAsync = function (cwd) {
     return gitFor(cwd).status();
 };
 
-// The staged diff ("--cached") or the unstaged working-tree diff. The staged diff backs the commit-message generation.
-const diffAsync = function (cwd, { staged } = {}) {
-    return gitFor(cwd).diff(staged ? ['--cached'] : []);
+// The staged diff ("--cached") or the unstaged working-tree diff, optionally narrowed to one path (the Status
+// panel's per-file diff view). The whole-repo staged diff backs the commit-message generation. The "--" separates
+// flags from paths so a path that looks like a flag cannot be reinterpreted.
+const diffAsync = function (cwd, { staged, path } = {}) {
+    const diffArguments = staged ? ['--cached'] : [];
+    if (typeof path === 'string' && path !== '') {
+        diffArguments.push('--', path);
+    }
+    return gitFor(cwd).diff(diffArguments);
 };
 
 const stageAsync = function (cwd, paths) {

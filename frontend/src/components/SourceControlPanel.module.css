@@ -231,6 +231,37 @@
     border-radius: 6px;
 }
 
+/* The row's clickable body (status letter + path), opening the per-file diff view. Styled as an invisible button so
+ * the row keeps its list look; the hover affordance stays the row's own background. */
+.file-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+/* The diff dialog's body: monospace, scrollable in both axes, matching the Raw tab's reading surface. */
+.diff-text {
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #f6f8fa;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow: auto;
+    max-height: 70vh;
+}
+
 .file-row:hover {
     background: #f3f4f6;
 }

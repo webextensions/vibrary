@@ -1,10 +1,11 @@
 import cx from 'classnames';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { commitChanges, discardPaths, generateCommitMessage, getGitStatus, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listStashes, pullChanges, pushChanges, stagePaths, stashAction, stashChanges, unstagePaths } from '../api.ts';
+import { commitChanges, discardPaths, generateCommitMessage, getGitDiff, getGitStatus, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listStashes, pullChanges, pushChanges, stagePaths, stashAction, stashChanges, unstagePaths } from '../api.ts';
 import { confirmDialog } from '../confirmDialog.ts';
 import { promptDialog } from '../promptDialog.ts';
 import { AccordionSection } from './AccordionSection.tsx';
+import { ResponsiveDialog } from './ResponsiveDialog.tsx';
 import { AiIcon, DiscardIcon, PlusIcon, RefreshIcon, RemoveIcon } from './Icons.tsx';
 import { StashSection } from './StashSection.tsx';
 
@@ -15,8 +16,8 @@ type FileAction = { label: string; Icon: () => ReactNode; onAction: () => void }
 
 // A single changed-file row: the status letter, the path (basename emphasized via title), and its action buttons.
 const FileRow = function (
-    { file, statusChar, actions, disabled }:
-    { file: GitFileStatus; statusChar: string; actions: FileAction[]; disabled: boolean }
+    { file, statusChar, actions, disabled, onView }:
+    { file: GitFileStatus; statusChar: string; actions: FileAction[]; disabled: boolean; onView: () => void }
 ) {
     // Split into a muted directory (which truncates) and the basename (always fully shown), like VS Code's SCM list.
     const lastSlash = file.path.lastIndexOf('/');
@@ -24,11 +25,13 @@ const FileRow = function (
     const basename = lastSlash === -1 ? file.path : file.path.slice(lastSlash + 1);
     return (
         <li className={styles.fileRow}>
-            <span className={styles.statusChar} title={file.path}>{statusChar}</span>
-            <span className={styles.filePath} title={file.path}>
-                {directory !== '' && <span className={styles.fileDir}>{directory}</span>}
-                <span className={styles.fileBase}>{basename}</span>
-            </span>
+            <button type="button" className={styles.fileMain} title={`Show changes in ${file.path}`} onClick={onView}>
+                <span className={styles.statusChar}>{statusChar}</span>
+                <span className={styles.filePath}>
+                    {directory !== '' && <span className={styles.fileDir}>{directory}</span>}
+                    <span className={styles.fileBase}>{basename}</span>
+                </span>
+            </button>
             {actions.map(function ({ label, Icon, onAction }) {
                 return (
                     <button
@@ -76,6 +79,27 @@ const SourceControlPanel = function () {
     // Errors and notices from an action (stage, commit, push, generate), shown above the commit box.
     const [actionError, setActionError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+
+    // The per-file diff dialog: which file is being viewed and what came back. Discard and Delete are irreversible,
+    // so the rows offer a look at what would be lost before the confirm ("what did the agent actually change?" is
+    // the most common question here); content: null renders the loading state.
+    const [diffView, setDiffView] = useState<{ path: string; untracked: boolean; content: string | null; error: string | null } | null>(null);
+
+    const openDiffView = function (path: string, options: { staged?: boolean; untracked?: boolean }) {
+        setDiffView({ path, untracked: options.untracked === true, content: null, error: null });
+        void (async function () {
+            try {
+                const result = await getGitDiff(path, options);
+                setDiffView(function (previous) {
+                    return previous !== null && previous.path === path ? { ...previous, content: result.diff } : previous;
+                });
+            } catch (error) {
+                setDiffView(function (previous) {
+                    return previous !== null && previous.path === path ? { ...previous, error: (error as Error).message } : previous;
+                });
+            }
+        })();
+    };
 
     const refresh = useCallback(async function () {
         setLoading(true);
@@ -388,6 +412,9 @@ const SourceControlPanel = function () {
                                     file={file}
                                     statusChar={file.index}
                                     disabled={busy}
+                                    onView={function () {
+                                        openDiffView(file.path, { staged: true });
+                                    }}
                                     actions={[{
                                         label: 'Unstage',
                                         Icon: RemoveIcon,
@@ -449,6 +476,9 @@ const SourceControlPanel = function () {
                                     file={file}
                                     statusChar={file.working_dir}
                                     disabled={busy}
+                                    onView={function () {
+                                        openDiffView(file.path, {});
+                                    }}
                                     actions={[
                                         {
                                             label: 'Discard changes',
@@ -519,6 +549,9 @@ const SourceControlPanel = function () {
                                     file={file}
                                     statusChar="?"
                                     disabled={busy}
+                                    onView={function () {
+                                        openDiffView(file.path, { untracked: true });
+                                    }}
                                     actions={[
                                         {
                                             label: 'Delete',
@@ -543,6 +576,23 @@ const SourceControlPanel = function () {
                     </ul>
                 </section>}
             </AccordionSection>
+
+            {diffView !== null &&
+            <ResponsiveDialog
+                open
+                onClose={function () {
+                    setDiffView(null);
+                }}
+                title={diffView.untracked ? `${diffView.path} (untracked - full content)` : diffView.path}
+                maxWidthWhenNotFullScreen={760}
+                noPrimaryButton
+            >
+                {diffView.error !== null && <p className={styles.message}>{diffView.error}</p>}
+                {diffView.error === null && diffView.content === null && <p className={styles.message}>Loading...</p>}
+                {diffView.error === null && diffView.content === '' && <p className={styles.message}>No changes.</p>}
+                {diffView.error === null && diffView.content !== null && diffView.content !== '' &&
+                <pre className={styles.diffText}>{diffView.content}</pre>}
+            </ResponsiveDialog>}
 
             <StashSection
                 stashes={stashes}

@@ -329,6 +329,15 @@ const pushChanges = function (): Promise<GitStatus> {
     return request<GitStatus>('/api/git/push', { method: 'POST' });
 };
 
+// One file's staged or worktree diff; for an untracked file (no diff exists) the response carries the file's full
+// content instead, flagged untracked so the dialog can title it accordingly.
+type GitFileDiff = { diff: string; untracked: boolean };
+
+const getGitDiff = function (path: string, options: { staged?: boolean; untracked?: boolean }): Promise<GitFileDiff> {
+    const parameters = new URLSearchParams({ path, staged: String(options.staged === true), untracked: String(options.untracked === true) });
+    return request<GitFileDiff>(`/api/git/diff?${parameters.toString()}`);
+};
+
 // Pull the current branch, resolving with the refreshed status (a pull can change the working tree).
 const pullChanges = function (): Promise<GitStatus> {
     return request<GitStatus>('/api/git/pull', { method: 'POST' });
@@ -372,4 +381,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { applySpec, applySpecs, chatContinue, commitChanges, createFile, deleteFile, discardPaths, duplicateFile, type FileListing, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, type GitFileDiff, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SearchResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

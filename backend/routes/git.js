@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import { Router } from 'express';
 
 import { abortOnDisconnect } from '../utils/abortOnDisconnect.js';
@@ -32,6 +34,31 @@ const createGitRouter = function ({ cwd }) {
         sendErrorResponse(response, 400, 'Not a git repository');
         return false;
     };
+
+    // One file's diff for the Status panel's view-before-you-discard dialog: staged ("--cached") or worktree. An
+    // untracked file has no diff, so its full content is returned instead (marked untracked) - the same "what would I
+    // be deleting?" question, answered the only way an untracked file can be. The path guard scopes reads to the
+    // served folder, the same trust boundary every other route enforces.
+    router.get('/git/diff', async function (request, response) {
+        const { path: diffPath, staged, untracked } = request.query;
+        const target = typeof diffPath === 'string' && diffPath !== '' ? resolveWithinCwd(cwd, diffPath) : null;
+        if (target === null) {
+            return sendErrorResponse(response, 400, 'Expected an in-folder "path"');
+        }
+        try {
+            if (!(await requireRepo(response))) {
+                return undefined;
+            }
+            if (untracked === 'true') {
+                const content = await readFile(target, 'utf8');
+                return sendSuccessResponse(response, { diff: content, untracked: true });
+            }
+            const diff = await diffAsync(cwd, { staged: staged === 'true', path: diffPath });
+            return sendSuccessResponse(response, { diff, untracked: false });
+        } catch (error) {
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
 
     router.get('/git/status', async function (request, response) {
         try {
