@@ -32,9 +32,11 @@ type RunActionSectionProperties = {
 // task options, seeded from remembered settings; the in-flight/custom-instructions flags) is entirely its own concern,
 // never written back to the entry.
 const RunActionSection = function ({ value, schemas }: RunActionSectionProperties) {
-    const { enqueue } = useActivityQueue();
+    const { enqueue, jobs } = useActivityQueue();
     const { loaded: settingsLoaded, getTaskOptions, setTaskOptions, resetTaskOptions } = useSettings();
-    const [applying, setApplying] = useState(false);
+    // True only while the custom-instructions prompt is open - NOT while the run itself executes (the card hands the
+    // job to the activity monitor and returns); the button's queued/running state is derived from the queue below.
+    const [prompting, setPrompting] = useState(false);
     const [useCustomInstructions, setUseCustomInstructions] = useState(false);
 
     // A task may declare a per-run options form via `formSchemaRef` ("<sibling-file>#<schemaId>"), resolved when the
@@ -87,8 +89,17 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
     };
 
     const runAction = value.type === 'task' ?
-        { label: 'Run this task', busyLabel: 'Running...', run: runTask } :
-        { label: 'Apply this spec', busyLabel: 'Applying...', run: applySpec };
+        { label: 'Run this task', kind: 'run-task' as const, busyLabel: 'Running...', run: runTask } :
+        { label: 'Apply this spec', kind: 'apply-spec' as const, busyLabel: 'Applying...', run: applySpec };
+
+    // A queued or running job for this same entry (matched by kind plus label, which enqueue sets to the entry's
+    // title). While one exists the button reports it and refuses to queue a duplicate - an impatient double-click
+    // otherwise silently queued the same agent run twice, i.e. two agents editing the working tree back to back.
+    // Untitled entries share the '' label, so two entries with no title can shadow each other; a rare state worth
+    // that simplicity. Re-running AFTER a job finishes stays possible: finished statuses do not match here.
+    const activeJob = jobs.find(function (job) {
+        return job.kind === runAction.kind && job.label === value.title && (job.status === 'queued' || job.status === 'running');
+    });
 
     // Queue the headless agent for this entry on the activity monitor (one job runs at a time). Uses the in-memory value
     // (current edits), so no save is needed first; the job's raw stdout is logged to the browser console for debugging.
@@ -96,18 +107,18 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
     // cancelling (or leaving it blank) aborts queuing rather than proceeding without the instructions the user opted to
     // give. The card returns as soon as the job is enqueued - progress lives in the activity monitor.
     const handleApply = async function () {
-        if (applying) {
+        if (prompting || activeJob !== undefined) {
             return;
         }
         let instructions = '';
         if (useCustomInstructions) {
-            setApplying(true);
+            setPrompting(true);
             const entered = await promptDialog({
                 message: 'Custom one-time instructions for this run:',
                 placeholder: 'e.g. focus on the backend only, skip tests',
                 confirmLabel: runAction.label
             });
-            setApplying(false);
+            setPrompting(false);
             if (entered === null) {
                 return;
             }
@@ -165,11 +176,11 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
             <button
                 type="button"
                 className={styles.apply}
-                disabled={applying}
+                disabled={prompting || activeJob !== undefined}
                 onClick={handleApply}
             >
-                {applying && <span className={styles.spinner} aria-hidden="true" />}
-                {applying ? runAction.busyLabel : runAction.label}
+                {activeJob !== undefined && <span className={styles.spinner} aria-hidden="true" />}
+                {activeJob === undefined ? runAction.label : (activeJob.status === 'running' ? runAction.busyLabel : 'Queued...')}
             </button>
             <label className={formStyles.checkbox} htmlFor={fieldId('custom-instructions')}>
                 <input
