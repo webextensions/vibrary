@@ -51,10 +51,11 @@ filter) and Escape clears the selection. Two buttons act on the ticked entries:
 
 - **Operations** - **Approve**, **Remove Approval**, **Duplicate** (each ticked entry's copy is inserted right after
   its own source), and **Delete**. These apply to any entry type.
-- **Actions** - **Apply changes**, which queues the same headless-agent run as the single-card button over every
-  ticked entry as one combined job, with its own **Provide custom one time instructions** checkbox applying the
-  entered guidance to the whole batch. Only applies to `spec`/`task` entries (mirroring the single-card gating
-  above); if the selection includes a `review`/`idea`, the popup says how many were skipped.
+- **Actions** - **Apply changes**, which queues the same headless-agent apply run as the single-card button over
+  every ticked `spec` entry as one combined job, with its own **Provide custom one time instructions** checkbox
+  applying the entered guidance to the whole batch. Only `spec` entries batch: a `task`'s action is "run" (with its
+  per-run options form), not "apply", so ticked tasks - like `review`/`idea` entries - are counted among the skipped
+  in the popup and keep their single-card **Run this task** flow.
 
 ## Filtering
 

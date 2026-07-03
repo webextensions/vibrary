@@ -340,12 +340,13 @@ const SpecsEditor = function (
         return selectedIds.has(spec.id);
     });
 
-    // The subset of the selection the headless-agent "Apply changes" action can actually run against: only spec and
-    // task entries have a run action at all (see RunActionSection, which renders nothing for a review or idea), so
-    // applying a review/idea through this bulk flow would send it through the "apply spec" prompt nonsensically. The
-    // single-card Run/Apply button already enforces this per entry; the bulk Actions popup mirrors it here.
+    // The subset of the selection the batch "Apply changes" can faithfully run: SPEC entries only. The batch goes
+    // through the apply prompt ("make the project conform to these specs"), which misrepresents every other type - a
+    // review/idea has no run semantics at all, and a task's action is "carry out the work" with its own per-run
+    // options form and Ralph opt-in that the batch path cannot carry. Ticked tasks are counted among the skipped
+    // (the popup says so) and keep their richer single-card "Run this task" flow.
     const applicableSpecs = selectedSpecs.filter(function (spec) {
-        return spec.type === 'spec' || spec.type === 'task';
+        return spec.type === 'spec';
     });
 
     // Queue the backend's headless agent over every applicable selected spec as one combined "claude -p" job on the
@@ -617,7 +618,7 @@ const SpecsEditor = function (
                         <p className={styles.actionsHeader}>
                             {applicableSpecs.length} {applicableSpecs.length === 1 ? 'entry' : 'entries'} selected
                             {selectedSpecs.length > applicableSpecs.length &&
-                            ` (${selectedSpecs.length - applicableSpecs.length} skipped - not a spec or task)`}
+                            ` (${selectedSpecs.length - applicableSpecs.length} skipped - only specs batch; run tasks from their own cards)`}
                         </p>
                         <ul className={styles.actionsTitleList}>
                             {applicableSpecs.map(function (spec) {
