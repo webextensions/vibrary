@@ -16,12 +16,17 @@ const createSettingsRouter = function ({ cwd }) {
     const settingsPath = path.resolve(cwd, SETTINGS_RELATIVE_PATH);
 
     // A missing or unreadable/corrupt file is treated as "no settings yet" rather than an error, so the UI always has a
-    // usable (empty) object to fall back on its own defaults.
+    // usable (empty) object to fall back on its own defaults. Only a missing file (first run) is silent, though: a
+    // corrupt or permission-blocked file is logged, because the next save overwrites it - without a trace here, "my
+    // settings keep resetting" is undiagnosable from the server output.
     router.get('/settings', async function (request, response) {
         try {
             const content = await readFile(settingsPath, 'utf8');
             return sendSuccessResponse(response, { settings: JSON.parse(content) });
-        } catch {
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.error(`Failed to read settings from ${settingsPath}:`, error);
+            }
             return sendSuccessResponse(response, { settings: {} });
         }
     });
