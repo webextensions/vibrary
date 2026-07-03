@@ -29,6 +29,13 @@ const VIBRARY_INCLUDE_TEMPLATE = [
     ''
 ].join('\n');
 
+// A claude session id, as captured from the CLI's own stream-json init event (a UUID). Enforced before the value
+// lands on the agent's argv as --resume's value: the process already runs with permission prompts disabled, and a
+// value starting with "-" would sit exactly where an injected flag could be parser-quirked into existence - keeping
+// foreign shapes off that argv is cheap insurance, and a garbage id gets a clean 400 naming the problem instead of an
+// opaque CLI failure.
+const SESSION_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Upper bound on entries applied in one batch run. Generous - its job is only to catch a pathological
 // select-everything-in-a-huge-file request before the single-argv prompt hits OS limits (Linux caps one argument
 // around 128 KiB) or the model's context; normal batches are far smaller.
@@ -431,8 +438,8 @@ const createFilesRouter = function ({ cwd }) {
         if (typeof message !== 'string' || message.trim() === '') {
             return sendErrorResponse(response, 400, 'Expected a non-empty "message"');
         }
-        if (typeof sessionId !== 'string' || sessionId.trim() === '') {
-            return sendErrorResponse(response, 400, 'Expected a "sessionId"');
+        if (typeof sessionId !== 'string' || !SESSION_ID_REGEX.test(sessionId)) {
+            return sendErrorResponse(response, 400, 'Expected "sessionId" to be a session UUID');
         }
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
