@@ -2,9 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ToastContainer } from 'react-toastify';
 
-import { ActivityQueueProvider } from './ActivityQueueProvider.tsx';
+import { ActivityQueueProvider } from './activity/ActivityQueueProvider.tsx';
 import { App } from './App.tsx';
-import { ActivityNotifier } from './components/ActivityNotifier.tsx';
+import { ActivityNotifier } from './activity/ActivityNotifier.tsx';
 import { SettingsProvider } from './SettingsProvider.tsx';
 import './index.css';
 

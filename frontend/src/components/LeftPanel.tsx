@@ -2,11 +2,11 @@ import cx from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 import { Resizable } from 're-resizable';
 
-import { useActivityQueueState } from '../activityQueue.ts';
+import { useActivityQueueState } from '../activity/activityQueue.ts';
 import { type FileCount } from '../useFileCounts.ts';
 import { type TreeNode } from '../fileTree.ts';
 import { useMediaQuery } from '../shared/useMediaQuery.ts';
-import { ActivityPanel } from './ActivityPanel.tsx';
+import { ActivityPanel } from '../activity/ActivityPanel.tsx';
 import { type LeftView, NavigationRail } from './NavigationRail.tsx';
 import { SearchPanel } from './SearchPanel.tsx';
 import { Sidebar } from './Sidebar.tsx';

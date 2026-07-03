@@ -1,4 +1,4 @@
-import { type JobKind } from './activityQueue.ts';
+import { type JobKind } from './activity/activityQueue.ts';
 import { type FormData } from './components/taskOptions.ts';
 
 // Per-project UI preferences persisted to `.vibrary/settings.local.json` (read/written via the backend settings route).

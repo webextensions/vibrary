@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
-import { type Job, type JobKind, type JobStatus, useActivityQueueActions, useActivityQueueState } from '../activityQueue.ts';
+import { type Job, type JobKind, type JobStatus, useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, formatDuration, KIND_META, STATUS_LABEL } from './activityPresentation.ts';

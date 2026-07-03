@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { type JobKind, type JobStatus } from '../activityQueue.ts';
+import { type JobKind, type JobStatus } from './activityQueue.ts';
 import { AiIcon, EditIcon, ListIcon, SpecIcon, TaskIcon } from '../shared/Icons.tsx';
 
 // The activity system's shared presentation vocabulary, in one place so the monitor list, the detail tab, and the

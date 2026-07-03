@@ -1,4 +1,4 @@
-import { type ClaudeStreamEvent } from './activityStream.ts';
+import { type ClaudeStreamEvent } from './activity/activityStream.ts';
 import { type AppSettings } from './settings.ts';
 import { type EntryType } from './xml/vibraryXml.ts';
 

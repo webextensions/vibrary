@@ -1,7 +1,7 @@
 import type { RJSFSchema } from '@rjsf/utils';
 import { lazy, Suspense, useMemo, useState } from 'react';
 
-import { useActivityQueueActions, useActivityQueueState } from '../activityQueue.ts';
+import { useActivityQueueActions, useActivityQueueState } from '../activity/activityQueue.ts';
 import { applySpec, runTask } from '../api.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';

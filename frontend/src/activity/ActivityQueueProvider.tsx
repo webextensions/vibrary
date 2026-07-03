@@ -1,9 +1,9 @@
 import { type ReactNode, useMemo, useRef, useState } from 'react';
 
-import { chatContinue } from './api.ts';
+import { chatContinue } from '../api.ts';
 import { type ActivityQueueActions, ActivityQueueActionsContext, type ActivityQueueState, ActivityQueueStateContext, type Job, type JobSpec, type JobStatus } from './activityQueue.ts';
 import { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, removeItem, type TranscriptItem, type TranscriptState } from './activityStream.ts';
-import { randomId } from './xml/vibraryXml.ts';
+import { randomId } from '../xml/vibraryXml.ts';
 
 // In-memory job queue for every "claude -p" action triggered from the UI (run task, apply spec, apply a batch,
 // generate, derive a title). The queue runs strictly one job at a time: an empty queue starts immediately, otherwise a

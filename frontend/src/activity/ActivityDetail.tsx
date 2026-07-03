@@ -2,8 +2,8 @@ import cx from 'classnames';
 import { useEffect, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
 
-import { useActivityQueueActions, useActivityQueueState, useJobEvents } from '../activityQueue.ts';
-import { type TranscriptItem } from '../activityStream.ts';
+import { useActivityQueueActions, useActivityQueueState, useJobEvents } from './activityQueue.ts';
+import { type TranscriptItem } from './activityStream.ts';
 
 import { formatDuration, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, RefreshIcon, StopIcon } from '../shared/Icons.tsx';

@@ -1,6 +1,6 @@
 import { AccordionSection } from '../shared/AccordionSection.tsx';
 import { ActivityMonitor } from './ActivityMonitor.tsx';
-import { useActivityQueueActions, useActivityQueueState } from '../activityQueue.ts';
+import { useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
 
 // The Activity monitor view: the background-job queue in its own navigation-rail tab. The accordion's open state lives in
 // the queue context so enqueuing a job can auto-expand it; the running+queued count is surfaced as a badge on the rail

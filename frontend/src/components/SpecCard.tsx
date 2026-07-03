@@ -4,7 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 
-import { useActivityQueueActions } from '../activityQueue.ts';
+import { useActivityQueueActions } from '../activity/activityQueue.ts';
 import { populateTitle } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { type SchemaMap } from '../loadVibraryFile.ts';

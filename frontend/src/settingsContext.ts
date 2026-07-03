@@ -1,6 +1,6 @@
 import { createContext, use } from 'react';
 
-import { type JobKind } from './activityQueue.ts';
+import { type JobKind } from './activity/activityQueue.ts';
 import { type FormData } from './components/taskOptions.ts';
 
 // Context and accessor for the per-project settings store. The stateful provider lives in SettingsProvider.tsx; kept

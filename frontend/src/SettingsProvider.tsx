@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { type JobKind } from './activityQueue.ts';
+import { type JobKind } from './activity/activityQueue.ts';
 import { getSettings, saveSettings } from './api.ts';
 import { type FormData } from './components/taskOptions.ts';
 import { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings } from './settings.ts';

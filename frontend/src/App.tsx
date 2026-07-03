@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
-import { useActivityQueueActions } from './activityQueue.ts';
+import { useActivityQueueActions } from './activity/activityQueue.ts';
 import { generateSpecs, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './components/LeftPanel.tsx';
@@ -28,7 +28,7 @@ const RawXmlView = lazy(async function () {
 // Same on-demand treatment for the activity-detail pane, whose markdown renderer (streamdown and its remark/rehype
 // stack) only matters once an activity tab is opened.
 const ActivityDetail = lazy(async function () {
-    const { ActivityDetail: component } = await import('./components/ActivityDetail.tsx');
+    const { ActivityDetail: component } = await import('./activity/ActivityDetail.tsx');
     return { default: component };
 });
 

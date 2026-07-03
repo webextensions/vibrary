@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 
-import { useActivityQueueState } from '../activityQueue.ts';
+import { useActivityQueueState } from './activityQueue.ts';
 import { useSettings } from '../settingsContext.ts';
 import { FINISHED_STATUSES, KIND_META } from './activityPresentation.ts';
 
