@@ -24,9 +24,13 @@ entries, so elements outside it are not preserved - anything else placed in the 
                 <ref>other-entry-title</ref>
             </relatesTo>
             <notes>Notes text</notes>
+            <formSchemaRef></formSchemaRef>
             <labels>
                 <label>A</label>
             </labels>
+            <created>2026-06-24T12:00:00.000Z</created>
+            <updated>2026-06-24T12:00:00.000Z</updated>
+            <updatedBy>Human</updatedBy>
         </entry>
         <entry type="review">
             <title>another-entry</title>
@@ -65,6 +69,10 @@ Each `<entry>` has these child elements:
   `<sibling-file>#<schemaId>` form (for example `tasks.xml.schemas.json#deploy-options`), resolved against that
   sidecar's schemas when the file loads. Empty (the default) means the task has no options form. Ignored on every
   other entry type.
+- `created` / `updated` - ISO 8601 timestamps: when the entry was created and when it was last edited. The editor
+  stamps `updated` on every change and renders both in the viewer's locale.
+- `updatedBy` - who made the last edit, either `Human` or `AI`: edits through the editor stamp `Human`, agent runs
+  stamp `AI`.
 
 ## Notes
 
