@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -25,18 +25,40 @@ const isFirstRunOfSession = function () {
     return true;
 };
 
+// Session markers accumulate in the tmpdir (one per `node --watch` supervisor pid, and nothing else deletes them);
+// sweep any older than a day on startup. Best-effort - a sweep failure must never block the server.
+const sweepStaleMarkers = function () {
+    try {
+        for (const entry of readdirSync(tmpdir())) {
+            if (!entry.startsWith('vibrary-start-') || !entry.endsWith('.marker')) {
+                continue;
+            }
+            const markerPath = path.join(tmpdir(), entry);
+            if (Date.now() - statSync(markerPath).mtimeMs > 24 * 60 * 60 * 1000) {
+                rmSync(markerPath, { force: true });
+            }
+        }
+    } catch {
+        // Ignore: the sweep is housekeeping, not a precondition.
+    }
+};
+
 // The server serves the built frontend from dist/. Under `npm start` the build runs concurrently, so wait for its
-// output before listening (and opening the browser) to avoid serving a half-built dist/.
+// completion marker before listening (and opening the browser): dist/index.html alone can be a leftover of the
+// PREVIOUS build, so scripts/start-build.js touches dist/.build-complete only when a build finishes and clears it
+// while one runs. Waiting cannot be unbounded (the build half may not be running at all), so after the deadline say
+// so loudly instead of silently serving whatever dist/ holds - a blank page with a quiet terminal is undebuggable.
 const waitForBuild = async function () {
     const deadline = Date.now() + 10000;
     while (Date.now() < deadline) {
         try {
-            await access('dist/index.html');
+            await access('dist/.build-complete');
             return;
         } catch {
             await delay(100);
         }
     }
+    console.warn('dist/.build-complete not found after 10s; starting anyway (is "start:build" running?)');
 };
 
 const { values } = parseArgs({ options: { hmr: { type: 'boolean', default: false } } });
@@ -47,6 +69,7 @@ if (!values.hmr) {
 }
 
 const firstRun = isFirstRunOfSession();
+sweepStaleMarkers();
 
 // startServer resolves once the server is listening (and the browser has been opened, when requested)
 const { url } = await startServer({ open: firstRun, hmr: values.hmr });
