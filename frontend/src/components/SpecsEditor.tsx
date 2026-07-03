@@ -494,7 +494,7 @@ const SpecsEditor = function (
                         classNamePrefix="rs"
                         isMulti
                         placeholder="Approval status"
-                        aria-label="Filter specs by approval status"
+                        aria-label="Filter entries by approval status"
                         options={FILTER_OPTIONS}
                         value={statusFilter}
                         onChange={function (options: MultiValue<Option>) {
@@ -506,7 +506,7 @@ const SpecsEditor = function (
                         classNamePrefix="rs"
                         isMulti
                         placeholder="Entry type"
-                        aria-label="Filter specs by entry type"
+                        aria-label="Filter entries by type"
                         options={TYPE_FILTER_OPTIONS}
                         value={typeFilter}
                         onChange={function (options: MultiValue<Option>) {
@@ -518,7 +518,7 @@ const SpecsEditor = function (
                         classNamePrefix="rs"
                         isMulti
                         placeholder="Labels"
-                        aria-label="Filter specs by label"
+                        aria-label="Filter entries by label"
                         options={labelFilterOptions}
                         value={labelFilter}
                         onChange={function (options: MultiValue<Option>) {
@@ -527,10 +527,10 @@ const SpecsEditor = function (
                     />}
                 </div>}
 
-                {specs.length === 0 && <p className={styles.placeholder}>No specs yet. Add one to get started.</p>}
+                {specs.length === 0 && <p className={styles.placeholder}>No entries yet. Add one to get started.</p>}
 
                 {specs.length > 0 && shown.length === 0 &&
-                <p className={styles.placeholder}>No specs match the selected filters.</p>}
+                <p className={styles.placeholder}>No entries match the selected filters.</p>}
 
                 {shown.map(function ({ spec, index }) {
                     return (
@@ -687,7 +687,7 @@ const SpecsEditor = function (
                     <button
                         type="button"
                         className={styles.fab}
-                        aria-label={menuOpen ? 'Close menu' : 'Add spec'}
+                        aria-label={menuOpen ? 'Close menu' : 'Add entry'}
                         aria-expanded={menuOpen}
                         onClick={function () {
                             setMenuOpen(function (previous) {

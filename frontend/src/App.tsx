@@ -753,7 +753,7 @@ const App = function () {
                                     <button
                                         type="button"
                                         className={cx(showFilters && styles.active)}
-                                        aria-label="Filter specs by approval status"
+                                        aria-label="Filter entries by approval status"
                                         aria-expanded={showFilters}
                                         onClick={function () {
                                             setShowFilters(function (previous) {

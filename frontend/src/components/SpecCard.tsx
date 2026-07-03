@@ -172,7 +172,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
     const handleApprovedByChange = async function (next: string) {
         if (value.approved !== '' && next === '') {
             const confirmed = await confirmDialog(
-                'Remove your approval from this spec?',
+                `Remove your approval from this ${value.type}?`,
                 'Remove approval'
             );
             if (!confirmed) {
@@ -197,7 +197,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
     // Confirm before deleting the whole spec - removal is destructive and not undoable.
     const confirmRemove = async function () {
         const confirmed = await confirmDialog(
-            'Remove this spec?',
+            `Remove this ${value.type}?`,
             'Remove'
         );
         if (confirmed) {
@@ -247,7 +247,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                                     type="text"
                                     value={value.title}
                                     placeholder="hyphenated-title"
-                                    aria-label="Spec title"
+                                    aria-label="Entry title"
                                     onChange={function (changeEvent) {
                                         update({ title: changeEvent.target.value });
                                     }}
@@ -271,7 +271,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                             </>
                         ) :
                         (
-                            <span className={styles.specCardTitle}>{value.title || `(untitled spec #${index + 1})`}</span>
+                            <span className={styles.specCardTitle}>{value.title || `(untitled ${value.type} #${index + 1})`}</span>
                         )}
                 </div>
                 <div className={styles.specCardActions}>
@@ -301,7 +301,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, schemas, a
                         (
                             <textarea
                                 id={fieldId('content')}
-                                aria-label="Spec content"
+                                aria-label="Entry content"
                                 value={value.content}
                                 spellCheck={false}
                                 onChange={function (changeEvent) {
