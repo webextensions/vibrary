@@ -97,7 +97,7 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry,
     );
 };
 
-// Gear button + popover for the per-project settings: which activity kinds pop a top-level start notification (the
+// Gear button + popover for the per-project settings: which activity kinds pop start/finish notifications (the
 // toast itself is fired by ActivityNotifier), plus a bulk reset for every task's remembered run options. Closes on an
 // outside click or Escape, matching every other popup in the app (Sidebar/TabBar menus, SpecsEditor's
 // speed-dial/Operations/Actions popups).
@@ -127,7 +127,7 @@ const NotificationSettingsMenu = function () {
             <div className={styles.settingsPanel}>
                 {saveError !== null &&
                 <p className={styles.settingsError}>Failed to save settings: {saveError}</p>}
-                <p className={styles.settingsHeading}>Notify when an activity starts</p>
+                <p className={styles.settingsHeading}>Notify when an activity starts or finishes</p>
                 {(Object.keys(KIND_META) as JobKind[]).map(function (kind) {
                     return (
                         <label key={kind} className={styles.settingsRow}>

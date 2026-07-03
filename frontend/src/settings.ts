@@ -2,7 +2,7 @@ import { type JobKind } from './activityQueue.ts';
 import { type FormData } from './components/taskOptions.ts';
 
 // Per-project UI preferences persisted to `.vibrary/settings.local.json` (read/written via the backend settings route).
-// Two independent concerns share the file: which activity kinds pop a start notification, and the last-used per-run
+// Two independent concerns share the file: which activity kinds pop start/finish notifications, and the last-used per-run
 // options for each task's options form (keyed by the task's stable formSchemaRef).
 
 type NotificationSettings = Record<JobKind, boolean>;
