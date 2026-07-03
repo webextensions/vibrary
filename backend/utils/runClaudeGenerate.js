@@ -11,8 +11,11 @@ const buildPrompt = function (name, type, count, instructions) {
     const lines = [
         `Add exactly ${count} new <entry type="${type}"> elements to the file "${name}" in this project.`,
         '',
-        `First read docs/vibrary-file-format.md to learn the XML format, then read the existing entries in ${name} and`,
-        'explore the project\'s codebase to find accurate, non-obvious facts about it worth capturing.',
+        // Conditional on purpose: the format doc ships with vibrary's own repo, not with the folders the server is
+        // typically started in - pointing the agent at a file that does not exist there wastes a turn.
+        'If docs/vibrary-file-format.md exists in this folder, read it to learn the XML format (when it does not, the',
+        `rules below cover the essentials). Then read the existing entries in ${name} and explore the project's`,
+        'codebase to find accurate, non-obvious facts about it worth capturing.',
         '',
         'Rules:',
         `- Append ${count} new <entry type="${type}"> elements inside the <entries> wrapper. If the file is empty,`,
