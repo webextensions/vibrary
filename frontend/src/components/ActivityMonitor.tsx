@@ -29,10 +29,18 @@ type JobRowProperties = {
     onAbort: () => void;
     onRemove: (id: string) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
-    onRetry: (id: string) => void
+    onRetry: (id: string) => void;
+    // Whether a queued neighbor actually exists in each direction (computed against the FULL queue) - the buttons
+    // mirror moveJob's own guards instead of rendering enabled no-ops at the queue's edges.
+    canMoveUp: boolean;
+    canMoveDown: boolean;
+    // Non-null while a Kind/Status filter hides part of the queue: reordering a list you can only partially see is
+    // ambiguous (a "move" would swap with an invisible neighbor and look dead), so both buttons disable with this
+    // explanation as their tooltip.
+    moveLockedReason: string | null
 };
 
-const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry }: JobRowProperties) {
+const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry, canMoveUp, canMoveDown, moveLockedReason }: JobRowProperties) {
     const { label: kindLabel, Icon } = KIND_META[job.kind];
     const canRetry = job.status === 'error' || job.status === 'aborted';
 
@@ -58,10 +66,10 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry 
             <div className={styles.jobActions}>
                 {job.status === 'queued' && (
                     <>
-                        <button type="button" className={cx(styles.rowButton, styles.moveUp)} aria-label="Move up" title="Move up" onClick={function () { onMove(job.id, 'up'); }}>
+                        <button type="button" className={cx(styles.rowButton, styles.moveUp)} aria-label="Move up" title={moveLockedReason ?? 'Move up'} disabled={moveLockedReason !== null || !canMoveUp} onClick={function () { onMove(job.id, 'up'); }}>
                             <ChevronIcon />
                         </button>
-                        <button type="button" className={cx(styles.rowButton, styles.moveDown)} aria-label="Move down" title="Move down" onClick={function () { onMove(job.id, 'down'); }}>
+                        <button type="button" className={cx(styles.rowButton, styles.moveDown)} aria-label="Move down" title={moveLockedReason ?? 'Move down'} disabled={moveLockedReason !== null || !canMoveDown} onClick={function () { onMove(job.id, 'down'); }}>
                             <ChevronIcon />
                         </button>
                         <button type="button" className={styles.rowButton} aria-label="Remove from queue" title="Remove from queue" onClick={function () { onRemove(job.id); }}>
@@ -298,6 +306,9 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
             {shownJobs.length > 0 &&
             <ul className={styles.jobs}>
                 {shownJobs.map(function (job) {
+                    // Mirror moveJob's guards (swap only with a QUEUED neighbor in the FULL queue) so the buttons
+                    // disable exactly when a click would be a no-op.
+                    const fullIndex = jobs.indexOf(job);
                     return (
                         <JobRow
                             key={job.id}
@@ -308,6 +319,9 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
                             onRemove={removeJob}
                             onMove={moveJob}
                             onRetry={retryJob}
+                            canMoveUp={jobs[fullIndex - 1]?.status === 'queued'}
+                            canMoveDown={jobs[fullIndex + 1]?.status === 'queued'}
+                            moveLockedReason={hasActiveFilter ? 'Reordering is disabled while a filter is active' : null}
                         />
                     );
                 })}
