@@ -74,6 +74,36 @@ test('create -> save -> read -> rename -> delete round trip', async function () 
     assert.equal((await requestJsonAsync('/files/tasks-flow2.xml')).status, 404);
 });
 
+test('save detects a concurrent on-disk change via the baseFileHash handshake', async function () {
+    await sendJsonAsync('/files', { name: 'tasks-conflict.xml' });
+    await sendJsonAsync('/files/tasks-conflict.xml', { content: VALID_XML }, 'PUT');
+
+    // Load the file (capturing its version token), then simulate an agent editing it on disk behind the editor.
+    const loaded = await requestJsonAsync('/files/tasks-conflict.xml');
+    assert.equal(typeof loaded.body.output.fileHash, 'string');
+    writeFileSync(path.join(cwd, 'tasks-conflict.xml'), VALID_XML.replace('Alpha', 'AgentEdit'));
+
+    // A save based on the stale token is refused; the disk content survives.
+    const conflicted = await sendJsonAsync('/files/tasks-conflict.xml', { content: VALID_XML.replace('Alpha', 'UserEdit'), baseFileHash: loaded.body.output.fileHash }, 'PUT');
+    assert.equal(conflicted.status, 409);
+    assert.match((await requestJsonAsync('/files/tasks-conflict.xml')).body.output.content, /AgentEdit/);
+
+    // Re-loading yields the current token, with which the save goes through and returns the saved content's new token.
+    const reloaded = await requestJsonAsync('/files/tasks-conflict.xml');
+    const saved = await sendJsonAsync('/files/tasks-conflict.xml', { content: VALID_XML.replace('Alpha', 'UserEdit'), baseFileHash: reloaded.body.output.fileHash }, 'PUT');
+    assert.equal(saved.status, 200);
+    assert.equal(typeof saved.body.output.fileHash, 'string');
+    assert.match((await requestJsonAsync('/files/tasks-conflict.xml')).body.output.content, /UserEdit/);
+
+    // Without the field the old blind-write semantics remain (the confirmed "Overwrite" path); a non-string is a 400,
+    // and a save against a since-deleted file conflicts rather than silently recreating it.
+    assert.equal((await sendJsonAsync('/files/tasks-conflict.xml', { content: VALID_XML }, 'PUT')).status, 200);
+    assert.equal((await sendJsonAsync('/files/tasks-conflict.xml', { content: VALID_XML, baseFileHash: 42 }, 'PUT')).status, 400);
+    const currentHash = (await requestJsonAsync('/files/tasks-conflict.xml')).body.output.fileHash;
+    await requestJsonAsync('/files/tasks-conflict.xml', { method: 'DELETE' });
+    assert.equal((await sendJsonAsync('/files/tasks-conflict.xml', { content: VALID_XML, baseFileHash: currentHash }, 'PUT')).status, 409);
+});
+
 test('create rejects invalid, non-included, and duplicate names with the right statuses', async function () {
     assert.equal((await sendJsonAsync('/files', { name: 'notes.xml' })).status, 400);
     assert.equal((await sendJsonAsync('/files', { name: 'ideas-new.xml' })).status, 400); // not included by the include file

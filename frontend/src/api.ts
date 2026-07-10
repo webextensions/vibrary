@@ -4,6 +4,18 @@ import { type EntryType } from './xml/vibraryXml.ts';
 
 type ApiResponse<T> = { status: 'success'; output: T } | { status: 'error'; errorMessage: string };
 
+// Error envelope failures carry the HTTP status so callers can branch on semantically meaningful codes (the save
+// flow's 409 conflict) instead of string-matching the message.
+class ApiError extends Error {
+    status: number;
+
+    constructor(message: string, options: ErrorOptions & { status: number }) {
+        super(message, options);
+        this.name = 'ApiError';
+        this.status = options.status;
+    }
+}
+
 // Options for the streaming agent calls: an abort signal (for the queue's abort/refresh) and an onEvent callback that
 // receives each parsed claude stream-json event as it arrives.
 type StreamOptions = { signal?: AbortSignal; onEvent?: (event: ClaudeStreamEvent) => void };
@@ -16,10 +28,10 @@ const request = async function <T>(url: string, init?: RequestInit): Promise<T> 
     } catch {
         // Non-JSON body (an HTML error page from Express or a proxy, or a connection cut mid-response): surface the
         // HTTP status instead of letting the JSON parser's SyntaxError reach the UI. Mirrors streamClaude below.
-        throw new Error(`Request failed (${response.status})`);
+        throw new ApiError(`Request failed (${response.status})`, { status: response.status });
     }
     if (body.status !== 'success') {
-        throw new Error(body.errorMessage || `Request failed (${response.status})`);
+        throw new ApiError(body.errorMessage || `Request failed (${response.status})`, { status: response.status });
     }
     return body.output;
 };
@@ -132,9 +144,11 @@ const getWorkspace = async function (): Promise<string> {
     return output.cwd;
 };
 
-const getFile = async function (name: string): Promise<string> {
-    const output = await request<{ name: string; content: string }>(`/api/files/${encodeURIComponent(name)}`);
-    return output.content;
+// The file's content plus its opaque version token (fileHash), which saveFile echoes back so the server can detect
+// that the file changed on disk after this read.
+const getFile = async function (name: string): Promise<{ content: string; fileHash: string }> {
+    const output = await request<{ name: string; content: string; fileHash: string }>(`/api/files/${encodeURIComponent(name)}`);
+    return { content: output.content, fileHash: output.fileHash };
 };
 
 // Read a form-schemas sidecar (e.g. "docs/tasks/tasks.xml.schemas.json") referenced by an entry's formSchemaRef. Served
@@ -157,8 +171,13 @@ const createFile = async function (name: string): Promise<void> {
     await requestJson<{ name: string }>('/api/files', 'POST', { name });
 };
 
-const saveFile = async function (name: string, content: string): Promise<void> {
-    await requestJson<{ name: string }>(`/api/files/${encodeURIComponent(name)}`, 'PUT', { content });
+// Save a file, echoing the version token from the load (getFile's fileHash) so the server rejects with a 409 when the
+// file changed on disk in between - the caller then asks the user before force-saving (no baseFileHash = blind write).
+// Resolves with the saved content's new token, which becomes the tab's base for the next save.
+const saveFile = async function (name: string, content: string, baseFileHash?: string): Promise<string> {
+    const payload = baseFileHash === undefined ? { content } : { content, baseFileHash };
+    const output = await requestJson<{ name: string; fileHash: string }>(`/api/files/${encodeURIComponent(name)}`, 'PUT', payload);
+    return output.fileHash;
 };
 
 // Delete a specs file. The caller (the explorer's "More" menu) confirms with the user first, then refreshes the file
@@ -349,4 +368,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

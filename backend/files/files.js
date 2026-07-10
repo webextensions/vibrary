@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { access, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -21,6 +22,13 @@ const VIBRARY_INCLUDE_TEMPLATE = [
     'tasks*.xml',
     ''
 ].join('\n');
+
+// Opaque version token for one file's raw on-disk content, handed out by GET and echoed back by PUT so a save can
+// detect that the file changed underneath the editor (an agent run, another tab, an outside tool). Only the two
+// sides of that handshake ever compare these, so the algorithm is free to change.
+const hashFileContent = function (content) {
+    return createHash('sha1').update(content).digest('hex');
+};
 
 const createFilesRouter = function ({ cwd }) {
     const router = Router();
@@ -133,7 +141,7 @@ const createFilesRouter = function ({ cwd }) {
 
         try {
             const content = await readFile(target, 'utf8');
-            return sendSuccessResponse(response, { name, content });
+            return sendSuccessResponse(response, { name, content, fileHash: hashFileContent(content) });
         } catch (error) {
             if (error.code === 'ENOENT') {
                 return sendErrorResponse(response, 404, 'File not found');
@@ -181,14 +189,37 @@ const createFilesRouter = function ({ cwd }) {
             return sendErrorResponse(response, 404, 'File not found');
         }
 
-        const { content } = request.body || {};
+        const { content, baseFileHash } = request.body || {};
         if (typeof content !== 'string') {
             return sendErrorResponse(response, 400, 'Expected a string "content" field');
+        }
+        if (baseFileHash !== undefined && typeof baseFileHash !== 'string') {
+            return sendErrorResponse(response, 400, 'Expected "baseFileHash" to be a string');
+        }
+
+        // Lost-update guard: when the client says which version it loaded (baseFileHash from GET), refuse to save over
+        // a file that changed on disk in the meantime - agent runs edit the very files the editor has open, and a blind
+        // write here would silently discard their work (or the user's, from another tab). A PUT without the field keeps
+        // the old semantics; the 409 lets the UI offer reload-or-overwrite. The read-then-write window that remains is
+        // the same single-user-local-server trade-off the rename route documents.
+        if (typeof baseFileHash === 'string') {
+            try {
+                const currentContent = await readFile(target, 'utf8');
+                if (hashFileContent(currentContent) !== baseFileHash) {
+                    return sendErrorResponse(response, 409, 'File changed on disk since it was loaded');
+                }
+            } catch (error) {
+                if (error.code === 'ENOENT') {
+                    return sendErrorResponse(response, 409, 'File was deleted on disk since it was loaded');
+                }
+                console.error(`Failed to read ${name} before saving:`, error);
+                return sendErrorResponse(response, 500, 'Unable to save file');
+            }
         }
 
         try {
             await writeFile(target, content, 'utf8');
-            return sendSuccessResponse(response, { name });
+            return sendSuccessResponse(response, { name, fileHash: hashFileContent(content) });
         } catch (error) {
             console.error(`Failed to save ${name}:`, error);
             if (['EACCES', 'EROFS', 'EPERM'].includes(error.code)) {

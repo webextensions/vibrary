@@ -68,20 +68,21 @@ const loadSchemasForEntries = async function (filePath: string, specs: Spec[]): 
     return map;
 };
 
-// Load one vibrary file: its raw content, the parsed entries, and the resolved schema map for any formSchemaRefs.
+// Load one vibrary file: its raw content, the server's version token for it (fileHash - echoed back on save so a
+// concurrent on-disk change is detected), the parsed entries, and the resolved schema map for any formSchemaRefs.
 // Malformed XML is reported IN-BAND (`parseError` set, entries empty) rather than thrown, so the content is still
 // returned and the Raw tab can show the broken file - a thrown parse error would lose the very text the user needs to
 // see to fix it. Rejects only when the file itself cannot be fetched; schema resolution never throws.
-const loadVibraryFile = async function (filePath: string): Promise<{ content: string; specs: Spec[]; schemas: SchemaMap; parseError: string | null }> {
-    const content = await getFile(filePath);
+const loadVibraryFile = async function (filePath: string): Promise<{ content: string; fileHash: string; specs: Spec[]; schemas: SchemaMap; parseError: string | null }> {
+    const { content, fileHash } = await getFile(filePath);
     let specs: Spec[];
     try {
         specs = parseVibraryXml(content);
     } catch (error) {
-        return { content, specs: [], schemas: {}, parseError: (error as Error).message };
+        return { content, fileHash, specs: [], schemas: {}, parseError: (error as Error).message };
     }
     const schemas = await loadSchemasForEntries(filePath, specs);
-    return { content, specs, schemas, parseError: null };
+    return { content, fileHash, specs, schemas, parseError: null };
 };
 
 export { loadVibraryFile, type SchemaMap };

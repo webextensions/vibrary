@@ -3,7 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from './activity/activityQueue.ts';
-import { generateSpecs, saveFile } from './api.ts';
+import { ApiError, generateSpecs, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './explorer/LeftPanel.tsx';
 import { TabBar } from './tabs/TabBar.tsx';
@@ -173,11 +173,12 @@ const App = function () {
         try {
             // A parse failure arrives in-band (parseError set, content still present) so the Raw tab can show the
             // malformed on-disk file; only a fetch failure lands in the catch, where there is no content to show.
-            const { content, specs, schemas, parseError } = await loadVibraryFile(path);
+            const { content, fileHash, specs, schemas, parseError } = await loadVibraryFile(path);
             patchTab(path, {
                 specs,
                 schemas,
                 rawFallback: content,
+                fileHash,
                 parseError,
                 dirty: false,
                 status: { kind: 'idle' },
@@ -205,14 +206,36 @@ const App = function () {
         const path = activeTab.path;
         const specs = activeTab.specs;
         patchTab(path, { status: { kind: 'saving' } });
-        try {
-            await saveFile(path, serializeVibraryXml(specs));
-            patchTab(path, { status: { kind: 'idle' }, dirty: false });
+        const applySaved = function (fileHash: string) {
+            patchTab(path, { status: { kind: 'idle' }, dirty: false, fileHash });
             markCounted(path, specs);
             // One summary request refreshes the title options and (eventually) the badges; markCounted above covers
             // the badge in the meantime.
             void refreshListing();
+        };
+        try {
+            applySaved(await saveFile(path, serializeVibraryXml(specs), activeTab.fileHash));
         } catch (error) {
+            // A 409 means the file changed on disk after this tab loaded it (an agent run, another tab, an outside
+            // editor) - saving would silently discard that version, so ask first. Cancel keeps the edits unsaved;
+            // the Reload button is the way to see the disk version.
+            if (error instanceof ApiError && error.status === 409) {
+                const overwrite = await confirmDialog(
+                    'This file changed on disk while it was open - saving will overwrite those changes. ' +
+                    'Cancel and use Reload to see the disk version instead.',
+                    'Overwrite'
+                );
+                if (!overwrite) {
+                    patchTab(path, { status: { kind: 'idle' } });
+                    return;
+                }
+                try {
+                    applySaved(await saveFile(path, serializeVibraryXml(specs)));
+                } catch (retryError) {
+                    patchTab(path, { status: { kind: 'error', message: (retryError as Error).message } });
+                }
+                return;
+            }
             patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
         }
     }, [activeTab, patchTab, markCounted, refreshListing]);
@@ -261,8 +284,8 @@ const App = function () {
         }
         const path = activeTab.path;
         if (activeTab.dirty) {
-            await saveFile(path, serializeVibraryXml(activeTab.specs));
-            patchTab(path, { dirty: false, status: { kind: 'idle' } });
+            const fileHash = await saveFile(path, serializeVibraryXml(activeTab.specs));
+            patchTab(path, { dirty: false, status: { kind: 'idle' }, fileHash });
         }
         const promptParts = [`Generate ${count} ${type} ${count === 1 ? 'entry' : 'entries'} in ${path}`];
         if (instructions !== '') {
@@ -278,11 +301,12 @@ const App = function () {
         });
         // parseError arrives in-band: if the agent left the file malformed, the tab shows the parse error with the
         // raw content visible instead of pretending the reload produced a clean model.
-        const { content, specs, schemas, parseError } = await loadVibraryFile(path);
+        const { content, fileHash, specs, schemas, parseError } = await loadVibraryFile(path);
         patchTab(path, {
             specs,
             schemas,
             rawFallback: content,
+            fileHash,
             parseError,
             dirty: false,
             status: { kind: 'idle' },

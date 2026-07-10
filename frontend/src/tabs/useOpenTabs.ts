@@ -21,6 +21,7 @@ type TabState = {
     specs: Spec[];
     schemas: SchemaMap; // resolved option-form schemas for this file's entries, keyed by formSchemaRef
     rawFallback: string; // original XML, shown in the raw view when parsing failed
+    fileHash: string; // the server's version token for the loaded content, echoed on save to detect on-disk changes
     parseError: string | null;
     innerTab: InnerTab; // the structured/raw toggle, independent per tab
     status: TabStatus;
@@ -46,6 +47,7 @@ const newTab = function (path: string): TabState {
         specs: [],
         schemas: {},
         rawFallback: '',
+        fileHash: '',
         parseError: null,
         innerTab: 'structured',
         status: { kind: 'idle' },
@@ -178,7 +180,7 @@ const useOpenTabs = function () {
             try {
                 // A parse failure arrives in-band (parseError set, content still present) so the Raw tab can show the
                 // malformed file; only a fetch failure lands in the catch below, where there is no content to show.
-                const { content, specs, schemas, parseError } = await loadVibraryFile(path);
+                const { content, fileHash, specs, schemas, parseError } = await loadVibraryFile(path);
                 setState(function (previous) {
                     if (previous.tabs.every(function (tab) { return tab.path !== path; })) {
                         return previous;
@@ -187,7 +189,7 @@ const useOpenTabs = function () {
                         ...previous,
                         tabs: previous.tabs.map(function (tab) {
                             return tab.path === path ?
-                                { ...tab, loading: false, specs, schemas, rawFallback: content, parseError } :
+                                { ...tab, loading: false, specs, schemas, rawFallback: content, fileHash, parseError } :
                                 tab;
                         })
                     };
