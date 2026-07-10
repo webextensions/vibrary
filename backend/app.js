@@ -9,6 +9,7 @@ import { createFilesRouter } from './files/files.js';
 import { createGitRouter } from './git/git.js';
 import { createSearchRouter } from './search/search.js';
 import { createSettingsRouter } from './settings/settings.js';
+import { blockCrossSiteRequests } from './shared/blockCrossSiteRequests.js';
 import { sendErrorResponse } from './shared/sendResponse.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,9 @@ const createApp = async function ({ cwd = process.cwd(), hmr = false } = {}) {
 
     app.use(compression());
     app.use(express.json({ limit: '10mb' }));
+
+    // Registered ahead of every router so no API handler is reachable from a foreign web page (CSRF/DNS rebinding)
+    app.use('/api', blockCrossSiteRequests);
 
     app.use('/api', createFilesRouter({ cwd }));
     app.use('/api', createAgentsRouter({ cwd }));
