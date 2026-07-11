@@ -15,6 +15,14 @@
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+/* Accent the card while a control inside it holds focus - above all the selection checkbox that Alt+ArrowUp/Down lands
+   on - so it is clear which card the keyboard actions (A approve, E edit, C copy) will act on. A deeper, thinner accent
+   than the search-jump .highlighted ring above (and placed after it, so an actively-focused card reads as focused). */
+.spec-card:focus-within {
+    border-color: #0969da;
+    box-shadow: 0 0 0 1px #0969da;
+}
+
 .spec-card-head {
     display: flex;
     align-items: center;
