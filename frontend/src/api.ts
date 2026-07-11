@@ -204,6 +204,14 @@ const duplicateFile = async function (name: string, newName: string): Promise<vo
     await requestJson<{ name: string }>(`/api/files/${encodeURIComponent(name)}/duplicate`, 'POST', { newName });
 };
 
+// Move the entries at `indexes` out of `name` and into `targetName`, both on disk. The server writes the target first
+// (a failure duplicates rather than loses) and guards the source with baseFileHash; the caller must have the source
+// saved so the indexes line up, and reloads both files afterward. Resolves with how many entries moved.
+const moveEntries = async function (name: string, targetName: string, indexes: number[], baseFileHash?: string): Promise<number> {
+    const output = await requestJson<{ movedCount: number }>(`/api/files/${encodeURIComponent(name)}/move-entries`, 'POST', { targetName, indexes, baseFileHash });
+    return output.movedCount;
+};
+
 // Runs the backend's headless AI agent to append `count` new specs to the file, streaming its activity through
 // `options.onEvent`. Resolves with the run's final result text once the file has been updated on disk; the caller
 // reloads it to pick up the additions. `instructions` carries optional custom one-time guidance, the same field every
@@ -374,4 +382,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { ApiError, applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

@@ -22,9 +22,10 @@ import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
-import { AiIcon, ClickIcon, CloseIcon, CopyIcon, EditIcon, LabelIcon, PlusIcon, RemoveIcon, TypeIcon } from '../shared/Icons.tsx';
+import { AiIcon, ClickIcon, CloseIcon, CopyIcon, EditIcon, ExplorerIcon, LabelIcon, PlusIcon, RemoveIcon, TypeIcon } from '../shared/Icons.tsx';
 import { ChangeTypeDialog } from './ChangeTypeDialog.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
+import { MoveEntriesDialog } from './MoveEntriesDialog.tsx';
 import { FindReplaceDialog } from './FindReplaceDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 
@@ -84,7 +85,12 @@ type SpecsEditorProperties = {
     // The entry sort order, owned by App like the filters above: a fresh editor mounts per tab (keyed by path), so a
     // locally-held sort would reset to file order on every tab switch - lifting it keeps the chosen sort with the rest.
     sortMode: SortMode;
-    onSortModeChange: (next: SortMode) => void
+    onSortModeChange: (next: SortMode) => void;
+    // Vibrary files other than this one, for the bulk "Move to file" destination picker.
+    otherFiles: string[];
+    // Move the entries at `indexes` (positions in this file) into `targetName`; App runs it on the server and reloads
+    // both files, returning an outcome the dialog surfaces (a failure keeps the dialog open with the reason).
+    onMoveEntries: (indexes: number[], targetName: string) => Promise<{ ok: boolean; message?: string }>
 };
 
 // Human-readable label per approval state, shown as the filter option text.
@@ -138,7 +144,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 ];
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, onMoveEntries }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -233,6 +239,8 @@ const SpecsEditor = function (
     const [findReplaceOpen, setFindReplaceOpen] = useState(false);
     // Bulk "Change type" over the selected entries; like Find & replace, only the open/closed flag lives here.
     const [changeTypeOpen, setChangeTypeOpen] = useState(false);
+    // Bulk "Move to file" over the selected entries; the destination picker and the move run in the dialog.
+    const [moveOpen, setMoveOpen] = useState(false);
 
     // The latest specs, read by the bulk-delete Undo toast so its restore re-inserts into the CURRENT list, not the
     // render-time snapshot the click handler closed over - an edit the user makes to another entry while the toast is
@@ -921,6 +929,18 @@ const SpecsEditor = function (
         }, { autoClose: 8000 });
     };
 
+    // Move the selected entries into `targetName`. The server does the move and App reloads both files; pass the
+    // entries' positions in THIS file (the source must be saved, so they match the on-disk order the server reads).
+    // Clear the selection only on success (a failure keeps it, and the dialog, so the user can fix the cause).
+    const handleMoveSelected = async function (targetName: string) {
+        const indexes = specs.flatMap(function (spec, index) { return selectedIds.has(spec.id) ? [index] : []; });
+        const outcome = await onMoveEntries(indexes, targetName);
+        if (outcome.ok) {
+            setSelectedIds(new Set());
+        }
+        return outcome;
+    };
+
     // Duplicate every selected entry in place, each inserted right after its own source - the bulk counterpart to the
     // single-card Duplicate button. Unlike duplicateAt, no single card to scroll to or focus, so the new entries are
     // left in review mode and the selection is cleared (it described the originals, not the copies).
@@ -1178,6 +1198,7 @@ const SpecsEditor = function (
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveLabel}><LabelIcon /><span>Remove label</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveBrokenReferences}><CloseIcon /><span>Remove broken references</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setChangeTypeOpen(true); }}><TypeIcon type="spec" /><span>Change type...</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setMoveOpen(true); }}><ExplorerIcon /><span>Move to file...</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setFindReplaceOpen(true); }}><EditIcon /><span>Find &amp; replace...</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
@@ -1319,6 +1340,15 @@ const SpecsEditor = function (
                 }}
                 selectedCount={selectedSpecs.length}
                 onChangeType={handleBulkChangeType}
+            />}
+            {moveOpen &&
+            <MoveEntriesDialog
+                onClose={function () {
+                    setMoveOpen(false);
+                }}
+                selectedCount={selectedSpecs.length}
+                otherFiles={otherFiles}
+                onMove={handleMoveSelected}
             />}
         </div>
     );

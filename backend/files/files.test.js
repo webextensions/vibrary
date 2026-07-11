@@ -173,3 +173,46 @@ test('the schema-file sidecar route reads by its own tight name shape', async fu
     assert.equal((await requestJsonAsync('/schema-file/..%2Ftasks.xml.schemas.json')).status, 400);
     assert.equal((await requestJsonAsync('/schema-file/specs.xml.schemas.json')).status, 404);
 });
+
+test('move-entries relocates selected entries into another file, appended after its own', async function () {
+    const twoEntries = [
+        '<root>', '    <entries>',
+        '        <entry type="spec"><title>keep-me</title><content>K</content></entry>',
+        '        <entry type="spec"><title>move-me</title><content>M</content></entry>',
+        '    </entries>', '</root>', ''
+    ].join('\n');
+    writeFileSync(path.join(cwd, 'specs-src.xml'), twoEntries);
+    writeFileSync(path.join(cwd, 'tasks-dst.xml'), VALID_XML); // one entry: first-spec
+
+    const loaded = await requestJsonAsync('/files/specs-src.xml');
+    const moved = await sendJsonAsync('/files/specs-src.xml/move-entries', {
+        targetName: 'tasks-dst.xml', indexes: [1], baseFileHash: loaded.body.output.fileHash
+    });
+    assert.equal(moved.status, 200);
+    assert.equal(moved.body.output.movedCount, 1);
+
+    const sourceAfter = (await requestJsonAsync('/files/specs-src.xml')).body.output.content;
+    assert.match(sourceAfter, /keep-me/);
+    assert.doesNotMatch(sourceAfter, /move-me/);
+
+    const targetAfter = (await requestJsonAsync('/files/tasks-dst.xml')).body.output.content;
+    assert.match(targetAfter, /first-spec/);
+    assert.ok(targetAfter.indexOf('first-spec') < targetAfter.indexOf('move-me'), 'moved entry is appended after the target\'s existing entries');
+});
+
+test('move-entries refuses the same file, a stale hash, an out-of-range index, a non-included target, and an empty set', async function () {
+    writeFileSync(path.join(cwd, 'specs-mv2.xml'), VALID_XML);
+    writeFileSync(path.join(cwd, 'tasks-mv2.xml'), VALID_XML);
+
+    assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'specs-mv2.xml', indexes: [0] })).status, 400);
+    assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'specs-hidden.xml', indexes: [0] })).status, 404);
+    assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'tasks-mv2.xml', indexes: [5] })).status, 409);
+    assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'tasks-mv2.xml', indexes: [] })).status, 400);
+
+    const loaded = await requestJsonAsync('/files/specs-mv2.xml');
+    writeFileSync(path.join(cwd, 'specs-mv2.xml'), VALID_XML.replace('Alpha', 'Changed'));
+    const stale = await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'tasks-mv2.xml', indexes: [0], baseFileHash: loaded.body.output.fileHash });
+    assert.equal(stale.status, 409);
+    // The stale-hash refusal left both files untouched (the source keeps the out-of-band change).
+    assert.match((await requestJsonAsync('/files/specs-mv2.xml')).body.output.content, /Changed/);
+});

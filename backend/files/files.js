@@ -5,7 +5,7 @@ import path from 'node:path';
 import { Router } from 'express';
 import writeFileAtomic from 'write-file-atomic';
 
-import { countApprovedSpecs, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
+import { countApprovedSpecs, parseVibraryXml, serializeVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibraryFiles, vibraryIncludeExistsAsync } from './vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
@@ -344,6 +344,70 @@ const createFilesRouter = function ({ cwd }) {
             }
             console.error(`Failed to duplicate ${name} to ${newName}:`, error);
             return sendErrorResponse(response, 500, 'Unable to duplicate file');
+        }
+    });
+
+    // Move one or more entries out of this file and into another vibrary file, both on disk. The target is written
+    // FIRST (with the moved entries appended) and only then is the source rewritten without them: if the second write
+    // fails, the entries still exist - duplicated into the target, which is visible and fixable - rather than being
+    // lost. The source's baseFileHash is the same lost-update guard the save route uses; the frontend requires the
+    // source saved first, so the client's entry positions line up with the on-disk order.
+    router.post('/files/:name/move-entries', async function (request, response) {
+        const { name } = request.params;
+        const { targetName, indexes, baseFileHash } = request.body || {};
+
+        if (!isValidVibraryName(name) || !isValidVibraryName(targetName)) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (name === targetName) {
+            return sendErrorResponse(response, 400, 'Source and target are the same file');
+        }
+        const source = resolveWithinCwd(cwd, name);
+        const targetPath = resolveWithinCwd(cwd, targetName);
+        if (source === null || targetPath === null) {
+            return sendErrorResponse(response, 400, 'Invalid file name');
+        }
+        if (!(await isVibraryNameIncluded(cwd, name)) || !(await isVibraryNameIncluded(cwd, targetName))) {
+            return sendErrorResponse(response, 404, 'File not found');
+        }
+        if (!Array.isArray(indexes) || indexes.length === 0 || indexes.some(function (index) { return !Number.isSafeInteger(index) || index < 0; })) {
+            return sendErrorResponse(response, 400, 'Expected a non-empty "indexes" array of entry positions');
+        }
+        if (baseFileHash !== undefined && typeof baseFileHash !== 'string') {
+            return sendErrorResponse(response, 400, 'Expected "baseFileHash" to be a string');
+        }
+
+        try {
+            const sourceContent = await readFile(source, 'utf8');
+            if (typeof baseFileHash === 'string' && hashFileContent(sourceContent) !== baseFileHash) {
+                return sendErrorResponse(response, 409, 'File changed on disk since it was loaded');
+            }
+            const sourceEntries = parseVibraryXml(sourceContent);
+            if (indexes.some(function (index) { return index >= sourceEntries.length; })) {
+                return sendErrorResponse(response, 409, 'An entry position is out of range - reload and try again');
+            }
+            const targetEntries = parseVibraryXml(await readFile(targetPath, 'utf8'));
+
+            const moveSet = new Set(indexes);
+            const moved = sourceEntries.filter(function (_entry, index) { return moveSet.has(index); });
+            const nextTargetContent = serializeVibraryXml([...targetEntries, ...moved]);
+            const nextSourceContent = serializeVibraryXml(sourceEntries.filter(function (_entry, index) { return !moveSet.has(index); }));
+
+            // Target first (see the route comment) so a mid-move failure duplicates rather than loses.
+            await writeFileAtomic(targetPath, nextTargetContent, { encoding: 'utf8' });
+            await writeFileAtomic(source, nextSourceContent, { encoding: 'utf8' });
+
+            return sendSuccessResponse(response, {
+                movedCount: moved.length,
+                source: { name, fileHash: hashFileContent(nextSourceContent) },
+                target: { name: targetName, fileHash: hashFileContent(nextTargetContent) }
+            });
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                return sendErrorResponse(response, 404, 'File not found');
+            }
+            console.error(`Failed to move entries from ${name} to ${targetName}:`, error);
+            return sendErrorResponse(response, 500, 'Unable to move entries');
         }
     });
 

@@ -3,7 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { toast } from 'react-toastify';
 
 import { useActivityQueueActions, useActivityQueueState } from './activity/activityQueue.ts';
-import { ApiError, generateSpecs, saveFile } from './api.ts';
+import { ApiError, generateSpecs, moveEntries, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './explorer/LeftPanel.tsx';
 import { TabBar } from './tabs/TabBar.tsx';
@@ -219,6 +219,61 @@ const App = function () {
             patchTab(path, { specs: [], schemas: {}, parseError: (error as Error).message, reloading: false });
         }
     }, [activeTab, patchTab]);
+
+    // Reload one open tab from disk by path (used after a move rewrites both the source and the target). Like
+    // reloadFile but for any path and without the unsaved-changes prompt - a move requires both files saved, so there
+    // is nothing to discard. A no-op for a path that is not open.
+    const reloadTabFromDisk = useCallback(async function (path: string) {
+        const tab = getTab(path);
+        if (tab === null || tab.kind !== 'file') {
+            return;
+        }
+        patchTab(path, { reloading: true });
+        try {
+            const { content, fileHash, specs, schemas, parseError } = await loadVibraryFile(path);
+            patchTab(path, {
+                specs,
+                schemas,
+                rawFallback: content,
+                fileHash,
+                parseError,
+                dirty: false,
+                status: { kind: 'idle' },
+                reloading: false,
+                reloadNonce: tab.reloadNonce + 1
+            });
+        } catch (error) {
+            patchTab(path, { specs: [], schemas: {}, parseError: (error as Error).message, reloading: false });
+        }
+    }, [getTab, patchTab]);
+
+    // Move the selected entries from the active file into `targetName` on disk, then reload both files. Requires the
+    // source saved (and the target too, if it is open) so the move's disk reads are authoritative, the client indexes
+    // address the on-disk order, and the reload discards nothing. Returns an outcome the dialog surfaces; on success
+    // the folder summary is refreshed so cross-file titles and the sidebar counts reflect the move.
+    const handleMoveEntries = useCallback(async function (indexes: number[], targetName: string): Promise<{ ok: boolean; message?: string }> {
+        if (activeTab === null || activeTab.kind !== 'file') {
+            return { ok: false, message: 'No file is open.' };
+        }
+        if (activeTab.dirty) {
+            return { ok: false, message: 'Save this file before moving entries.' };
+        }
+        const targetTab = getTab(targetName);
+        if (targetTab !== null && targetTab.kind === 'file' && targetTab.dirty) {
+            return { ok: false, message: 'The target file has unsaved changes - save it first.' };
+        }
+        try {
+            await moveEntries(activeTab.path, targetName, indexes, activeTab.fileHash);
+        } catch (error) {
+            return { ok: false, message: error instanceof Error ? error.message : 'Unable to move entries.' };
+        }
+        await reloadTabFromDisk(activeTab.path);
+        if (targetTab !== null) {
+            await reloadTabFromDisk(targetName);
+        }
+        void handleRefresh();
+        return { ok: true };
+    }, [activeTab, getTab, reloadTabFromDisk, handleRefresh]);
 
     // Raw tab shows the XML regenerated from the structured model (source of truth); on parse failure it shows the
     // original file content so the malformed XML is still visible.
@@ -759,6 +814,8 @@ const App = function () {
                                         onTextFilterChange={setTextFilter}
                                         sortMode={sortMode}
                                         onSortModeChange={setSortMode}
+                                        otherFiles={files.filter(function (name) { return name !== activeTab.path; })}
+                                        onMoveEntries={handleMoveEntries}
                                     />
                                 ) :
                                 (
