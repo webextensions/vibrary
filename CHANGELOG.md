@@ -26,6 +26,8 @@ All notable changes to this project are documented here. The format loosely foll
   "2 references from other files will break"), so an irreversible delete no longer silently strands cross-file links.
 - The file-list footer shows a folder-wide approval total ("3 files, 12/40 approved") alongside the per-file badges,
   for an at-a-glance sense of overall progress; it tracks the open files' live edits like the badges do.
+- Editing the title of an entry that other entries reference now shows a "renaming breaks N links" hint, since
+  `relatesTo` references resolve by exact title - a heads-up before an edit silently strands those links.
 
 ### Changed
 

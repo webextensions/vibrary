@@ -441,6 +441,13 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                             Remove
                         </button>
                     </span>}
+                    {isEditing && referencedBy.length > 0 &&
+                    <span
+                        className={styles.renameRefHint}
+                        title={`${referencedBy.length} entr${referencedBy.length === 1 ? 'y references' : 'ies reference'} this by its current title. Renaming it breaks those "Relates to" links - they resolve by title - unless you update them too.`}
+                    >
+                        renaming breaks {referencedBy.length} {referencedBy.length === 1 ? 'link' : 'links'}
+                    </span>}
                 </div>
                 <div className={styles.specCardActions}>
                     {reorderable &&

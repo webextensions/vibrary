@@ -203,6 +203,22 @@
     cursor: help;
 }
 
+/* Shown while editing the title of an entry that other entries reference: a muted, informational heads-up (not the
+   amber "problem" tone) that renaming will break those relatesTo links, since they resolve by exact title. */
+.rename-ref-hint {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    background: #f6f8fa;
+    color: #57606a;
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: help;
+}
+
 /* One-click cleanup inside the broken-references badge: drop the dangling references from this entry (the counterpart
    of the duplicate-title warning's "Make unique"). */
 .dangling-refs-fix {
@@ -604,6 +620,9 @@
 
     .spec-card-title-group {
         flex-basis: 100%;
+        /* On its own full-width row, let the title's companions (Populate, the duplicate/broken/rename hints) wrap
+           below the input instead of running off the clipped edge on a narrow screen. */
+        flex-wrap: wrap;
     }
 
     .title-input {
