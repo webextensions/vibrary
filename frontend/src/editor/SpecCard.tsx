@@ -444,7 +444,10 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                             Remove
                         </button>
                     </span>}
-                    {isEditing && referencedBy.length > 0 &&
+                    {/* Suppressed while the title is a duplicate: referencedBy is resolved by the entry's live-edited
+                        title, so a title typed to collide with another referenced entry would otherwise show THAT
+                        entry's backlink count here. The duplicate-title warning above is the correct signal in that case. */}
+                    {isEditing && referencedBy.length > 0 && !hasDuplicateTitle &&
                     <span
                         className={styles.renameRefHint}
                         title={`${referencedBy.length} entr${referencedBy.length === 1 ? 'y references' : 'ies reference'} this by its current title. Renaming it breaks those "Relates to" links - they resolve by title - unless you update them too.`}
