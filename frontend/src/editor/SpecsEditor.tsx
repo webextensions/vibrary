@@ -559,7 +559,9 @@ const SpecsEditor = function (
         if (isTextInput || isEditable || isInDropdown || target instanceof HTMLTextAreaElement) {
             return;
         }
-        const order = shown.map(function ({ spec }) { return spec.id; });
+        // Navigate in the order the cards are actually rendered (sortedShown), not file order, so Alt+Arrow steps and
+        // Home/End land where the user sees the next/previous/first/last card under any active sort.
+        const order = sortedShown.map(function ({ spec }) { return spec.id; });
         if (order.length === 0) {
             return;
         }
