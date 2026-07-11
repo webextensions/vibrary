@@ -52,11 +52,12 @@ type SpecCardProperties = {
     // The entries that reference THIS one (via their relatesTo), for the read-only "Referenced by" section - the
     // reverse of "Relates to". Folder-wide, already merged (live for this file, saved summary for others) by the editor.
     referencedBy: BacklinkSource[];
-    // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
-    onOpenRelated: (title: string) => void;
+    // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file). The second
+    // argument is this entry's own title, recorded as the Back target for the jump.
+    onOpenRelated: (title: string, fromTitle: string) => void;
     // Navigate to a "Referenced by" source by its exact file + title (so a title duplicated across files still lands on
-    // the file that actually holds the referencing entry).
-    onOpenBacklink: (file: string, title: string) => void;
+    // the file that actually holds the referencing entry). The third argument is this entry's title (the Back target).
+    onOpenBacklink: (file: string, title: string, fromTitle: string) => void;
     // Toggle a clicked label chip into/out of the active label filter.
     onLabelClick: (label: string) => void;
     onChange: (next: Spec) => void;
@@ -583,7 +584,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                             ) :
                             <Chips
                                 items={value.relatesTo}
-                                onItemClick={onOpenRelated}
+                                onItemClick={function (title) { onOpenRelated(title, value.title); }}
                                 titleFor={function (title) { return `Go to "${title}"`; }}
                                 isDangling={function (title) { return danglingReferences.has(title); }}
                             />}
@@ -600,7 +601,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                                         className={cx(styles.chip, styles.chipLink)}
                                         title={`Go to "${source.title}" in ${source.file}`}
                                         onClick={function () {
-                                            onOpenBacklink(source.file, source.title);
+                                            onOpenBacklink(source.file, source.title, value.title);
                                         }}
                                     >
                                         {source.title}

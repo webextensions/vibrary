@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 import { useActivityQueueActions, useActivityQueueState } from './activity/activityQueue.ts';
 import { ApiError, generateSpecs, moveEntries, saveFile } from './api.ts';
-import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
+import { ChevronIcon, CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './explorer/LeftPanel.tsx';
 import { TabBar } from './tabs/TabBar.tsx';
 import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
@@ -91,6 +91,10 @@ const App = function () {
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
     const [searchTarget, setSearchTarget] = useState<{ path: string; query: string; matchIndex: number; exactTitle: boolean } | null>(null);
+    // A stack of entries to return to after following a "Relates to" / "Referenced by" chip - each hop pushes the entry
+    // it was clicked FROM (file + title), so a Back button can retrace the relation-exploration path. Persistent (a
+    // manual tab switch does not clear it); Back navigates without pushing, so it never loops.
+    const [backStack, setBackStack] = useState<{ path: string; title: string }[]>([]);
     // The keyboard-shortcuts help dialog, opened by the "?" key or the rail's help button.
     const [shortcutsOpen, setShortcutsOpen] = useState<boolean>(false);
     // The quick-open file palette (Cmd/Ctrl+K).
@@ -625,7 +629,7 @@ const App = function () {
 
     // Open the entry a clicked "Relates to" chip points at: resolve its title to a file via titleIndex first. A stale
     // reference (the target renamed or removed since the chip was set) gets a toast instead of a silent dead click.
-    const handleOpenRelated = useCallback(function (title: string) {
+    const handleOpenRelated = useCallback(function (title: string, fromTitle: string) {
         const entry = titleIndex.find(function (candidate) {
             return candidate.title === title;
         });
@@ -633,8 +637,34 @@ const App = function () {
             toast(`No entry titled "${title}" found - it may have been renamed or removed.`);
             return;
         }
+        if (activeFilePath !== null && fromTitle !== '') {
+            setBackStack(function (previous) { return [...previous, { path: activeFilePath, title: fromTitle }]; });
+        }
         openEntryByTitle(entry.path, title);
-    }, [titleIndex, openEntryByTitle]);
+    }, [titleIndex, openEntryByTitle, activeFilePath]);
+
+    // The "Referenced by" chip carries its source entry's exact file, so it navigates precisely; like handleOpenRelated
+    // it records where it was clicked from so Back can return there.
+    const handleOpenBacklink = useCallback(function (file: string, title: string, fromTitle: string) {
+        if (activeFilePath !== null && fromTitle !== '') {
+            setBackStack(function (previous) { return [...previous, { path: activeFilePath, title: fromTitle }]; });
+        }
+        openEntryByTitle(file, title);
+    }, [openEntryByTitle, activeFilePath]);
+
+    // Return to the entry at the top of the back stack, popping it. Navigates without pushing, so Back never grows the
+    // stack it consumes.
+    const handleGoBack = useCallback(function () {
+        const target = backStack.at(-1);
+        if (target === undefined) {
+            return;
+        }
+        setBackStack(function (previous) { return previous.slice(0, -1); });
+        openEntryByTitle(target.path, target.title);
+    }, [backStack, openEntryByTitle]);
+
+    // The entry the Back button would return to (the top of the stack), or undefined when there is nowhere to go back.
+    const backTop = backStack.at(-1);
 
     // Everything the quick-open palette (Cmd/Ctrl+K) can jump to: every listed file, then every entry by title (with
     // its file as the muted hint). Files open the tab; entries open the file and scroll to the entry.
@@ -756,6 +786,17 @@ const App = function () {
                         <>
                             <div className={styles.toolbar}>
                                 <div className={styles.toolbarActions}>
+                                    {backTop !== undefined &&
+                                    <button
+                                        type="button"
+                                        className={styles.back}
+                                        aria-label={`Back to "${backTop.title}"`}
+                                        title={`Back to "${backTop.title}"`}
+                                        onClick={handleGoBack}
+                                    >
+                                        <ChevronIcon />
+                                        Back
+                                    </button>}
                                     <button
                                         type="button"
                                         className={cx(styles.reload, activeTab.reloading && styles.reloading)}
@@ -846,7 +887,7 @@ const App = function () {
                                         onChange={onSpecsChange}
                                         onGenerate={handleGenerate}
                                         onOpenRelated={handleOpenRelated}
-                                        onOpenBacklink={openEntryByTitle}
+                                        onOpenBacklink={handleOpenBacklink}
                                         showFilters={showFilters}
                                         statusFilter={statusFilter}
                                         onStatusFilterChange={setStatusFilter}

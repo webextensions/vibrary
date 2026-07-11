@@ -66,11 +66,13 @@ type SpecsEditorProperties = {
     // `instructions` carries optional custom one-time guidance from the dialog's own field. Rejects on failure so the
     // dialog can surface the error.
     onGenerate: (type: EntryType, count: number, instructions: string) => Promise<void>;
-    // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
-    onOpenRelated: (title: string) => void;
+    // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file). `fromTitle` is
+    // the entry the chip was clicked from, recorded so a Back control can return there.
+    onOpenRelated: (title: string, fromTitle: string) => void;
     // Navigate to a "Referenced by" source entry by its exact file AND title - unlike onOpenRelated, which resolves a
     // bare title folder-wide, this lands on the right file even when the source title is duplicated across files.
-    onOpenBacklink: (file: string, title: string) => void;
+    // `fromTitle` is the entry the chip was clicked from (for Back).
+    onOpenBacklink: (file: string, title: string, fromTitle: string) => void;
     // Whether the filter dropdowns are open. Toggled by the Filter button in the toolbar (see App.tsx).
     showFilters: boolean;
     // Selected status filters, owned by App so the toolbar's Filter button can show an "active" badge.

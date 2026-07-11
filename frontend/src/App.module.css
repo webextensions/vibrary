@@ -81,6 +81,25 @@
     animation: spin 0.6s linear infinite;
 }
 
+/* Retrace the relation-navigation path; plain like the reload button, not the green Save action */
+.toolbar .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: #fff;
+    color: #656d76;
+}
+
+.toolbar .back:hover {
+    background: #f3f4f6;
+}
+
+/* ChevronIcon points right; flip it so it points back (left) */
+.toolbar .back svg {
+    transform: rotate(180deg);
+}
+
 .spinner {
     display: inline-block;
     width: 14px;
