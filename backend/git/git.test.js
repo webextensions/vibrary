@@ -74,6 +74,15 @@ test('an untracked file diff answers its full content, and discard deletes the f
     assert.throws(function () { readFileSync(path.join(repoCwd, 'notes.txt')); }, { code: 'ENOENT' });
 });
 
+test('untracked diff refuses a path git does not report as untracked (no raw read of arbitrary files)', async function () {
+    // specs.xml is tracked and clean (committed, then discarded back) so git does not list it. The untracked branch
+    // must not read its bytes just because the client claimed untracked=true - that would turn the diff endpoint into
+    // an arbitrary in-folder file reader (a .env, a key) beyond the untracked files the panel actually shows.
+    const tracked = await repo.requestJsonAsync('/git/diff?path=specs.xml&untracked=true');
+    assert.equal(tracked.status, 404);
+    assert.doesNotMatch(JSON.stringify(tracked.body), /original/);
+});
+
 test('stash save and pop round-trip the working tree, answering status plus stash list', async function () {
     writeFileSync(path.join(repoCwd, 'specs.xml'), 'original\nstash me\n');
 

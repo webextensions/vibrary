@@ -50,6 +50,17 @@ const createGitRouter = function ({ cwd }) {
                 return undefined;
             }
             if (untracked === 'true') {
+                // Returning an "untracked" file's full content is the one diff branch that reads raw bytes off disk, so
+                // trusting the client's untracked flag would let ANY in-folder path be read (a .env, a key) - a broader
+                // read surface than the rest of the API allows. Confirm git actually reports this path as untracked
+                // ("??") before reading it; a path git does not list that way is treated as absent.
+                const { files } = await statusAsync(cwd);
+                const isUntracked = files.some(function (file) {
+                    return file.path === diffPath && file.index === '?' && file.working_dir === '?';
+                });
+                if (!isUntracked) {
+                    return sendErrorResponse(response, 404, 'File not found');
+                }
                 const content = await readFile(target, 'utf8');
                 return sendSuccessResponse(response, { diff: content, untracked: true });
             }
