@@ -110,6 +110,28 @@ test('GET /files-summary builds a folder-wide reverse-reference (backlinks) map,
     }
 });
 
+test('GET /files-summary survives a title that collides with an Object.prototype key (e.g. "constructor")', async function () {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'vibrary-proto-title-'));
+    writeFileSync(path.join(cwd, '.vibraryinclude'), 'specs.xml\n');
+    // "constructor" is a valid normalized title (all-lowercase, no punctuation); an entry references it. A plain-object
+    // backlinks map would hit the inherited constructor and throw, 500-ing the whole summary.
+    writeFileSync(path.join(cwd, 'specs.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>constructor</title><content>x</content></entry>',
+        '  <entry type="spec"><title>src</title><content>y</content><relatesTo><ref>constructor</ref></relatesTo></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    const app = await startAppAsync(cwd);
+    try {
+        const { status, body } = await app.requestJsonAsync('/files-summary');
+        assert.equal(status, 200);
+        assert.deepEqual(body.output.backlinks.constructor, [{ file: 'specs.xml', title: 'src' }]);
+    } finally {
+        app.server.close();
+        rmSync(cwd, { recursive: true, force: true });
+    }
+});
+
 test('create -> save -> read -> rename -> delete round trip', async function () {
     const created = await sendJsonAsync('/files', { name: 'tasks-flow.xml' });
     assert.equal(created.status, 200);

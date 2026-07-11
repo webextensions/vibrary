@@ -400,7 +400,10 @@ const SpecsEditor = function (
         if (spec.title === '') {
             return [];
         }
-        const fromOtherFiles = (backlinks[spec.title] ?? []).filter(function (source) { return source.file !== currentFilePath; });
+        // Object.hasOwn, not a plain lookup: the map arrives as a JSON-parsed object (Object.prototype in its chain),
+        // so backlinks['constructor'] would be the inherited method - a valid entry title must read as "no backlinks".
+        const savedSources = Object.hasOwn(backlinks, spec.title) ? backlinks[spec.title] : [];
+        const fromOtherFiles = savedSources.filter(function (source) { return source.file !== currentFilePath; });
         const fromThisFile = (liveBacklinks.get(spec.title) ?? [])
             .filter(function (source) { return source.id !== spec.id; })
             .map(function (source) { return { file: source.file, title: source.title }; });

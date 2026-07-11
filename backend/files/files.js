@@ -92,7 +92,10 @@ const createFilesRouter = function ({ cwd }) {
             // Reverse-reference map: for each existing title, which entries (file + entry title) point AT it via
             // relatesTo. Keyed only on real titles (a dangling target is nobody's viewable entry, so it is never looked
             // up). References resolve by exact title folder-wide, matching how the editor renders the forward chips.
-            const backlinks = {};
+            // A null-prototype object so a title that collides with an Object.prototype key (e.g. "constructor", a
+            // perfectly valid normalized title) is a plain data key, not the inherited method - `x ??= []` on a normal
+            // {} would find that method truthy, skip the assignment, and then `.push` on a function throws.
+            const backlinks = Object.create(null);
             for (const file of parsed) {
                 for (const entry of file.references) {
                     for (const target of entry.relatesTo) {
