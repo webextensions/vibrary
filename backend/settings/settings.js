@@ -1,7 +1,8 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
+import writeFileAtomic from 'write-file-atomic';
 
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 
@@ -39,7 +40,8 @@ const createSettingsRouter = function ({ cwd }) {
 
         try {
             await mkdir(path.dirname(settingsPath), { recursive: true });
-            await writeFile(settingsPath, `${JSON.stringify(settings, null, 4)}\n`, 'utf8');
+            // Atomic replace, like the file save route: a crash mid-write must not leave a truncated settings file.
+            await writeFileAtomic(settingsPath, `${JSON.stringify(settings, null, 4)}\n`, { encoding: 'utf8' });
             return sendSuccessResponse(response, {});
         } catch (error) {
             console.error('Failed to save settings:', error);

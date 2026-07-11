@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -64,6 +64,9 @@ test('create -> save -> read -> rename -> delete round trip', async function () 
 
     const read = await requestJsonAsync('/files/tasks-flow.xml');
     assert.equal(read.body.output.content, VALID_XML);
+
+    // The save is an atomic temp-file + rename; its temp file (named "<file>.<hash>") must not survive the request.
+    assert.deepEqual(readdirSync(cwd).filter(function (entry) { return entry.startsWith('tasks-flow.xml.'); }), []);
 
     const renamed = await sendJsonAsync('/files/tasks-flow.xml/rename', { newName: 'tasks-flow2.xml' });
     assert.equal(renamed.status, 200);

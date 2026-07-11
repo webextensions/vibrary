@@ -3,6 +3,7 @@ import { access, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/prom
 import path from 'node:path';
 
 import { Router } from 'express';
+import writeFileAtomic from 'write-file-atomic';
 
 import { countApprovedSpecs, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
@@ -218,7 +219,11 @@ const createFilesRouter = function ({ cwd }) {
         }
 
         try {
-            await writeFile(target, content, 'utf8');
+            // Atomic replace (temp file + fsync + rename): a plain writeFile truncates in place, so a crash, disk-full,
+            // or process kill mid-write would leave the user's file empty or truncated. The other write routes keep
+            // plain writes on purpose - they are create-only ('wx', which the temp+rename pattern cannot express) and
+            // never hold the only copy of existing data.
+            await writeFileAtomic(target, content, { encoding: 'utf8' });
             return sendSuccessResponse(response, { name, fileHash: hashFileContent(content) });
         } catch (error) {
             console.error(`Failed to save ${name}:`, error);
