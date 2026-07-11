@@ -11,9 +11,9 @@ All notable changes to this project are documented here. The format loosely foll
   Remove broken references operations each show a brief Undo toast that restores exactly what changed, leaving any
   edit made in the meantime untouched.
 - Editable entry type - a Type dropdown on each card and a bulk "Change type" operation over the selected entries.
-- A bulk "Move to file" operation that relocates the selected entries into another vibrary file (both files saved
-  first; the entries are appended to the destination), for reclassifying an entry into a different family without
-  losing its id, approval, or timestamps.
+- A bulk "Move to file" operation that relocates the selected entries into another vibrary file - an existing one or a
+  new file named in the dialog (to split a file into topic files) - appending them to the destination, for
+  reclassifying or reorganizing entries without losing their ids, approval, or timestamps.
 - A "Show more" / "Show less" clamp on long entry content in review mode, so one wall-of-text entry no longer buries
   the rest of the list.
 - The Search panel now marks the matched term in a jumped-to entry's title, content, and notes, and reveals the entry

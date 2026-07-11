@@ -347,11 +347,12 @@ const createFilesRouter = function ({ cwd }) {
         }
     });
 
-    // Move one or more entries out of this file and into another vibrary file, both on disk. The target is written
-    // FIRST (with the moved entries appended) and only then is the source rewritten without them: if the second write
-    // fails, the entries still exist - duplicated into the target, which is visible and fixable - rather than being
-    // lost. The source's baseFileHash is the same lost-update guard the save route uses; the frontend requires the
-    // source saved first, so the client's entry positions line up with the on-disk order.
+    // Move one or more entries out of this file and into another vibrary file, both on disk. The target may already
+    // exist (the entries are appended) or not (it is created), so the same dialog can split entries into a fresh file.
+    // The target is written FIRST (with the moved entries) and only then is the source rewritten without them: if the
+    // second write fails, the entries still exist - duplicated into the target, which is visible and fixable - rather
+    // than being lost. The source's baseFileHash is the same lost-update guard the save route uses; the frontend
+    // requires the source saved first, so the client's entry positions line up with the on-disk order.
     router.post('/files/:name/move-entries', async function (request, response) {
         const { name } = request.params;
         const { targetName, indexes, baseFileHash } = request.body || {};
@@ -398,25 +399,48 @@ const createFilesRouter = function ({ cwd }) {
             if (indexes.some(function (index) { return index >= sourceEntries.length; })) {
                 return sendErrorResponse(response, 409, 'An entry position is out of range - reload and try again');
             }
-            const targetEntries = parseVibraryXml(await readFile(targetPath, 'utf8'));
+            // The target is created when it does not exist yet (moving entries into a fresh file); otherwise the moved
+            // entries are appended to what is already there. Only a missing target is tolerated here - any other read
+            // failure propagates to the catch below.
+            let targetContent = null;
+            try {
+                targetContent = await readFile(targetPath, 'utf8');
+            } catch (readError) {
+                if (readError.code !== 'ENOENT') {
+                    throw readError;
+                }
+            }
+            const isTargetNew = targetContent === null;
+            const targetEntries = isTargetNew ? [] : parseVibraryXml(targetContent);
 
             const moveSet = new Set(indexes);
             const moved = sourceEntries.filter(function (_entry, index) { return moveSet.has(index); });
             const nextTargetContent = serializeVibraryXml([...targetEntries, ...moved]);
             const nextSourceContent = serializeVibraryXml(sourceEntries.filter(function (_entry, index) { return !moveSet.has(index); }));
 
-            // Target first (see the route comment) so a mid-move failure duplicates rather than loses.
-            await writeFileAtomic(targetPath, nextTargetContent, { encoding: 'utf8' });
+            // Target first (see the route comment) so a mid-move failure duplicates rather than loses. A brand-new
+            // target is created with the create-only flag ('wx'), so a file that appeared in the meantime is never
+            // silently overwritten - that race surfaces as a 409 instead.
+            if (isTargetNew) {
+                await mkdir(path.dirname(targetPath), { recursive: true });
+                await writeFile(targetPath, nextTargetContent, { encoding: 'utf8', flag: 'wx' });
+            } else {
+                await writeFileAtomic(targetPath, nextTargetContent, { encoding: 'utf8' });
+            }
             await writeFileAtomic(source, nextSourceContent, { encoding: 'utf8' });
 
             return sendSuccessResponse(response, {
                 movedCount: moved.length,
+                createdTarget: isTargetNew,
                 source: { name, fileHash: hashFileContent(nextSourceContent) },
                 target: { name: targetName, fileHash: hashFileContent(nextTargetContent) }
             });
         } catch (error) {
             if (error.code === 'ENOENT') {
                 return sendErrorResponse(response, 404, 'File not found');
+            }
+            if (error.code === 'EEXIST') {
+                return sendErrorResponse(response, 409, 'A file with the target name was created in the meantime');
             }
             console.error(`Failed to move entries from ${name} to ${targetName}:`, error);
             return sendErrorResponse(response, 500, 'Unable to move entries');

@@ -233,3 +233,21 @@ test('move-entries refuses a target that is the same file under a different name
     // The entry is still there - the move never ran, so the "append then overwrite" data loss cannot happen.
     assert.match((await requestJsonAsync('/files/specs-inode.xml')).body.output.content, /solo-entry/);
 });
+
+test('move-entries creates the target file when it does not exist yet', async function () {
+    writeFileSync(path.join(cwd, 'specs-split.xml'), [
+        '<root>', '    <entries>',
+        '        <entry type="spec"><title>alpha</title><content>A</content></entry>',
+        '        <entry type="spec"><title>beta</title><content>B</content></entry>',
+        '    </entries>', '</root>', ''
+    ].join('\n'));
+    // tasks-fresh.xml does not exist yet, but "tasks*.xml" includes it, so it can be created by the move.
+    const moved = await sendJsonAsync('/files/specs-split.xml/move-entries', { targetName: 'tasks-fresh.xml', indexes: [0] });
+    assert.equal(moved.status, 200);
+    assert.equal(moved.body.output.createdTarget, true);
+
+    const created = await requestJsonAsync('/files/tasks-fresh.xml');
+    assert.equal(created.status, 200);
+    assert.match(created.body.output.content, /<title>alpha<\/title>/); // the new file holds the moved entry
+    assert.doesNotMatch((await requestJsonAsync('/files/specs-split.xml')).body.output.content, /<title>alpha<\/title>/);
+});

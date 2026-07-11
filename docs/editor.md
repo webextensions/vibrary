@@ -82,8 +82,9 @@ status. The sort is view-only and never changes the saved file. Two buttons act 
   to, or strip it from, every ticked entry), **Remove broken references** (drops every dangling `relatesTo` reference -
   see below - from the ticked entries, touching only those that have one), **Change type** (opens a dialog to set every
   ticked entry to a chosen type at once), **Move to file** (opens a dialog to move the ticked entries into another
-  vibrary file - both the source and, if it is open, the destination must be saved first, and the moved entries are
-  appended to the destination), **Find & replace** (opens a dialog to
+  vibrary file - pick an existing file or type a new name to split them into a fresh file; the moved entries are
+  appended to the destination, and both the source and, if it is open, an existing destination must be saved first),
+  **Find & replace** (opens a dialog to
   replace a term across the ticked entries' content and notes - titles are left alone since they are `relatesTo`
   identifiers - with a **Match case** toggle and a live occurrence count), **Copy as Markdown** (copies the ticked entries as one Markdown
   document, so **Select all** then this copies the whole file), **Duplicate** (each ticked entry's copy is inserted
