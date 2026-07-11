@@ -52,7 +52,9 @@ entries with AI** opens a dialog where you pick what to create (specs / reviews 
 open file's name family), how many, and optional custom instructions for the run; a headless agent then appends that
 many entries of the chosen type to the file. **Duplicate** on a card clones it (a fresh entry with the same content,
 notes, labels and relations, but its own id, timestamps and an unapproved state) as a starting point for a similar
-one. **Remove** on a card deletes that entry.
+one. **Remove** on a card deletes that entry. The stacked up/down control at the start of a card's actions moves the
+entry one position in the file (disabled at the ends, and hidden while a filter is active since moving relative to
+hidden entries would be ambiguous).
 
 ## Bulk selection
 
