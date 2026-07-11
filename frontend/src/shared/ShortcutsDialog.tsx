@@ -20,16 +20,23 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
         heading: 'Editing',
         shortcuts: [
             { keys: [MOD, 'S'], description: 'Save the current file' },
-            { keys: ['Alt', 'Up'], description: 'Move to the previous entry card (not while typing)' },
-            { keys: ['Alt', 'Down'], description: 'Move to the next entry card (not while typing)' },
-            { keys: ['Home', 'End'], description: 'Jump to the first / last entry card (not while typing)' },
+            { keys: ['/'], description: 'Filter the entries by text (not while typing)' }
+        ]
+    },
+    {
+        // The cohesive keyboard workflow for the entry list: move focus between cards, then act on the focused one.
+        // They all share the "ignored while typing" caveat, so it lives once in the heading instead of on every row.
+        heading: 'Entry cards (not while typing in a field)',
+        shortcuts: [
+            { keys: ['Alt', 'Up'], description: 'Move to the previous entry card' },
+            { keys: ['Alt', 'Down'], description: 'Move to the next entry card' },
+            { keys: ['Home', 'End'], description: 'Jump to the first / last entry card' },
             { keys: ['Alt', 'Shift', 'Up'], description: 'Move the focused entry up (file order only)' },
             { keys: ['Alt', 'Shift', 'Down'], description: 'Move the focused entry down (file order only)' },
-            { keys: ['A'], description: 'Approve / reapprove the focused entry (not while typing)' },
-            { keys: ['E'], description: 'Edit / stop editing the focused entry (not while typing)' },
-            { keys: ['C'], description: 'Copy the focused entry as Markdown (not while typing)' },
-            { keys: ['D'], description: 'Duplicate the focused entry (not while typing)' },
-            { keys: ['/'], description: 'Filter the entries by text (not while typing)' }
+            { keys: ['A'], description: 'Approve / reapprove the focused entry' },
+            { keys: ['E'], description: 'Edit / stop editing the focused entry' },
+            { keys: ['C'], description: 'Copy the focused entry as Markdown' },
+            { keys: ['D'], description: 'Duplicate the focused entry' }
         ]
     },
     {
