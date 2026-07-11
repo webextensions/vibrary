@@ -45,7 +45,17 @@ const FileCountBadge = function ({ count }: { count: FileCount }) {
             </span>
         );
     }
-    return <span className={cx(styles.fileCount, styles.muted)}>{count.kind === 'error' ? '!' : '...'}</span>;
+    // The non-ready badges get their own tooltip too, so a bare "!" is not an unexplained glyph: the error case says
+    // the file could not be read/parsed (open it to see the specific parse error), and the loading case that the count
+    // is still arriving.
+    return (
+        <span
+            className={cx(styles.fileCount, styles.muted)}
+            title={count.kind === 'error' ? 'This file could not be read or parsed - open it to see the error' : 'Counting entries...'}
+        >
+            {count.kind === 'error' ? '!' : '...'}
+        </span>
+    );
 };
 
 // One row of the "Open Editors" list: the open tab's label (basename for files, the job name for activity tabs - same
