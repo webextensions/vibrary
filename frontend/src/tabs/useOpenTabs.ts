@@ -75,6 +75,17 @@ const useOpenTabs = function () {
     // Paths whose initial content has been requested, so the load effect fetches each new tab exactly once. An entry is
     // dropped when its tab closes, letting a reopened file fetch fresh.
     const requestedPathsReference = useRef<Set<string>>(new Set());
+    // Live mirror of state so getTab can read the CURRENT tab after an await (a long agent run), when the caller's
+    // captured `tabs` closure is stale - e.g. deciding whether a generate reload would clobber edits made mid-run.
+    // Mirrored in an effect (not during render) so the ref is only touched after commit.
+    const stateReference = useRef(state);
+    useEffect(function () {
+        stateReference.current = state;
+    }, [state]);
+
+    const getTab = useCallback(function (path: string): TabState | null {
+        return stateReference.current.tabs.find(function (tab) { return tab.path === path; }) ?? null;
+    }, []);
 
     const patchTab = useCallback(function (path: string, patch: Partial<TabState>) {
         setState(function (previous) {
@@ -235,7 +246,8 @@ const useOpenTabs = function () {
         reopenClosedTab,
         setActive,
         setInnerTab,
-        patchTab
+        patchTab,
+        getTab
     };
 };
 

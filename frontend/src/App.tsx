@@ -64,7 +64,7 @@ const App = function () {
     // necessary - the editor only acts when it matches the active tab.
     const [searchTarget, setSearchTarget] = useState<{ path: string; query: string; matchIndex: number; exactTitle: boolean } | null>(null);
 
-    const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab } =
+    const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab, getTab } =
         useOpenTabs();
     const { enqueue } = useActivityQueueActions();
     // The queue is in-memory, so a reload aborts the in-flight run and drops everything still queued. Track whether any
@@ -308,6 +308,22 @@ const App = function () {
                 return generateSpecs(path, type, count, instructions, { signal, onEvent });
             }
         });
+        // The run appended entries to the file on disk. If the user edited this tab DURING the (minutes-long) run, a
+        // blind reload would discard those edits, so ask first - Cancel keeps the in-memory edits (a later Save will
+        // hit the on-disk-changed 409 and re-offer overwrite), while the generated entries stay on disk either way.
+        // The tab is re-read live (getTab) because the captured activeTab closure predates the whole run.
+        const currentTab = getTab(path);
+        if (currentTab !== null && currentTab.dirty) {
+            const reload = await confirmDialog(
+                'Generated entries were added to the file on disk, but this tab has edits made while it ran. ' +
+                'Reload to see the new entries? Your unsaved edits will be lost.',
+                'Reload'
+            );
+            if (!reload) {
+                void refreshListing();
+                return;
+            }
+        }
         // parseError arrives in-band: if the agent left the file malformed, the tab shows the parse error with the
         // raw content visible instead of pretending the reload produced a clean model.
         const { content, fileHash, specs, schemas, parseError } = await loadVibraryFile(path);
@@ -319,10 +335,10 @@ const App = function () {
             parseError,
             dirty: false,
             status: { kind: 'idle' },
-            reloadNonce: activeTab.reloadNonce + 1
+            reloadNonce: (getTab(path)?.reloadNonce ?? activeTab.reloadNonce) + 1
         });
         void refreshListing();
-    }, [activeTab, enqueue, patchTab, refreshListing]);
+    }, [activeTab, enqueue, patchTab, getTab, refreshListing]);
 
     const onSpecsChange = useCallback(function (next: Spec[]) {
         if (activePath === null) {
