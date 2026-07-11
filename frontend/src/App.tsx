@@ -262,8 +262,9 @@ const App = function () {
         if (targetTab !== null && targetTab.kind === 'file' && targetTab.dirty) {
             return { ok: false, message: 'The target file has unsaved changes - save it first.' };
         }
+        let movedCount: number;
         try {
-            await moveEntries(activeTab.path, targetName, indexes, activeTab.fileHash);
+            movedCount = await moveEntries(activeTab.path, targetName, indexes, activeTab.fileHash);
         } catch (error) {
             return { ok: false, message: error instanceof Error ? error.message : 'Unable to move entries.' };
         }
@@ -272,6 +273,8 @@ const App = function () {
             await reloadTabFromDisk(targetName);
         }
         void handleRefresh();
+        // Confirm where they went: after the move the entries have left this file's view, so a toast is the only cue.
+        toast.success(`Moved ${movedCount} ${movedCount === 1 ? 'entry' : 'entries'} to ${targetName}`);
         return { ok: true };
     }, [activeTab, getTab, reloadTabFromDisk, handleRefresh]);
 
