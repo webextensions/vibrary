@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import { toast } from 'react-toastify';
@@ -477,6 +477,34 @@ const SpecsEditor = function (
         setSelectedIds(new Set());
     };
 
+    // Alt+ArrowUp/Down moves focus between visible cards (landing on the target card's select checkbox and scrolling
+    // it into view), so a keyboard user can traverse the list without Tabbing through every control of each card. Only
+    // fires when focus is already inside a card; every other key passes through untouched. Alt is used so the arrows
+    // stay free for text fields and native controls.
+    const handleListKeyDown = function (event: ReactKeyboardEvent<HTMLDivElement>) {
+        if (!event.altKey || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) {
+            return;
+        }
+        const order = shown.map(function ({ spec }) { return spec.id; });
+        if (order.length === 0) {
+            return;
+        }
+        const activeCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
+        const currentId = activeCard instanceof HTMLElement ? activeCard.dataset.specId ?? '' : '';
+        const currentIndex = order.indexOf(currentId);
+        const delta = event.key === 'ArrowDown' ? 1 : -1;
+        const nextIndex = currentIndex === -1 ?
+            (delta === 1 ? 0 : order.length - 1) :
+            Math.min(order.length - 1, Math.max(0, currentIndex + delta));
+        event.preventDefault();
+        const card = document.getElementById(`spec-${order[nextIndex]}`);
+        card?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        const checkbox = card?.querySelector('input[type="checkbox"]');
+        if (checkbox instanceof HTMLElement) {
+            checkbox.focus({ preventScroll: true });
+        }
+    };
+
     // Whether every currently-shown entry is expanded; flips the footer toggle between Expand all and Collapse all.
     const allShownExpanded = shown.length > 0 && shown.every(function ({ spec }) {
         return expandedIds.has(spec.id);
@@ -578,7 +606,7 @@ const SpecsEditor = function (
 
     return (
         <div className={styles.specsEditor}>
-            <div className={styles.scrollArea}>
+            <div className={styles.scrollArea} onKeyDown={handleListKeyDown}>
                 {specs.length > 0 && (showFilters || hasActiveFilter) &&
                 <div className={styles.specFilter}>
                     {hasActiveFilter &&

@@ -19,7 +19,9 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     {
         heading: 'Editing',
         shortcuts: [
-            { keys: [MOD, 'S'], description: 'Save the current file' }
+            { keys: [MOD, 'S'], description: 'Save the current file' },
+            { keys: ['Alt', 'Up'], description: 'Move to the previous entry card (when a card has focus)' },
+            { keys: ['Alt', 'Down'], description: 'Move to the next entry card (when a card has focus)' }
         ]
     },
     {

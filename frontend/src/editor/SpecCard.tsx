@@ -247,7 +247,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
         undefined;
 
     return (
-        <fieldset id={`spec-${value.id}`} className={cx(styles.specCard, highlighted && styles.highlighted)}>
+        <fieldset id={`spec-${value.id}`} data-spec-id={value.id} className={cx(styles.specCard, highlighted && styles.highlighted)}>
             <div className={styles.specCardHead}>
                 <input
                     type="checkbox"
