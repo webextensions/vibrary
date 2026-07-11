@@ -30,7 +30,8 @@ Initial release. A globally-installable local web app for browsing and editing v
 ### Navigation
 
 - Quick-open palette (`Cmd/Ctrl+K`) to jump to any file or entry by name, a keyboard-shortcuts help dialog (`?`),
-  full-text search across files, and per-folder session restore of open tabs.
+  full-text search across files (matching entry title, content, notes, and labels), and per-folder session restore
+  of open tabs.
 
 ### Git and agents
 

@@ -48,3 +48,28 @@ test('search enforces the two-character floor and trims the needle', async funct
     const padded = await searchVibrary(directory, '  needle ');
     assert.equal(padded.results[0].matches.length, 2);
 });
+
+test('search matches an entry by its labels, ranked after the text fields', async function () {
+    const directory = mkdtempSync(path.join(tmpdir(), 'vibrary-search-labels-'));
+    writeFileSync(path.join(directory, '.vibraryinclude'), 'specs*.xml\n');
+    writeFileSync(path.join(directory, 'specs.xml'), [
+        '<root><entries>',
+        // Entry 0: the term lives ONLY in a label - unmatchable before labels were searched.
+        '  <entry type="spec"><title>alpha</title><content>plain body</content>',
+        '    <labels><label>backend</label><label>urgent</label></labels></entry>',
+        // Entry 1: the term is in the content AND a label - the content snippet must win (labels rank last).
+        '  <entry type="spec"><title>beta</title><content>a backend change</content>',
+        '    <labels><label>backend</label></labels></entry>',
+        '</entries></root>'
+    ].join('\n'));
+
+    const { results } = await searchVibrary(directory, 'backend');
+    const matches = results[0].matches;
+    assert.deepEqual(matches.map(function (match) { return match.entryIndex; }), [0, 1]);
+    // Entry 0 matched via its labels, with only the label(s) containing the needle in the snippet.
+    assert.equal(matches[0].field, 'labels');
+    assert.equal(matches[0].snippet, 'backend');
+    // Entry 1 matched via content first, so the richer text snippet wins over the label.
+    assert.equal(matches[1].field, 'content');
+    assert.equal(matches[1].snippet, 'a backend change');
+});

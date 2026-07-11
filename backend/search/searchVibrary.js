@@ -29,13 +29,23 @@ const buildSnippet = function (text, needle) {
     return text.slice(lineStart, lineEnd).trim().slice(0, MAX_SNIPPET_LENGTH);
 };
 
-// The first field of `entry` containing the needle, with its snippet - or null for a non-matching entry.
+// The first field of `entry` containing the needle, with its snippet - or null for a non-matching entry. The three
+// text fields are checked first (in snippet-preference order); labels are checked last, so a term that also appears in
+// the title/content/notes still surfaces the richer text snippet, and a labels-only match is caught rather than missed.
 const matchEntry = function (entry, needle) {
     for (const field of SEARCH_FIELDS) {
         const snippet = buildSnippet(entry[field], needle);
         if (snippet !== null) {
             return { field, snippet };
         }
+    }
+    // Labels are an array, not a line of text, so they cannot go through buildSnippet; match any label containing the
+    // needle and surface the matching labels (comma-joined, capped) as the snippet.
+    const matchingLabels = entry.labels.filter(function (label) {
+        return label.toLowerCase().includes(needle);
+    });
+    if (matchingLabels.length > 0) {
+        return { field: 'labels', snippet: matchingLabels.join(', ').slice(0, MAX_SNIPPET_LENGTH) };
     }
     return null;
 };
@@ -58,8 +68,8 @@ const collectMatchesInFile = function (entries, needle, limit) {
 };
 
 // Case-insensitive ENTRY search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary
-// files), so Search and Explorer always agree on scope. A match is an entry whose title/content/notes contain the
-// query - one match per entry, however many times the query occurs - and carries the entry's index within its file,
+// files), so Search and Explorer always agree on scope. A match is an entry whose title/content/notes/labels contain
+// the query - one match per entry, however many times the query occurs - and carries the entry's index within its file,
 // so a clicked result addresses the editor's parsed entries directly (both sides parse the same file). Searching the
 // parsed fields rather than the raw XML also keeps markup out of the results: a query like "task" no longer floods
 // the panel with <entry type="task"> lines. A file that cannot be read OR parsed is skipped (its entries are not
