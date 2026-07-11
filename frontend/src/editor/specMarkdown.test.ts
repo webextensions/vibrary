@@ -21,6 +21,8 @@ test('a full entry renders heading, content, and every present optional section'
         [
             '# ship-the-thing',
             '',
+            '_task_',
+            '',
             'Do the work.\nThen verify it.',
             '',
             '## Notes',
@@ -37,5 +39,5 @@ test('a full entry renders heading, content, and every present optional section'
 
 test('a bare entry omits the optional sections and uses the untitled placeholder', function () {
     const spec = { ...emptySpec('idea'), content: 'Just a thought.' };
-    assert.equal(specToMarkdown(spec), '# untitled idea\n\nJust a thought.\n');
+    assert.equal(specToMarkdown(spec), '# untitled idea\n\n_idea_\n\nJust a thought.\n');
 });

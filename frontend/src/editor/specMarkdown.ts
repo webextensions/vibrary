@@ -6,7 +6,9 @@ import { type Spec } from '../xml/vibraryXml.ts';
 // (timestamps, approval, ids) are deliberately left out - this shares the substance of an entry, not its metadata.
 const specToMarkdown = function (spec: Spec): string {
     const heading = spec.title !== '' ? spec.title : `untitled ${spec.type}`;
-    const lines = [`# ${heading}`, '', spec.content.trim()];
+    // The entry type as an italic subtitle, so a copied set of mixed entries says which is a spec / task / review /
+    // idea rather than looking like undifferentiated headings.
+    const lines = [`# ${heading}`, '', `_${spec.type}_`, '', spec.content.trim()];
     if (spec.notes.trim() !== '') {
         lines.push('', '## Notes', '', spec.notes.trim());
     }
