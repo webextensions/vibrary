@@ -23,6 +23,12 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
         ]
     },
     {
+        heading: 'Navigation',
+        shortcuts: [
+            { keys: [MOD, 'K'], description: 'Quick-open a file by name' }
+        ]
+    },
+    {
         heading: 'Tabs',
         shortcuts: [
             { keys: [MOD, 'Shift', 'T'], description: 'Reopen the last closed tab' },

@@ -11,6 +11,7 @@ import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
 import { confirmDialog } from './shared/confirmDialog.ts';
 import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
+import { QuickOpen } from './shared/QuickOpen.tsx';
 import { ShortcutsDialog } from './shared/ShortcutsDialog.tsx';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './explorer/useFileCounts.ts';
@@ -66,6 +67,8 @@ const App = function () {
     const [searchTarget, setSearchTarget] = useState<{ path: string; query: string; matchIndex: number; exactTitle: boolean } | null>(null);
     // The keyboard-shortcuts help dialog, opened by the "?" key or the rail's help button.
     const [shortcutsOpen, setShortcutsOpen] = useState<boolean>(false);
+    // The quick-open file palette (Cmd/Ctrl+K).
+    const [quickOpenOpen, setQuickOpenOpen] = useState<boolean>(false);
 
     const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab, getTab } =
         useOpenTabs();
@@ -271,6 +274,13 @@ const App = function () {
                     event.preventDefault();
                     reopenClosedTab();
                 }
+                return;
+            }
+            // Cmd/Ctrl+K opens the quick-open file palette, the binding VS Code and most editors use for it. Prevent
+            // default so the browser does not hijack it (Chrome focuses the address bar on Ctrl+K).
+            if (!event.shiftKey && !event.altKey && key === 'k') {
+                event.preventDefault();
+                setQuickOpenOpen(true);
                 return;
             }
             if (event.shiftKey || event.altKey || key !== 's') {
@@ -648,6 +658,15 @@ const App = function () {
                     setShortcutsOpen(false);
                 }}
             />
+
+            {quickOpenOpen &&
+            <QuickOpen
+                files={files}
+                onOpen={handleOpen}
+                onClose={function () {
+                    setQuickOpenOpen(false);
+                }}
+            />}
         </div>
     );
 };
