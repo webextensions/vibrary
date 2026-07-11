@@ -3,6 +3,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import { startAppAsync } from '../shared/testHelpers.js';
 
@@ -14,6 +15,10 @@ import { startAppAsync } from '../shared/testHelpers.js';
 const FAKE_CLAUDE = String.raw`#!/bin/sh
 case "$2" in
     *FAIL*) echo "agent exploded" >&2; exit 3 ;;
+    *SLEEP*)
+        sleep 1
+        printf '{"type":"result","result":"slow done"}\n'
+        ;;
     *)
         printf '{"type":"system","subtype":"init","session_id":"11111111-2222-3333-4444-555555555555"}\n'
         printf '{"type":"result","result":"all done"}\n'
@@ -65,6 +70,22 @@ test('a clean run streams the prompt echo, the CLI lines, and a code-0 _exit ter
 test('a failing run terminates the stream with a code-1 _exit carrying the stderr text', async function () {
     const lines = await streamLinesAsync('/run-task', { title: 'demo', content: 'please FAIL' });
     assert.deepEqual(lines.at(-1), { type: '_exit', code: 1, error: 'agent exploded' });
+});
+
+test('a second run while one is active is refused with a 409, and the slot frees afterwards', async function () {
+    const first = streamLinesAsync('/apply', { title: 'demo', content: 'please SLEEP a while' });
+    await delay(200); // let the first request claim the run slot and spawn
+
+    // Any streaming agent route contends for the same slot; validation failures never claim it.
+    const rejected = await sendJsonAsync('/run-task', { title: 'demo', content: 'do the thing' });
+    assert.equal(rejected.status, 409);
+    assert.match(rejected.body.errorMessage ?? '', /already in progress/);
+
+    assert.deepEqual((await first).at(-1), { type: '_exit', code: 0, error: null });
+
+    // The slot is released once the run ended, so the next run streams normally.
+    const second = await streamLinesAsync('/run-task', { title: 'demo', content: 'do the thing' });
+    assert.deepEqual(second.at(-1), { type: '_exit', code: 0, error: null });
 });
 
 test('validation failures answer the plain JSON envelope, not a stream', async function () {

@@ -29,11 +29,23 @@ const MAX_APPLY_BATCH_COUNT = 50;
 const createAgentsRouter = function ({ cwd }) {
     const router = Router();
 
+    // The frontend's activity queue runs agent jobs strictly one at a time, but a frontend-only invariant is not a
+    // safety boundary: a second browser tab, a retried request, or a direct API caller could otherwise run concurrent
+    // agents editing the same working tree (and racing each other's git operations). One in-process flag is enough -
+    // the server serves exactly one folder. The buffered read-only helpers (/title, /git/generate-message) stay
+    // unguarded on purpose: the UI runs them alongside a queued job by design.
+    let isAgentRunActive = false;
+
     // Stream a "claude -p" run to the client as newline-delimited JSON (claude's own stream-json lines, one per write),
     // followed by a terminal {"type":"_exit",...} line carrying the process outcome. `runner({ signal, onLine })` runs
     // the agent. Cache-Control: no-transform makes the compression middleware pass the body through unbuffered so lines
-    // reach the browser as they arrive. On an abort the client is already gone, so we just stop writing.
+    // reach the browser as they arrive. On an abort the client is already gone, so we just stop writing. Every route
+    // funnels through here AFTER its validation, so only requests that actually start a run contend for the one slot.
     const streamClaudeRoute = async function (request, response, runner) {
+        if (isAgentRunActive) {
+            return sendErrorResponse(response, 409, 'Another agent run is already in progress');
+        }
+        isAgentRunActive = true;
         const controller = abortOnDisconnect(request, response);
         response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
         response.setHeader('Cache-Control', 'no-transform');
@@ -55,6 +67,7 @@ const createAgentsRouter = function ({ cwd }) {
                 writeLine(JSON.stringify({ type: '_exit', code: 1, error: error.message }));
             }
         } finally {
+            isAgentRunActive = false;
             if (!response.writableEnded) {
                 response.end();
             }
