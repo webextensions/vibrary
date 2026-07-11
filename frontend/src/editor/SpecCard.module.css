@@ -191,6 +191,7 @@
 .dangling-refs-warning {
     display: inline-flex;
     align-items: center;
+    gap: 6px;
     flex-shrink: 0;
     padding: 1px 6px;
     border: 1px solid #d4a72c;
@@ -200,6 +201,19 @@
     font-size: 11px;
     white-space: nowrap;
     cursor: help;
+}
+
+/* One-click cleanup inside the broken-references badge: drop the dangling references from this entry (the counterpart
+   of the duplicate-title warning's "Make unique"). */
+.dangling-refs-fix {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #9a6700;
+    font: inherit;
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 /* Stale approval: content changed since sign-off, prompting a reapprove */

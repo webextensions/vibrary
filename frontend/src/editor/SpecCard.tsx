@@ -349,9 +349,19 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                     {danglingReferences.size > 0 &&
                     <span
                         className={styles.danglingRefsWarning}
-                        title={`Points to no entry: ${[...danglingReferences].join(', ')}. Expand the card to see (and fix) the broken "Relates to" reference${danglingReferences.size === 1 ? '' : 's'}.`}
+                        title={`Points to no entry: ${[...danglingReferences].join(', ')}. These "Relates to" reference${danglingReferences.size === 1 ? '' : 's'} resolve to nothing (their targets were renamed or removed).`}
                     >
                         {danglingReferences.size} broken {danglingReferences.size === 1 ? 'reference' : 'references'}
+                        <button
+                            type="button"
+                            className={styles.danglingRefsFix}
+                            title="Remove the broken references from this entry"
+                            onClick={function () {
+                                update({ relatesTo: value.relatesTo.filter(function (title) { return !danglingReferences.has(title); }) });
+                            }}
+                        >
+                            Remove
+                        </button>
                     </span>}
                 </div>
                 <div className={styles.specCardActions}>
