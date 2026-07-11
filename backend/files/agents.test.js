@@ -88,6 +88,22 @@ test('a second run while one is active is refused with a 409, and the slot frees
     assert.deepEqual(second.at(-1), { type: '_exit', code: 0, error: null });
 });
 
+test('content that would overflow the single argv argument is refused with a 413', async function () {
+    // Comfortably over the 96 KiB prompt budget, but well under the 10 MB body limit, so it reaches the guard.
+    const huge = 'x'.repeat(200 * 1024);
+
+    const applied = await sendJsonAsync('/apply', { title: 'demo', content: huge });
+    assert.equal(applied.status, 413);
+    assert.match(applied.body.errorMessage ?? '', /too large/);
+
+    // The batch limit applies to the entries' COMBINED text, not each one: several under-limit entries still overflow.
+    const entries = [1, 2, 3].map(function () {
+        return { title: 'demo', content: 'y'.repeat(40 * 1024) };
+    });
+    const batched = await sendJsonAsync('/apply-batch', { entries });
+    assert.equal(batched.status, 413);
+});
+
 test('validation failures answer the plain JSON envelope, not a stream', async function () {
     const { status, body } = await sendJsonAsync('/apply', { title: 'demo', content: '' });
     assert.equal(status, 400);

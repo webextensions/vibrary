@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer';
+
 import { Router } from 'express';
 
 import { ENTRY_TYPES } from '../../shared/vibraryXmlCore.js';
@@ -25,6 +27,23 @@ const SESSION_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 // select-everything-in-a-huge-file request before the single-argv prompt hits OS limits (Linux caps one argument
 // around 128 KiB) or the model's context; normal batches are far smaller.
 const MAX_APPLY_BATCH_COUNT = 50;
+
+// The assembled prompt is handed to claude as a SINGLE argv argument, and the OS caps one argument's byte length
+// (Linux's MAX_ARG_STRLEN is 128 KiB). Oversized user text would otherwise fail the spawn with an opaque E2BIG only
+// after a "run" appeared to start; the routes reject it up front with a clear 413 instead. Measured in UTF-8 bytes
+// (the OS limit is bytes, not characters) and kept well under 128 KiB to leave room for the fixed prompt template
+// wrapping the user's text.
+const MAX_PROMPT_BYTES = 96 * 1024;
+
+// Total UTF-8 byte size of the user-supplied text that will land in the prompt; non-string parts count as zero, so
+// callers can pass raw body fields before their own type coercion.
+const promptBytes = function (...parts) {
+    return parts.reduce(function (total, part) {
+        return total + (typeof part === 'string' ? Buffer.byteLength(part, 'utf8') : 0);
+    }, 0);
+};
+
+const PROMPT_TOO_LARGE_MESSAGE = `Content is too large to send to the agent (limit ${MAX_PROMPT_BYTES / 1024} KB)`;
 
 const createAgentsRouter = function ({ cwd }) {
     const router = Router();
@@ -95,6 +114,9 @@ const createAgentsRouter = function ({ cwd }) {
         if (!Number.isSafeInteger(count) || count < 1 || count > MAX_GENERATE_COUNT) {
             return sendErrorResponse(response, 400, `Expected an integer "count" between 1 and ${MAX_GENERATE_COUNT}`);
         }
+        if (promptBytes(instructions) > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
+        }
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
             return generateSpecsAsync({ cwd, name, type, count, instructions: typeof instructions === 'string' ? instructions : '', signal, onLine });
@@ -107,6 +129,9 @@ const createAgentsRouter = function ({ cwd }) {
         const { title, content, notes, instructions } = request.body || {};
         if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
             return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
+        }
+        if (promptBytes(title, content, notes, instructions) > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
         }
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
@@ -128,6 +153,9 @@ const createAgentsRouter = function ({ cwd }) {
         const { title, content, notes, instructions, options } = request.body || {};
         if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
             return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
+        }
+        if (promptBytes(title, content, notes, instructions, options) > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
         }
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
@@ -154,6 +182,9 @@ const createAgentsRouter = function ({ cwd }) {
         if (typeof sessionId !== 'string' || !SESSION_ID_REGEX.test(sessionId)) {
             return sendErrorResponse(response, 400, 'Expected "sessionId" to be a session UUID');
         }
+        if (promptBytes(message) > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
+        }
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
             return runChatAsync({ cwd, message, sessionId, signal, onLine });
@@ -176,6 +207,13 @@ const createAgentsRouter = function ({ cwd }) {
         });
         if (!valid) {
             return sendErrorResponse(response, 400, 'Each entry needs a string "title" and a non-empty "content"');
+        }
+        // The whole batch becomes one prompt, so the argv limit applies to the entries' combined text, not each entry.
+        const batchBytes = entries.reduce(function (total, entry) {
+            return total + promptBytes(entry.title, entry.content, entry.notes);
+        }, promptBytes(instructions));
+        if (batchBytes > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
         }
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
