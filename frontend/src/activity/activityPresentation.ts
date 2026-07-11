@@ -27,12 +27,7 @@ const STATUS_LABEL: Record<JobStatus, string> = {
     aborted: 'Aborted'
 };
 
-// mm:ss for an elapsed span; the running job ticks live, finished jobs show their final duration.
-const formatDuration = function (milliseconds: number): string {
-    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${String(seconds).padStart(2, '0')}`;
-};
-
-export { FINISHED_STATUSES, formatDuration, KIND_META, STATUS_LABEL };
+// formatDuration lives in its own module (kept there so it stays node-testable, free of the icon imports above) but is
+// re-exported here so existing importers keep getting it from this shared presentation vocabulary.
+export { formatDuration } from './formatDuration.ts';
+export { FINISHED_STATUSES, KIND_META, STATUS_LABEL };
