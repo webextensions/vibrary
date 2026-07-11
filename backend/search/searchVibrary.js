@@ -17,7 +17,14 @@ const MIN_QUERY_LENGTH = 2;
 // The entry fields a match can live in, in the order the snippet prefers them.
 const SEARCH_FIELDS = ['title', 'content', 'notes'];
 
-// The trimmed, length-capped line around the needle's first occurrence in `text`, or null when it does not occur.
+// How much of the matched line to keep before the needle when the line is too long to show whole, so the match sits
+// just inside the window rather than at its very edge.
+const SNIPPET_CONTEXT_BEFORE = 30;
+
+// The trimmed, length-capped snippet around the needle's first occurrence in `text`, or null when it does not occur.
+// A line that fits within the cap is returned whole; a longer one is windowed AROUND the match (with "..." marking a
+// clipped end) rather than sliced from the line start - otherwise a match far into a long line would be cut off and the
+// snippet would not even contain the term the user searched for.
 const buildSnippet = function (text, needle) {
     const at = text.toLowerCase().indexOf(needle);
     if (at === -1) {
@@ -26,7 +33,16 @@ const buildSnippet = function (text, needle) {
     const lineStart = text.lastIndexOf('\n', at) + 1;
     const lineEndRaw = text.indexOf('\n', at);
     const lineEnd = lineEndRaw === -1 ? text.length : lineEndRaw;
-    return text.slice(lineStart, lineEnd).trim().slice(0, MAX_SNIPPET_LENGTH);
+    const line = text.slice(lineStart, lineEnd);
+    if (line.length <= MAX_SNIPPET_LENGTH) {
+        return line.trim();
+    }
+    // Window the long line so the match is visible: start a little before it, take one snippet's worth, and pull the
+    // start back if that ran past the line end so the window stays full.
+    const matchInLine = at - lineStart;
+    const end = Math.min(line.length, Math.max(0, matchInLine - SNIPPET_CONTEXT_BEFORE) + MAX_SNIPPET_LENGTH);
+    const start = Math.max(0, end - MAX_SNIPPET_LENGTH);
+    return `${start > 0 ? '...' : ''}${line.slice(start, end).trim()}${end < line.length ? '...' : ''}`;
 };
 
 // The first field of `entry` containing the needle, with its snippet - or null for a non-matching entry. The three

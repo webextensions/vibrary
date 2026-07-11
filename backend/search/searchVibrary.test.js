@@ -73,3 +73,20 @@ test('search matches an entry by its labels, ranked after the text fields', asyn
     assert.equal(matches[1].field, 'content');
     assert.equal(matches[1].snippet, 'a backend change');
 });
+
+test('a match far into a long line is windowed so the snippet still contains the term', async function () {
+    const directory = mkdtempSync(path.join(tmpdir(), 'vibrary-search-snippet-'));
+    writeFileSync(path.join(directory, '.vibraryinclude'), 'specs*.xml\n');
+    // One long single-line content with the needle ~250 chars in - past the 200-char snippet cap, so a from-the-start
+    // slice would omit it entirely.
+    const content = `${'a'.repeat(250)}zzz findme zzz`;
+    writeFileSync(path.join(directory, 'specs.xml'), `<root><entries><entry type="spec"><title>long</title><content>${content}</content></entry></entries></root>`);
+
+    const { results } = await searchVibrary(directory, 'findme');
+    const snippet = results[0].matches[0].snippet;
+    // The whole point: the searched term is actually in the snippet (a start-anchored slice would have dropped it).
+    assert.ok(snippet.includes('findme'), `snippet should contain the match, got ${JSON.stringify(snippet)}`);
+    // The clipped leading end is marked, and the line ends at the match's tail so there is no trailing ellipsis.
+    assert.ok(snippet.startsWith('...'), 'a clipped start is marked with an ellipsis');
+    assert.ok(!snippet.endsWith('...'), 'the window reaches the line end, so no trailing ellipsis');
+});
