@@ -105,6 +105,12 @@ const SpecsEditor = function (
         return new Set();
     });
 
+    // Ids of specs whose extra-fields section is open. Lifted from the card (was local) so the footer's "Expand all /
+    // Collapse all" can drive every visible card at once; a card still toggles its own via the chevron.
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(function () {
+        return new Set();
+    });
+
     const { enqueue } = useActivityQueueActions();
 
     // Id of the entry briefly ring-highlighted after the file was opened from a Search result; cleared on a timer.
@@ -188,6 +194,18 @@ const SpecsEditor = function (
 
     const toggleSelect = function (id: string) {
         setSelectedIds(function (previous) {
+            const next = new Set(previous);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const toggleExpand = function (id: string) {
+        setExpandedIds(function (previous) {
             const next = new Set(previous);
             if (next.has(id)) {
                 next.delete(id);
@@ -432,6 +450,28 @@ const SpecsEditor = function (
         setSelectedIds(new Set());
     };
 
+    // Whether every currently-shown entry is expanded; flips the footer toggle between Expand all and Collapse all.
+    const allShownExpanded = shown.length > 0 && shown.every(function ({ spec }) {
+        return expandedIds.has(spec.id);
+    });
+
+    // Expand or collapse the extra-fields section of every VISIBLE entry at once (a filter may hide others, which are
+    // left as they were), mirroring how Select all operates only on the shown set.
+    const toggleExpandAll = function () {
+        const shownIds = shown.map(function ({ spec }) { return spec.id; });
+        setExpandedIds(function (previous) {
+            const next = new Set(previous);
+            for (const id of shownIds) {
+                if (allShownExpanded) {
+                    next.delete(id);
+                } else {
+                    next.add(id);
+                }
+            }
+            return next;
+        });
+    };
+
     // Apply a transform to every selected entry, stamping each as a fresh human edit - matching the single-card path
     // (SpecCard's onChange flows through updateAt, which stamps updated/updatedBy the same way).
     const updateSelected = function (transform: (spec: Spec) => Spec) {
@@ -575,6 +615,10 @@ const SpecsEditor = function (
                             onToggleSelect={function () {
                                 toggleSelect(spec.id);
                             }}
+                            expanded={expandedIds.has(spec.id)}
+                            onToggleExpand={function () {
+                                toggleExpand(spec.id);
+                            }}
                         />
                     );
                 })}
@@ -602,6 +646,14 @@ const SpecsEditor = function (
                     onClick={deselectAll}
                 >
                     Deselect all
+                </button>
+                <button
+                    type="button"
+                    className={styles.selectLink}
+                    disabled={shown.length === 0}
+                    onClick={toggleExpandAll}
+                >
+                    {allShownExpanded ? 'Collapse all' : 'Expand all'}
                 </button>
                 <div className={styles.actionsAnchor} ref={operationsReference}>
                     {operationsOpen &&

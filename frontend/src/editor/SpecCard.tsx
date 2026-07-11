@@ -43,7 +43,11 @@ type SpecCardProperties = {
     onRemove: () => void;
     onDuplicate: () => void;
     selected: boolean;
-    onToggleSelect: () => void
+    onToggleSelect: () => void;
+    // Whether this card's extra-fields section (notes/labels/relates-to/metadata/run) is open. Lifted to the editor so
+    // a single "Expand all / Collapse all" control can drive every card at once.
+    expanded: boolean;
+    onToggleExpand: () => void
 };
 
 const toOptions = function (values: string[]): Option[] {
@@ -120,10 +124,9 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
-    const [expanded, setExpanded] = useState(false);
     const [populating, setPopulating] = useState(false);
 
     const update = function (patch: Partial<Spec>) {
@@ -246,11 +249,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                         className={styles.expandToggle}
                         aria-expanded={expanded}
                         aria-label={expanded ? 'Collapse extra fields' : 'Expand extra fields'}
-                        onClick={function () {
-                            setExpanded(function (open) {
-                                return !open;
-                            });
-                        }}
+                        onClick={onToggleExpand}
                     >
                         <ChevronIcon />
                     </button>
