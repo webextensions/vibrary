@@ -151,6 +151,11 @@ const SourceControlPanel = function () {
     const [pushing, setPushing] = useState(false);
     const [pulling, setPulling] = useState(false);
     const [stashing, setStashing] = useState(false);
+    // A stage/unstage/discard or stash apply/pop/drop request in flight. These share the two runStatusAction/
+    // runStashAction helpers, so one flag covers them all: it feeds `busy` below, which disables every row/group/stash
+    // button. Without it a fast double-click double-submits, and two overlapping mutations each end in a setStatus,
+    // letting an older response (computed before the second action) land last and show stale state.
+    const [mutating, setMutating] = useState(false);
     // Errors and notices from an action (stage, commit, push, generate), shown above the commit box.
     const [actionError, setActionError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -269,17 +274,21 @@ const SourceControlPanel = function () {
         );
     }
 
-    const busy = generating || committing || pushing || pulling || stashing;
+    const busy = generating || committing || pushing || pulling || stashing || mutating;
 
     // Run an action that returns refreshed status, surfacing any failure as the action error. Used by
-    // stage/unstage/discard so a single round trip both mutates and re-renders.
+    // stage/unstage/discard so a single round trip both mutates and re-renders. `mutating` disables the other buttons
+    // while it runs, so only one such action is ever in flight - no double-submit, no stale-response clobbering.
     const runStatusAction = async function (action: () => Promise<GitStatus>) {
         setActionError(null);
         setNotice(null);
+        setMutating(true);
         try {
             setStatus(await action());
         } catch (error) {
             setActionError((error as Error).message);
+        } finally {
+            setMutating(false);
         }
     };
 
@@ -287,12 +296,15 @@ const SourceControlPanel = function () {
     const runStashAction = async function (action: () => Promise<GitStashResult>) {
         setActionError(null);
         setNotice(null);
+        setMutating(true);
         try {
             const result = await action();
             setStatus(result.status);
             setStashes(result.stashes);
         } catch (error) {
             setActionError((error as Error).message);
+        } finally {
+            setMutating(false);
         }
     };
 
