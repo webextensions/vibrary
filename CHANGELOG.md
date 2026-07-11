@@ -24,8 +24,8 @@ Initial release. A globally-installable local web app for browsing and editing v
   count, a one-click "make unique" fix for a title duplicated within or across files, and up/down reordering.
 - Broken "Relates to" references (pointing at a title no entry has) are flagged - an amber chip on the reference, a
   header badge on the entry, and a per-file count in the sidebar - and cleared in one click on a card or in bulk.
-- Bulk selection operations (approve, remove approval, add / remove label, remove broken references, copy as Markdown,
-  duplicate, delete) and a batch agent apply.
+- Bulk selection operations (approve, remove approval, add / remove label, remove broken references, find & replace
+  across content and notes, copy as Markdown, duplicate, delete) and a batch agent apply.
 - Filter entries by approval status, type, label, creator (Human / AI), or free text, with a one-click clear; a
   per-file approval meter; and a view-only sort (file order, title, recently updated, or approval status).
 - Save the active file (Ctrl/Cmd+S) or, when several are unsaved, every open file at once (Save all in the Open

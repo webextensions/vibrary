@@ -14,11 +14,13 @@ import { promptDialog } from '../shared/promptDialog.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { moveEntry } from './moveEntry.ts';
+import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
-import { AiIcon, ClickIcon, CloseIcon, CopyIcon, LabelIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
+import { AiIcon, ClickIcon, CloseIcon, CopyIcon, EditIcon, LabelIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
+import { FindReplaceDialog } from './FindReplaceDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 
 import formStyles from './forms.module.css';
@@ -212,6 +214,9 @@ const SpecsEditor = function (
     // The "Operations" popup above the footer: bulk approve / remove-approval / delete over the selected entries.
     const [operationsOpen, setOperationsOpen] = useState(false);
     const operationsReference = useRef<HTMLDivElement>(null);
+    // Find & replace across the selected entries; SpecsEditor owns whether the dialog is open (its form state lives in
+    // the dialog, which is mounted only while open).
+    const [findReplaceOpen, setFindReplaceOpen] = useState(false);
 
     // The "+" button expands into a speed-dial menu offering manual vs AI entry creation; the AI choice opens
     // CreateEntriesDialog, which owns its own form state.
@@ -755,6 +760,17 @@ const SpecsEditor = function (
         toast.success(`Removed ${removedCount} broken ${removedCount === 1 ? 'reference' : 'references'} from ${touchedCount} ${touchedCount === 1 ? 'entry' : 'entries'}`);
     };
 
+    // Apply the Find & replace dialog's terms across the selected entries' content and notes. replaceInEntries rewrites
+    // (and re-stamps) only entries that actually contained the term; a toast reports the result.
+    const handleReplaceAll = function (find: string, replace: string) {
+        const result = replaceInEntries(specs, find, replace, selectedIds, nowTimestamp());
+        if (result.entriesChanged === 0) {
+            return;
+        }
+        onChange(result.specs);
+        toast.success(`Replaced ${result.occurrences} ${result.occurrences === 1 ? 'occurrence' : 'occurrences'} across ${result.entriesChanged} ${result.entriesChanged === 1 ? 'entry' : 'entries'}`);
+    };
+
     // Duplicate every selected entry in place, each inserted right after its own source - the bulk counterpart to the
     // single-card Duplicate button. Unlike duplicateAt, no single card to scroll to or focus, so the new entries are
     // left in review mode and the selection is cleared (it described the originals, not the copies).
@@ -976,6 +992,7 @@ const SpecsEditor = function (
                         <button type="button" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveLabel}><LabelIcon /><span>Remove label</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveBrokenReferences}><CloseIcon /><span>Remove broken references</span></button>
+                        <button type="button" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setFindReplaceOpen(true); }}><EditIcon /><span>Find &amp; replace...</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
                         <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
@@ -1092,6 +1109,18 @@ const SpecsEditor = function (
                 }}
                 defaultEntryType={defaultEntryType}
                 onGenerate={onGenerate}
+            />}
+
+            {findReplaceOpen &&
+            <FindReplaceDialog
+                onClose={function () {
+                    setFindReplaceOpen(false);
+                }}
+                selectedCount={selectedSpecs.length}
+                countFor={function (find) {
+                    return countReplaceable(specs, find, selectedIds);
+                }}
+                onReplace={handleReplaceAll}
             />}
         </div>
     );
