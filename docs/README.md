@@ -51,6 +51,17 @@ edit files as your user without asking - only run vibrary in folders, and on ent
 apply: cancelling a run (or refreshing the page) kills the agent's whole process tree, and every run's exact prompt
 is visible in the Activity monitor via the initial bubble's "Full" view.
 
+## Source control
+
+When the served folder is a Git repository, the source-control view (the branch icon in the navigation rail) is a small
+Git panel over it. It lists the working tree's changes grouped as staged and unstaged; stages, unstages, and discards
+files (discarding a file, or deleting an untracked one, is confirmed first, and a file's changes can be viewed before
+you discard them); and commits, pushes, and pulls. **Generate** drafts a commit message from the staged diff with a
+headless Claude run - the same agent machinery as the editor's actions - which you can edit before committing. A stash
+section saves the current changes (untracked files included) and applies, pops, or drops entries. The panel refreshes
+itself when an agent run finishes touching files, so a commit or apply that edited the tree shows up without a manual
+refresh.
+
 ## Development
 
 ### Working on vibrary itself
