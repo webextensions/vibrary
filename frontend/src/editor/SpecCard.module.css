@@ -117,6 +117,9 @@
 /* Duplicate-title warning chip beside the title, in the same amber family as the stale-approval state: both mean
  * "this entry needs attention before its metadata can be trusted". */
 .duplicate-title-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     flex-shrink: 0;
     padding: 1px 6px;
     border: 1px solid #d4a72c;
@@ -125,6 +128,18 @@
     color: #9a6700;
     font-size: 11px;
     white-space: nowrap;
+}
+
+/* One-click de-dup action inside the warning pill: append a numeric suffix to make the title unique. */
+.duplicate-title-fix {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #9a6700;
+    font: inherit;
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 /* Stale approval: content changed since sign-off, prompting a reapprove */

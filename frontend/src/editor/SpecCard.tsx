@@ -11,6 +11,7 @@ import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { specToMarkdown } from './specMarkdown.ts';
+import { uniqueTitle } from './uniqueTitle.ts';
 import { AGENTS, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
@@ -303,6 +304,16 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                         title="Another entry in this file has the same title. Titles are how entries reference each other (relatesTo), so a duplicated title makes those references ambiguous."
                     >
                         duplicate title
+                        <button
+                            type="button"
+                            className={styles.duplicateTitleFix}
+                            title="Append a numeric suffix to make this title unique in the file"
+                            onClick={function () {
+                                update({ title: uniqueTitle(value.title, allTitles) });
+                            }}
+                        >
+                            Make unique
+                        </button>
                     </span>}
                 </div>
                 <div className={styles.specCardActions}>
