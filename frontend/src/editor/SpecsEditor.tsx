@@ -697,6 +697,35 @@ const SpecsEditor = function (
         setOperationsOpen(false);
     };
 
+    // Drop every "Relates to" reference that resolves to no entry, across the selected entries - the bulk counterpart of
+    // a single card's Remove-broken-references action, for cleaning up dead links after a rename. Unlike updateSelected,
+    // only entries that actually had a broken reference are rewritten (and re-stamped); untouched entries keep their
+    // exact state and timestamp. A no-op selection reports so rather than silently doing nothing.
+    const handleBulkRemoveBrokenReferences = function () {
+        const known = new Set(takenTitles);
+        let removedCount = 0;
+        let touchedCount = 0;
+        const next = specs.map(function (spec) {
+            if (!selectedIds.has(spec.id)) {
+                return spec;
+            }
+            const kept = spec.relatesTo.filter(function (title) { return known.has(title); });
+            if (kept.length === spec.relatesTo.length) {
+                return spec;
+            }
+            removedCount += spec.relatesTo.length - kept.length;
+            touchedCount += 1;
+            return { ...spec, relatesTo: kept, updated: nowTimestamp(), updatedBy: 'Human' as const };
+        });
+        setOperationsOpen(false);
+        if (touchedCount === 0) {
+            toast.info('No broken references in the selected entries');
+            return;
+        }
+        onChange(next);
+        toast.success(`Removed ${removedCount} broken ${removedCount === 1 ? 'reference' : 'references'} from ${touchedCount} ${touchedCount === 1 ? 'entry' : 'entries'}`);
+    };
+
     // Duplicate every selected entry in place, each inserted right after its own source - the bulk counterpart to the
     // single-card Duplicate button. Unlike duplicateAt, no single card to scroll to or focus, so the new entries are
     // left in review mode and the selection is cleared (it described the originals, not the copies).
@@ -917,6 +946,7 @@ const SpecsEditor = function (
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveLabel}><LabelIcon /><span>Remove label</span></button>
+                        <button type="button" className={styles.operationButton} onClick={handleBulkRemoveBrokenReferences}><CloseIcon /><span>Remove broken references</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
                         <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>

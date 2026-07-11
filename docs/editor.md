@@ -71,9 +71,10 @@ default, and the only one in which the up/down reorder is available), title, mos
 status. The sort is view-only and never changes the saved file. Two buttons act on the ticked entries:
 
 - **Operations** - **Approve**, **Remove Approval**, **Add label** / **Remove label** (prompt for a label and add it
-  to, or strip it from, every ticked entry), **Copy as Markdown** (copies the ticked entries as one Markdown document,
-  so **Select all** then this copies the whole file), **Duplicate** (each ticked entry's copy is inserted right after
-  its own source), and **Delete**. These apply to any entry type.
+  to, or strip it from, every ticked entry), **Remove broken references** (drops every dangling `relatesTo` reference -
+  see below - from the ticked entries, touching only those that have one), **Copy as Markdown** (copies the ticked
+  entries as one Markdown document, so **Select all** then this copies the whole file), **Duplicate** (each ticked
+  entry's copy is inserted right after its own source), and **Delete**. These apply to any entry type.
 - **Actions** - **Apply changes**, which queues the same headless-agent apply run as the single-card button over
   every ticked `spec` entry as one combined job, with its own **Provide custom one time instructions** checkbox
   applying the entered guidance to the whole batch. Only `spec` entries batch: a `task`'s action is "run" (with its
