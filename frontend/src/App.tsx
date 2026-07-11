@@ -214,26 +214,15 @@ const App = function () {
         return activeTab.parseError === null ? serializeVibraryXml(activeTab.specs) : activeTab.rawFallback;
     }, [activeTab]);
 
-    const onSave = useCallback(async function () {
-        if (activeTab === null || activeTab.parseError !== null) {
-            return;
-        }
-        const path = activeTab.path;
-        const specs = activeTab.specs;
-        patchTab(path, { status: { kind: 'saving' } });
-        const applySaved = function (fileHash: string) {
-            patchTab(path, { status: { kind: 'idle' }, dirty: false, fileHash });
-            markCounted(path, specs);
-            // One summary request refreshes the title options and (eventually) the badges; markCounted above covers
-            // the badge in the meantime.
-            void refreshListing();
-        };
+    // Save a tab's model, guarding against a concurrent on-disk change via the lost-update version hash. Returns the
+    // new file hash on success, or null when the file changed underneath and the user DECLINED to overwrite (the caller
+    // then aborts whatever it was about to do). A 409 means the file changed on disk after this tab loaded it (an agent
+    // run, another tab, an outside editor); saving would silently discard that version, so ask first. Shared by the
+    // Save button and the pre-generate flush, so neither can regress into a blind write.
+    const saveGuardedAsync = useCallback(async function (path: string, specs: Spec[], baseFileHash: string): Promise<string | null> {
         try {
-            applySaved(await saveFile(path, serializeVibraryXml(specs), activeTab.fileHash));
+            return await saveFile(path, serializeVibraryXml(specs), baseFileHash);
         } catch (error) {
-            // A 409 means the file changed on disk after this tab loaded it (an agent run, another tab, an outside
-            // editor) - saving would silently discard that version, so ask first. Cancel keeps the edits unsaved;
-            // the Reload button is the way to see the disk version.
             if (error instanceof ApiError && error.status === 409) {
                 const overwrite = await confirmDialog(
                     'This file changed on disk while it was open - saving will overwrite those changes. ' +
@@ -241,19 +230,37 @@ const App = function () {
                     'Overwrite'
                 );
                 if (!overwrite) {
-                    patchTab(path, { status: { kind: 'idle' } });
-                    return;
+                    return null;
                 }
-                try {
-                    applySaved(await saveFile(path, serializeVibraryXml(specs)));
-                } catch (retryError) {
-                    patchTab(path, { status: { kind: 'error', message: (retryError as Error).message } });
-                }
+                return await saveFile(path, serializeVibraryXml(specs));
+            }
+            throw error;
+        }
+    }, []);
+
+    const onSave = useCallback(async function () {
+        if (activeTab === null || activeTab.parseError !== null) {
+            return;
+        }
+        const path = activeTab.path;
+        const specs = activeTab.specs;
+        patchTab(path, { status: { kind: 'saving' } });
+        try {
+            const fileHash = await saveGuardedAsync(path, specs, activeTab.fileHash);
+            if (fileHash === null) {
+                // Declined to overwrite a since-changed file; keep the edits unsaved (Reload shows the disk version).
+                patchTab(path, { status: { kind: 'idle' } });
                 return;
             }
+            patchTab(path, { status: { kind: 'idle' }, dirty: false, fileHash });
+            markCounted(path, specs);
+            // One summary request refreshes the title options and (eventually) the badges; markCounted above covers
+            // the badge in the meantime.
+            void refreshListing();
+        } catch (error) {
             patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
         }
-    }, [activeTab, patchTab, markCounted, refreshListing]);
+    }, [activeTab, patchTab, markCounted, refreshListing, saveGuardedAsync]);
 
     // App-wide keyboard shortcuts. Ctrl+S / Cmd+S saves the active file, matching every other text editor - PLAIN
     // Ctrl+S only: Ctrl+Shift+S and Ctrl+Alt+S belong to the browser or the user's own tools, and an editor treating
@@ -327,7 +334,13 @@ const App = function () {
         }
         const path = activeTab.path;
         if (activeTab.dirty) {
-            const fileHash = await saveFile(path, serializeVibraryXml(activeTab.specs));
+            // Flush edits so the agent reads them from disk - but through the same lost-update guard as Save, not a
+            // blind write. If the file changed on disk (e.g. a prior generate the user declined to reload) and they
+            // decline to overwrite, abort rather than clobber the agent's on-disk work.
+            const fileHash = await saveGuardedAsync(path, activeTab.specs, activeTab.fileHash);
+            if (fileHash === null) {
+                return;
+            }
             patchTab(path, { dirty: false, status: { kind: 'idle' }, fileHash });
         }
         const promptParts = [`Generate ${count} ${type} ${count === 1 ? 'entry' : 'entries'} in ${path}`];
@@ -372,7 +385,7 @@ const App = function () {
             reloadNonce: (getTab(path)?.reloadNonce ?? activeTab.reloadNonce) + 1
         });
         void refreshListing();
-    }, [activeTab, enqueue, patchTab, getTab, refreshListing]);
+    }, [activeTab, enqueue, patchTab, getTab, refreshListing, saveGuardedAsync]);
 
     const onSpecsChange = useCallback(function (next: Spec[]) {
         if (activePath === null) {
