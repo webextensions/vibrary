@@ -365,7 +365,9 @@ const SpecsEditor = function (
             return selectedLabelKeys.has(label);
         });
         const isCreatorMatch = selectedCreatorKeys.size === 0 || selectedCreatorKeys.has(spec.createdBy);
-        const isTextMatch = textNeedle === '' || `${spec.title}\n${spec.content}\n${spec.notes}`.toLowerCase().includes(textNeedle);
+        // Labels join the text haystack so a typed term finds an entry by its label too, matching the global Search
+        // (and complementing the exact-match label dropdown with a substring path).
+        const isTextMatch = textNeedle === '' || `${spec.title}\n${spec.content}\n${spec.notes}\n${spec.labels.join(' ')}`.toLowerCase().includes(textNeedle);
         return isStatusMatch && isTypeMatch && isLabelMatch && isCreatorMatch && isTextMatch;
     };
 

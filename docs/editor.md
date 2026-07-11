@@ -82,7 +82,7 @@ status. The sort is view-only and never changes the saved file. Two buttons act 
 The toolbar's **Filter** button (visible once a file has entries) opens a free-text box plus four multi-select
 dropdowns: **Approval status**, **Entry type**, **Labels** (whose options are whatever labels are actually used in
 the open file), and **Created by** (Human / AI / Unspecified - the entry's provenance). The text box matches an
-entry's title, content, or notes. An entry is shown when it matches every dimension that is set; an empty selection
+entry's title, content, notes, or labels. An entry is shown when it matches every dimension that is set; an empty selection
 (or empty text) in a dimension imposes no constraint there. A dot on the
 Filter button and an "X of Y shown" count both indicate when a filter is active, and a **Clear filters** link resets
 all four at once. This narrows the open file's list; to jump to a matching entry across all files, use the Search
