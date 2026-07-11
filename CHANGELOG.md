@@ -28,14 +28,10 @@ All notable changes to this project are documented here. The format loosely foll
   for an at-a-glance sense of overall progress; it tracks the open files' live edits like the badges do.
 - Editing the title of an entry that other entries reference now shows a "renaming breaks N links" hint, since
   `relatesTo` references resolve by exact title - a heads-up before an edit silently strands those links.
-- Press **A** to approve (or re-approve a stale) focused entry - a keyboard fast path for reviewing down a list with
-  Alt+ArrowUp/Down. It never removes an approval and is ignored while typing.
-- Press **E** to toggle the focused entry between edit and review mode (the keyboard equivalent of its Edit button),
-  ignored while typing.
-- Press **C** to copy the focused entry as Markdown (the keyboard equivalent of its Copy button; Ctrl/Cmd+C still
-  copies selected text), and **D** to duplicate it - both ignored while typing.
-- The entry card holding keyboard focus now shows a subtle blue accent, so it is clear which card the A / E / C / D
-  shortcuts will act on as you move through the list.
+- Keyboard shortcuts to review and act on entries without the mouse: move focus between cards with Alt+ArrowUp/Down (the
+  focused card takes a subtle blue accent), then **A** approves or re-approves it, **E** toggles edit mode, **C** copies
+  it as Markdown, and **D** duplicates it. All are ignored while typing, A never removes an approval, and Ctrl/Cmd+C
+  still copies selected text. The "?" help groups these under "Entry cards".
 
 ### Changed
 
