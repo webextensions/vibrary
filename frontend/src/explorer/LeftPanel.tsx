@@ -87,6 +87,8 @@ type LeftPanelProperties = {
     onBulkDelete: (paths: string[]) => Promise<boolean>;
     onSelectTab: (path: string) => void;
     onCloseTab: (path: string) => void;
+    // Save every open file tab that has unsaved edits, in one action.
+    onSaveAll: () => void;
     // Activity monitor: open a job's detail editor tab when its row is clicked.
     onOpenActivity: (jobId: string, title: string) => void;
     // Search: open the file holding a clicked match and ask the editor to scroll to / highlight it.
@@ -162,6 +164,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
                 onBulkDelete={properties.onBulkDelete}
                 onSelectTab={properties.onSelectTab}
                 onCloseTab={properties.onCloseTab}
+                onSaveAll={properties.onSaveAll}
             />}
             {activeView === 'search' && <SearchPanel onOpenMatch={onOpenMatch} />}
             {activeView === 'sourceControl' && <SourceControlPanel />}

@@ -133,6 +133,25 @@
     background: #1f883d;
 }
 
+/* "Save all" action above the Open Editors list, shown only when one or more tabs are unsaved. A quiet accent-colored
+   text button so it reads as an action without competing with the file rows below it. */
+.save-all-button {
+    display: block;
+    width: 100%;
+    padding: 4px 8px;
+    border: none;
+    background: none;
+    color: #0969da;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+}
+
+.save-all-button:hover {
+    text-decoration: underline;
+}
+
 /* Open Editors close button; hidden until the row is hovered (or focused) so the list stays quiet, like the kebab. */
 .tree-row .row-close {
     flex-shrink: 0;

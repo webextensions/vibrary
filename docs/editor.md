@@ -104,7 +104,10 @@ you can see it, and saving is disabled until the file is fixed (edit it outside 
 ## Saving
 
 The **Save** button (or Ctrl+S / Cmd+S from anywhere in the app) writes the file. It always serializes the Structured
-model to XML (see [vibrary-file-format.md](vibrary-file-format.md)), regardless of which tab is active.
+model to XML (see [vibrary-file-format.md](vibrary-file-format.md)), regardless of which tab is active. When more than
+one open file has unsaved edits, a **Save all (N unsaved)** action appears atop the sidebar's **Open Editors** list and
+writes them all in one go (each file is saved independently, so a conflict on one - see the overwrite prompt below -
+does not block the others).
 
 ## Keyboard and mouse shortcuts
 

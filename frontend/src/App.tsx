@@ -274,6 +274,32 @@ const App = function () {
         }
     }, [activeTab, patchTab, markCounted, refreshListing, saveGuardedAsync]);
 
+    // Save every file tab with unsaved edits, in one action. Sequential so a per-file overwrite confirmation
+    // (saveGuardedAsync's 409 dialog) is answered one at a time rather than stacking, and so each tab's patch commits in
+    // order. Each tab is handled independently: a declined conflict or a failed save leaves that tab unsaved while the
+    // rest still save. Reads specs/fileHash from the snapshot captured when invoked - saving what was dirty at that
+    // moment. Parse-error and mid-save tabs are skipped (they cannot be saved), mirroring onSave.
+    const onSaveAll = useCallback(async function () {
+        const dirtyTabs = tabs.filter(function (tab) {
+            return tab.kind === 'file' && tab.dirty && tab.parseError === null && tab.status.kind !== 'saving';
+        });
+        for (const tab of dirtyTabs) {
+            patchTab(tab.path, { status: { kind: 'saving' } });
+            try {
+                const fileHash = await saveGuardedAsync(tab.path, tab.specs, tab.fileHash);
+                if (fileHash === null) {
+                    patchTab(tab.path, { status: { kind: 'idle' } });
+                    continue;
+                }
+                patchTab(tab.path, { status: { kind: 'idle' }, dirty: false, fileHash });
+                markCounted(tab.path, tab.specs);
+            } catch (error) {
+                patchTab(tab.path, { status: { kind: 'error', message: (error as Error).message } });
+            }
+        }
+        void refreshListing();
+    }, [tabs, patchTab, markCounted, refreshListing, saveGuardedAsync]);
+
     // App-wide keyboard shortcuts. Ctrl+S / Cmd+S saves the active file, matching every other text editor - PLAIN
     // Ctrl+S only: Ctrl+Shift+S and Ctrl+Alt+S belong to the browser or the user's own tools, and an editor treating
     // them as Save would hijack them for no benefit. The browser's "Save Page As" is prevented even when there is
@@ -544,6 +570,7 @@ const App = function () {
                 onBulkDelete={handleBulkDelete}
                 onSelectTab={setActive}
                 onCloseTab={handleCloseTab}
+                onSaveAll={onSaveAll}
                 onOpenActivity={openActivity}
                 onOpenMatch={handleOpenMatch}
                 onShowHelp={function () {

@@ -30,6 +30,8 @@ type SidebarProperties = {
     onNewFile: (folderPath: string) => void;
     onSelectTab: (path: string) => void;
     onCloseTab: (path: string) => void;
+    // Save every open file tab that has unsaved edits, in one action.
+    onSaveAll: () => void;
     // Bulk-delete the given files (paths), confirming first; resolves true if the user confirmed (regardless of
     // whether every individual delete succeeded), false if they cancelled - the caller uses this to decide whether to
     // clear its selection.
@@ -297,7 +299,7 @@ const TreeRows = function ({ nodes, depth, selected, collapsed, openMenuPath, se
     });
 };
 
-const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onCreateInclude, onDelete, onRename, onDuplicate, onNewFile, onSelectTab, onCloseTab, onBulkDelete }: SidebarProperties) {
+const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, countForFile, openTabs, onOpen, onRefresh, onAddFile, onCreateInclude, onDelete, onRename, onDuplicate, onNewFile, onSelectTab, onCloseTab, onSaveAll, onBulkDelete }: SidebarProperties) {
     const tree = useMemo(function () {
         return buildFileTree(files);
     }, [files]);
@@ -396,6 +398,9 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
         }
     };
 
+    // How many open tabs have unsaved edits, driving the "Save all" affordance in the Open Editors section.
+    const dirtyCount = openTabs.filter(function (tab) { return tab.dirty; }).length;
+
     return (
         <div className={styles.sidebar}>
             <AccordionSection
@@ -413,19 +418,30 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
                         <p className={styles.empty}>No open editors.</p>
                     ) :
                     (
-                        <ul>
-                            {openTabs.map(function (tab) {
-                                return (
-                                    <OpenEditorRow
-                                        key={tab.path}
-                                        tab={tab}
-                                        active={tab.path === selected}
-                                        onSelect={onSelectTab}
-                                        onClose={onCloseTab}
-                                    />
-                                );
-                            })}
-                        </ul>
+                        <>
+                            {dirtyCount > 0 &&
+                            <button
+                                type="button"
+                                className={styles.saveAllButton}
+                                title="Save every open file that has unsaved edits"
+                                onClick={onSaveAll}
+                            >
+                                Save all ({dirtyCount} unsaved)
+                            </button>}
+                            <ul>
+                                {openTabs.map(function (tab) {
+                                    return (
+                                        <OpenEditorRow
+                                            key={tab.path}
+                                            tab={tab}
+                                            active={tab.path === selected}
+                                            onSelect={onSelectTab}
+                                            onClose={onCloseTab}
+                                        />
+                                    );
+                                })}
+                            </ul>
+                        </>
                     )}
             </AccordionSection>
 
