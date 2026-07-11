@@ -361,6 +361,18 @@
     resize: vertical;
 }
 
+/* A single-line text field stacked in a column (the find & replace terms) fills the dialog width - only the row-layout
+   number field above keeps the fixed 80px. */
+.ai-field-column input {
+    width: auto;
+}
+
+/* A checkbox (find & replace's "Match case") keeps its native box, not the fixed width/padding the number field uses. */
+.ai-field input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+}
+
 .ai-error {
     margin: 0;
     color: #cf222e;
