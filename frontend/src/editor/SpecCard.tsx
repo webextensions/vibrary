@@ -13,6 +13,7 @@ import { danglingRelations } from './danglingRelations.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
+import { highlightText } from '../shared/highlightText.tsx';
 import { AGENTS, ENTRY_TYPES, type EntryType, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
@@ -32,6 +33,9 @@ type SpecCardProperties = {
     mode: Mode;
     // Briefly true after the card is scrolled to from a Search result, to ring-highlight it.
     highlighted?: boolean;
+    // The Search term to emphasize (<mark>) within this card's content and notes - set only on the entry a Search
+    // result jumped to, so the exact match is visible in the (possibly long) text; undefined for every other card.
+    matchQuery?: string;
     // Another entry in this file bears the same title; references by that title are ambiguous, so the card says so.
     hasDuplicateTitle?: boolean;
     schemas: SchemaMap;
@@ -157,7 +161,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, hasDuplicateTitle = false, schemas, allTitles, takenTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
@@ -193,6 +197,12 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
 
     const update = function (patch: Partial<Spec>) {
         onChange({ ...value, ...patch });
+    };
+
+    // In review mode, emphasize the Search term within a jumped-to entry's text (matchQuery is set only on that card);
+    // otherwise the text renders plain. The clamp and pre-wrap are unaffected - <mark> is inline.
+    const renderText = function (text: string): ReactNode {
+        return matchQuery === undefined || matchQuery === '' ? text : highlightText(text, matchQuery, styles.mark);
     };
 
     // Derive the hyphenated-title from the content below by asking the backend's headless "claude -p" agent, then drop
@@ -451,7 +461,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                                     ref={contentReference}
                                     className={cx(styles.multiline, !contentExpanded && styles.clamped)}
                                 >
-                                    {orDash(value.content)}
+                                    {renderText(orDash(value.content))}
                                 </span>
                                 {contentOverflows &&
                                 <button
@@ -501,7 +511,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                                     }}
                                 />
                             ) :
-                            <span className={styles.multiline}>{orDash(value.notes)}</span>}
+                            <span className={styles.multiline}>{renderText(orDash(value.notes))}</span>}
                     </Row>
 
                     <Row label="Labels" htmlFor={isEditing ? fieldId('labels') : undefined}>

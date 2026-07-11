@@ -367,6 +367,12 @@
     box-shadow: 0 0 0 1px #2684ff;
 }
 
+/* Emphasis for a Search term within a jumped-to entry's content/notes; matches the Search panel's snippet mark. */
+.mark {
+    background: #fff3c4;
+    color: inherit;
+}
+
 /* The "Show more / Show less" text button under a clamped content preview, styled like the other footer text links. */
 .content-toggle {
     margin-top: 4px;

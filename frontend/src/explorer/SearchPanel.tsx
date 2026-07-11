@@ -1,9 +1,10 @@
 import cx from 'classnames';
-import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
+import { highlightText } from '../shared/highlightText.tsx';
 import { SearchIcon, TypeIcon } from '../shared/Icons.tsx';
 
 import styles from './SearchPanel.module.css';
@@ -15,36 +16,6 @@ const DEBOUNCE_MS = 250;
 // Matches the backend's floor (searchVibrary's MIN_QUERY_LENGTH - keep the two in sync): a one-character query is
 // too broad to be useful, and skipping it here avoids a round trip that would answer with nothing.
 const MIN_QUERY_LENGTH = 2;
-
-// Emphasize each case-insensitive occurrence of `query` within a snippet line, leaving the rest as plain text. Splitting
-// on a lowercased copy keeps the original casing in the output.
-const highlight = function (text: string, query: string): ReactNode {
-    const haystack = text.toLowerCase();
-    const needle = query.toLowerCase();
-    // An empty needle would make indexOf return 0 forever - an infinite loop that hangs the tab. Unreachable through
-    // today's callers (results only render for queries at or above the length floor), but that invariant lives far
-    // from this loop, so guard it here rather than trust every future caller.
-    if (needle === '') {
-        return text;
-    }
-    const parts: ReactNode[] = [];
-    let cursor = 0;
-    let found = haystack.indexOf(needle, cursor);
-    let key = 0;
-    while (found !== -1) {
-        if (found > cursor) {
-            parts.push(text.slice(cursor, found));
-        }
-        parts.push(<mark key={key} className={styles.mark}>{text.slice(found, found + needle.length)}</mark>);
-        key += 1;
-        cursor = found + needle.length;
-        found = haystack.indexOf(needle, cursor);
-    }
-    if (cursor < text.length) {
-        parts.push(text.slice(cursor));
-    }
-    return parts;
-};
 
 // Entry search across the included vibrary files. Results are grouped by file, one row per matching ENTRY (title +
 // snippet); clicking a row opens the file and asks the editor to scroll to / highlight that entry (see App's
@@ -258,9 +229,9 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                                                 }}
                                             >
                                                 <span className={styles.matchType} title={match.type}><TypeIcon type={match.type} /></span>
-                                                <span className={styles.matchEntryTitle}>{highlight(match.title || '(untitled)', searchedQuery)}</span>
+                                                <span className={styles.matchEntryTitle}>{highlightText(match.title || '(untitled)', searchedQuery, styles.mark)}</span>
                                                 {match.field !== 'title' &&
-                                                <span className={styles.matchText}>{highlight(match.snippet, searchedQuery)}</span>}
+                                                <span className={styles.matchText}>{highlightText(match.snippet, searchedQuery, styles.mark)}</span>}
                                             </button>
                                         </li>
                                     );

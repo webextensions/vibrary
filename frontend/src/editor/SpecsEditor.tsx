@@ -1068,6 +1068,7 @@ const SpecsEditor = function (
                             index={index}
                             mode={editingIds.has(spec.id) ? 'edit' : 'review'}
                             highlighted={spec.id === highlightId}
+                            matchQuery={!highlightExactTitle && spec.id === highlightMatchId ? highlightQuery : undefined}
                             hasDuplicateTitle={spec.title !== '' && (duplicateTitles.has(spec.title) || crossFileTitles.has(spec.title))}
                             value={spec}
                             schemas={schemas}
