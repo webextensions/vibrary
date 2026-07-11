@@ -33,8 +33,8 @@ All notable changes to this project are documented here. The format loosely foll
 - Press **E** to toggle the focused entry between edit and review mode (the keyboard equivalent of its Edit button),
   ignored while typing.
 - Press **C** to copy the focused entry as Markdown (the keyboard equivalent of its Copy button; Ctrl/Cmd+C still
-  copies selected text), ignored while typing.
-- The entry card holding keyboard focus now shows a subtle blue accent, so it is clear which card the A / E / C
+  copies selected text), and **D** to duplicate it - both ignored while typing.
+- The entry card holding keyboard focus now shows a subtle blue accent, so it is clear which card the A / E / C / D
   shortcuts will act on as you move through the list.
 
 ### Changed

@@ -170,6 +170,8 @@ does not block the others).
   again. Ignored while typing in a text field.
 - C - copy the focused entry to the clipboard as Markdown, the keyboard equivalent of its Copy button (Ctrl/Cmd+C still
   copies any selected text). Ignored while typing in a text field.
+- D - duplicate the focused entry, the keyboard equivalent of its Duplicate button; the copy opens in edit mode with its
+  content focused. Ignored while typing in a text field.
 - Escape - closes the open popup, menu, or dialog first; with none open, clears the entry or file selection.
 - ArrowLeft/ArrowRight/Home/End on a focused editor tab - switch tabs (wrapping at the ends); the whole strip is a
   single Tab stop, so keyboarding past it costs one press however many files are open.

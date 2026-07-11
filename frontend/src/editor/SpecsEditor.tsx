@@ -698,7 +698,10 @@ const SpecsEditor = function (
         // Bare "c" copies the focused entry to the clipboard as Markdown, the keyboard twin of its Copy button. (Not
         // Ctrl/Cmd+C, which stays the browser's copy of any selected text.)
         const isCopy = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && (event.key === 'c' || event.key === 'C');
-        if (!isStep && !isMove && !isJump && !isApprove && !isEdit && !isCopy) {
+        // Bare "d" duplicates the focused entry, the keyboard twin of its Duplicate button - a fast path for authoring
+        // variations. Like the button, the copy opens in edit mode with its content focused.
+        const isDuplicate = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && (event.key === 'd' || event.key === 'D');
+        if (!isStep && !isMove && !isJump && !isApprove && !isEdit && !isCopy && !isDuplicate) {
             return;
         }
         // Never steal the key from text entry or a dropdown: the scroll area also holds the filter box, every
@@ -746,6 +749,16 @@ const SpecsEditor = function (
                     }
                     return copied;
                 });
+            }
+            return;
+        }
+        if (isDuplicate) {
+            const activeCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
+            const cardId = activeCard instanceof HTMLElement ? activeCard.dataset.specId ?? '' : '';
+            const index = specs.findIndex(function (candidate) { return candidate.id === cardId; });
+            if (index !== -1) {
+                event.preventDefault();
+                duplicateAt(index);
             }
             return;
         }
