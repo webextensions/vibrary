@@ -370,6 +370,18 @@ const createFilesRouter = function ({ cwd }) {
         if (!(await isVibraryNameIncluded(cwd, name)) || !(await isVibraryNameIncluded(cwd, targetName))) {
             return sendErrorResponse(response, 404, 'File not found');
         }
+        // Reject a target that is the SAME on-disk file as the source under a different name - a case-only variant on a
+        // case-insensitive filesystem passes the string check above. Moving an entry "into" its own file would, with the
+        // target-written-first order, append the moved entries and then overwrite that with source-minus-them, losing
+        // them. Compare identities (dev + inode), like the rename route; a missing file just falls through to the 404.
+        try {
+            const [sourceStat, targetStat] = await Promise.all([stat(source), stat(targetPath)]);
+            if (sourceStat.dev === targetStat.dev && sourceStat.ino === targetStat.ino) {
+                return sendErrorResponse(response, 400, 'Source and target are the same file');
+            }
+        } catch {
+            // Source or target does not resolve to an existing file; the readFile below answers with the proper 404.
+        }
         if (!Array.isArray(indexes) || indexes.length === 0 || indexes.some(function (index) { return !Number.isSafeInteger(index) || index < 0; })) {
             return sendErrorResponse(response, 400, 'Expected a non-empty "indexes" array of entry positions');
         }

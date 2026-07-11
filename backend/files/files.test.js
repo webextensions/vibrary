@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -215,4 +215,21 @@ test('move-entries refuses the same file, a stale hash, an out-of-range index, a
     assert.equal(stale.status, 409);
     // The stale-hash refusal left both files untouched (the source keeps the out-of-band change).
     assert.match((await requestJsonAsync('/files/specs-mv2.xml')).body.output.content, /Changed/);
+});
+
+test('move-entries refuses a target that is the same file under a different name (same inode), losing nothing', async function () {
+    const single = [
+        '<root>', '    <entries>',
+        '        <entry type="spec"><title>solo-entry</title><content>Solo</content></entry>',
+        '    </entries>', '</root>', ''
+    ].join('\n');
+    writeFileSync(path.join(cwd, 'specs-inode.xml'), single);
+    // A second name resolving to the same on-disk file - the shape a case-insensitive filesystem produces. Both match
+    // "specs*.xml", so both pass the name/include checks and only the inode comparison can catch this.
+    symlinkSync(path.join(cwd, 'specs-inode.xml'), path.join(cwd, 'specs-inode-alias.xml'));
+
+    const refused = await sendJsonAsync('/files/specs-inode.xml/move-entries', { targetName: 'specs-inode-alias.xml', indexes: [0] });
+    assert.equal(refused.status, 400);
+    // The entry is still there - the move never ran, so the "append then overwrite" data loss cannot happen.
+    assert.match((await requestJsonAsync('/files/specs-inode.xml')).body.output.content, /solo-entry/);
 });
