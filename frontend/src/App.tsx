@@ -277,28 +277,38 @@ const App = function () {
     // Save every file tab with unsaved edits, in one action. Sequential so a per-file overwrite confirmation
     // (saveGuardedAsync's 409 dialog) is answered one at a time rather than stacking, and so each tab's patch commits in
     // order. Each tab is handled independently: a declined conflict or a failed save leaves that tab unsaved while the
-    // rest still save. Reads specs/fileHash from the snapshot captured when invoked - saving what was dirty at that
-    // moment. Parse-error and mid-save tabs are skipped (they cannot be saved), mirroring onSave.
+    // rest still save.
     const onSaveAll = useCallback(async function () {
-        const dirtyTabs = tabs.filter(function (tab) {
-            return tab.kind === 'file' && tab.dirty && tab.parseError === null && tab.status.kind !== 'saving';
-        });
-        for (const tab of dirtyTabs) {
-            patchTab(tab.path, { status: { kind: 'saving' } });
+        const dirtyPaths = tabs
+            .filter(function (tab) {
+                return tab.kind === 'file' && tab.dirty && tab.parseError === null && tab.status.kind !== 'saving';
+            })
+            .map(function (tab) { return tab.path; });
+        for (const path of dirtyPaths) {
+            // Re-read the tab's LIVE state each iteration rather than trusting the initial snapshot: the loop yields at
+            // every await (and blocks while a 409 confirm for an earlier tab is open), during which the user may edit or
+            // separately save a still-pending tab. Writing a stale snapshot would both save outdated content AND clear
+            // the dirty flag, silently dropping the newer edits; a stale fileHash would also trip a spurious overwrite
+            // prompt for a tab just saved out of loop order. Skip a tab since closed, saved, or no longer dirty.
+            const tab = getTab(path);
+            if (tab === null || tab.kind !== 'file' || !tab.dirty || tab.parseError !== null || tab.status.kind === 'saving') {
+                continue;
+            }
+            patchTab(path, { status: { kind: 'saving' } });
             try {
-                const fileHash = await saveGuardedAsync(tab.path, tab.specs, tab.fileHash);
+                const fileHash = await saveGuardedAsync(path, tab.specs, tab.fileHash);
                 if (fileHash === null) {
-                    patchTab(tab.path, { status: { kind: 'idle' } });
+                    patchTab(path, { status: { kind: 'idle' } });
                     continue;
                 }
-                patchTab(tab.path, { status: { kind: 'idle' }, dirty: false, fileHash });
-                markCounted(tab.path, tab.specs);
+                patchTab(path, { status: { kind: 'idle' }, dirty: false, fileHash });
+                markCounted(path, tab.specs);
             } catch (error) {
-                patchTab(tab.path, { status: { kind: 'error', message: (error as Error).message } });
+                patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
             }
         }
         void refreshListing();
-    }, [tabs, patchTab, markCounted, refreshListing, saveGuardedAsync]);
+    }, [tabs, getTab, patchTab, markCounted, refreshListing, saveGuardedAsync]);
 
     // App-wide keyboard shortcuts. Ctrl+S / Cmd+S saves the active file, matching every other text editor - PLAIN
     // Ctrl+S only: Ctrl+Shift+S and Ctrl+Alt+S belong to the browser or the user's own tools, and an editor treating
