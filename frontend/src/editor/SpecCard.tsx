@@ -179,6 +179,18 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
         }
     }, [value.content, contentExpanded, isEditing]);
 
+    // When this card becomes the target of a Search jump, reveal its full content so a match sitting past the clamp is
+    // not hidden behind "Show more". Latched with the previous-value pattern (adjust state during render, not in an
+    // effect) so the reveal survives the ring highlight clearing on its 2s timer instead of collapsing out from under
+    // the reader; they can Show less again. A short entry has no clamp, so this is a no-op there.
+    const [wasSearchTarget, setWasSearchTarget] = useState(false);
+    if (highlighted !== wasSearchTarget) {
+        setWasSearchTarget(highlighted);
+        if (highlighted) {
+            setContentExpanded(true);
+        }
+    }
+
     const update = function (patch: Partial<Spec>) {
         onChange({ ...value, ...patch });
     };
