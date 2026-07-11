@@ -1063,9 +1063,10 @@ const SpecsEditor = function (
                 </div>
                 <div ref={speedDialReference} className={styles.speedDial}>
                     {menuOpen &&
-                    <div className={styles.speedDialActions}>
+                    <MenuPanel className={styles.speedDialActions}>
                         <button
                             type="button"
+                            role="menuitem"
                             className={styles.speedDialAction}
                             onClick={function () {
                                 setMenuOpen(false);
@@ -1076,6 +1077,7 @@ const SpecsEditor = function (
                         </button>
                         <button
                             type="button"
+                            role="menuitem"
                             className={styles.speedDialAction}
                             onClick={function () {
                                 setMenuOpen(false);
@@ -1084,12 +1086,13 @@ const SpecsEditor = function (
                         >
                             <PlusIcon /><span>Create manually</span>
                         </button>
-                    </div>}
+                    </MenuPanel>}
 
                     <button
                         type="button"
                         className={styles.fab}
                         aria-label={menuOpen ? 'Close menu' : 'Add entry'}
+                        aria-haspopup="menu"
                         aria-expanded={menuOpen}
                         onClick={function () {
                             setMenuOpen(function (previous) {
