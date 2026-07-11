@@ -255,6 +255,15 @@
     font-size: 14px;
 }
 
+/* Live word/char tally under the content textarea in edit mode; right-aligned and muted so it stays out of the way. */
+.content-meta {
+    display: block;
+    margin-top: 4px;
+    color: #8c959f;
+    font-size: 11px;
+    text-align: right;
+}
+
 .title-input {
     flex: 1;
     margin-right: 12px;

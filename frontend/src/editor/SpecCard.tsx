@@ -66,6 +66,13 @@ const orDash = function (text: string): string {
     return text === '' ? '-' : text;
 };
 
+// Whitespace-delimited word count, 0 for blank/whitespace-only text. Backs the content field's live counter in edit
+// mode; a rough writing gauge, not a linguistic tokenizer.
+const countWords = function (text: string): number {
+    const trimmed = text.trim();
+    return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
+};
+
 // Render an ISO 8601 timestamp in the viewer's locale; fall back to the raw value if it is not a valid date.
 const formatTimestamp = function (iso: string): string {
     if (iso === '') {
@@ -326,16 +333,19 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                 <div className={styles.specContent}>
                     {isEditing ?
                         (
-                            <textarea
-                                id={fieldId('content')}
-                                aria-label="Entry content"
-                                value={value.content}
-                                spellCheck={false}
-                                onChange={function (changeEvent) {
-                                    const next = changeEvent.target.value;
-                                    update({ content: next, contentHash: hashContent({ ...value, content: next }) });
-                                }}
-                            />
+                            <>
+                                <textarea
+                                    id={fieldId('content')}
+                                    aria-label="Entry content"
+                                    value={value.content}
+                                    spellCheck={false}
+                                    onChange={function (changeEvent) {
+                                        const next = changeEvent.target.value;
+                                        update({ content: next, contentHash: hashContent({ ...value, content: next }) });
+                                    }}
+                                />
+                                <span className={styles.contentMeta}>{countWords(value.content)} words, {value.content.length} chars</span>
+                            </>
                         ) :
                         <span className={styles.multiline}>{orDash(value.content)}</span>}
                 </div>
