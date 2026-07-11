@@ -64,9 +64,10 @@ filter) and Escape clears the selection. The footer also shows a small approval 
 entries are currently approved) and an **Expand all** / **Collapse all** link that opens or closes the extra-fields
 section of every shown entry at once. Two buttons act on the ticked entries:
 
-- **Operations** - **Approve**, **Remove Approval**, **Copy as Markdown** (copies the ticked entries as one Markdown
-  document, so **Select all** then this copies the whole file), **Duplicate** (each ticked entry's copy is inserted
-  right after its own source), and **Delete**. These apply to any entry type.
+- **Operations** - **Approve**, **Remove Approval**, **Add label** (prompts for a label and adds it to every ticked
+  entry, deduped), **Copy as Markdown** (copies the ticked entries as one Markdown document, so **Select all** then
+  this copies the whole file), **Duplicate** (each ticked entry's copy is inserted right after its own source), and
+  **Delete**. These apply to any entry type.
 - **Actions** - **Apply changes**, which queues the same headless-agent apply run as the single-card button over
   every ticked `spec` entry as one combined job, with its own **Provide custom one time instructions** checkbox
   applying the entered guidance to the whole batch. Only `spec` entries batch: a `task`'s action is "run" (with its
