@@ -221,7 +221,8 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                                                 }}
                                             >
                                                 <span className={styles.matchEntryTitle}>{highlight(match.title || '(untitled)', searchedQuery)}</span>
-                                                <span className={styles.matchText}>{highlight(match.snippet, searchedQuery)}</span>
+                                                {match.field !== 'title' &&
+                                                <span className={styles.matchText}>{highlight(match.snippet, searchedQuery)}</span>}
                                             </button>
                                         </li>
                                     );
