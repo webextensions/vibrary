@@ -177,8 +177,11 @@ const SpecsEditor = function (
             const target = specs.find(function (spec) { return spec.title === highlightQuery; });
             return target === undefined ? null : target.id;
         }
+        // Match the SAME fields the backend search does - title, content, notes AND labels (searchVibrary's
+        // SEARCH_FIELDS plus its labels pass) - so this staleness re-check validates a labels-only hit instead of
+        // rejecting it and falling back to the wrong entry (or none), which silently broke the jump for such results.
         const matchesNeedle = function (spec: Spec) {
-            return `${spec.title}\n${spec.content}\n${spec.notes}`.toLowerCase().includes(needle);
+            return `${spec.title}\n${spec.content}\n${spec.notes}\n${spec.labels.join(' ')}`.toLowerCase().includes(needle);
         };
         const indexed = specs[Math.min(highlightMatchIndex ?? 0, specs.length - 1)];
         if (matchesNeedle(indexed)) {
