@@ -50,7 +50,10 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
         if (value.type !== 'task' || value.formSchemaRef === '') {
             return null;
         }
-        return schemas[value.formSchemaRef] ?? null;
+        // Object.hasOwn, not a plain lookup: a hand-written formSchemaRef of "constructor" (or another Object.prototype
+        // key) would otherwise read the inherited method - a truthy non-schema that `?? null` lets through and rjsf then
+        // chokes on. Real refs are "<file>#<id>", so they always shadow nothing anyway; this only guards the odd input.
+        return Object.hasOwn(schemas, value.formSchemaRef) ? schemas[value.formSchemaRef] : null;
     }, [value.type, value.formSchemaRef, schemas]);
     // The task's options form is keyed by its stable formSchemaRef (entry ids are regenerated on every parse). The last
     // used values are remembered in the per-project settings and re-applied here; a "Reset to default options" button
