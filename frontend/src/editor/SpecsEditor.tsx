@@ -17,7 +17,7 @@ import { promptForCustomInstructions } from './customInstructions.ts';
 import { moveEntry } from './moveEntry.ts';
 import { reinsertEntries } from './reinsertEntries.ts';
 import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
-import { restoreReplacedEntries } from './restoreReplacedEntries.ts';
+import { restoreEntries } from './restoreEntries.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
@@ -766,7 +766,7 @@ const SpecsEditor = function (
     const handleBulkRemoveBrokenReferences = function () {
         const known = new Set(takenTitles);
         let removedCount = 0;
-        let touchedCount = 0;
+        const changes: { before: Spec; after: Spec }[] = [];
         const next = specs.map(function (spec) {
             if (!selectedIds.has(spec.id)) {
                 return spec;
@@ -776,16 +776,36 @@ const SpecsEditor = function (
                 return spec;
             }
             removedCount += spec.relatesTo.length - kept.length;
-            touchedCount += 1;
-            return { ...spec, relatesTo: kept, updated: nowTimestamp(), updatedBy: 'Human' as const };
+            const after = { ...spec, relatesTo: kept, updated: nowTimestamp(), updatedBy: 'Human' as const };
+            changes.push({ before: spec, after });
+            return after;
         });
         setOperationsOpen(false);
-        if (touchedCount === 0) {
+        if (changes.length === 0) {
             toast.info('No broken references in the selected entries');
             return;
         }
         onChange(next);
-        toast.success(`Removed ${removedCount} broken ${removedCount === 1 ? 'reference' : 'references'} from ${touchedCount} ${touchedCount === 1 ? 'entry' : 'entries'}`);
+        const touchedCount = changes.length;
+        // The dropped refs were already dead links, but a user may have meant to CREATE those targets rather than cut
+        // the links - so the same Undo the other bulk ops offer (restoring only entries untouched since) applies here.
+        toast.success(function ({ closeToast }) {
+            return (
+                <span className={styles.undoToast}>
+                    Removed {removedCount} broken {removedCount === 1 ? 'reference' : 'references'} from {touchedCount} {touchedCount === 1 ? 'entry' : 'entries'}
+                    <button
+                        type="button"
+                        className={styles.undoButton}
+                        onClick={function () {
+                            onChange(restoreEntries(specsReference.current, changes));
+                            closeToast();
+                        }}
+                    >
+                        Undo
+                    </button>
+                </span>
+            );
+        }, { autoClose: 8000 });
     };
 
     // Apply the Find & replace dialog's terms across the selected entries' content and notes. replaceInEntries rewrites
@@ -796,11 +816,11 @@ const SpecsEditor = function (
             return;
         }
         // Record each rewritten entry (replaceInEntries preserves order and returns the SAME object for entries it did
-        // not touch, so a reference change pinpoints the changed ones) with its pre-replace spec and post-replace text -
-        // enough for the Undo to revert only the entries the user has not edited since. See restoreReplacedEntries.
+        // not touch, so a reference change pinpoints the changed ones) as a before/after pair - enough for the Undo to
+        // revert only the entries the user has not edited since. See restoreEntries.
         const replaced = specs.flatMap(function (before, index) {
             const after = result.specs[index];
-            return after === undefined || after === before ? [] : [{ before, afterContent: after.content, afterNotes: after.notes }];
+            return after === undefined || after === before ? [] : [{ before, after }];
         });
         onChange(result.specs);
         toast.success(function ({ closeToast }) {
@@ -811,7 +831,7 @@ const SpecsEditor = function (
                         type="button"
                         className={styles.undoButton}
                         onClick={function () {
-                            onChange(restoreReplacedEntries(specsReference.current, replaced));
+                            onChange(restoreEntries(specsReference.current, replaced));
                             closeToast();
                         }}
                     >
