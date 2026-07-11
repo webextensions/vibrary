@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -25,14 +25,50 @@ writeFileSync(path.join(repoCwd, 'specs.xml'), 'original\n');
 
 const plainCwd = mkdtempSync(path.join(tmpdir(), 'vibrary-git-plain-'));
 
+// A repo whose SERVED folder is a subdirectory (docs/), plus a change at the repo root outside it, to pin that status
+// paths are remapped to cwd-relative and out-of-folder changes are dropped.
+const subRepoRoot = mkdtempSync(path.join(tmpdir(), 'vibrary-git-subdir-'));
+const subGit = function (...arguments_) {
+    execFileSync('git', arguments_, { cwd: subRepoRoot });
+};
+subGit('init', '-b', 'main');
+subGit('config', 'user.email', 'test@example.com');
+subGit('config', 'user.name', 'Test');
+subGit('config', 'commit.gpgsign', 'false');
+mkdirSync(path.join(subRepoRoot, 'docs'));
+writeFileSync(path.join(subRepoRoot, 'docs', 'specs.xml'), 'in the served subfolder\n');
+writeFileSync(path.join(subRepoRoot, 'root-file.txt'), 'at the repo root, outside the served folder\n');
+const subCwd = path.join(subRepoRoot, 'docs');
+
 const repo = await startAppAsync(repoCwd);
 const plain = await startAppAsync(plainCwd);
+const sub = await startAppAsync(subCwd);
 
 after(function () {
     repo.server.close();
     plain.server.close();
+    sub.server.close();
     rmSync(repoCwd, { recursive: true, force: true });
     rmSync(plainCwd, { recursive: true, force: true });
+    rmSync(subRepoRoot, { recursive: true, force: true });
+});
+
+test('served from a repo subdirectory: status paths are cwd-relative and out-of-folder changes are dropped', async function () {
+    const { body } = await sub.requestJsonAsync('/git/status');
+    const paths = body.output.files.map(function (file) { return file.path; });
+    // The served folder's file is reported cwd-relative ("specs.xml"), not repo-root-relative ("docs/specs.xml").
+    assert.ok(paths.includes('specs.xml'), `expected cwd-relative specs.xml, got ${JSON.stringify(paths)}`);
+    assert.ok(paths.every(function (entry) { return !entry.startsWith('docs/'); }), 'no repo-root-relative path leaks through');
+    // A change at the repo root, outside the served folder, is filtered out.
+    assert.ok(paths.every(function (entry) { return !entry.includes('root-file'); }), 'out-of-folder change is not shown');
+});
+
+test('served from a repo subdirectory: staging a cwd-relative path targets the right file', async function () {
+    const staged = await sub.sendJsonAsync('/git/stage', { paths: ['specs.xml'] });
+    assert.equal(staged.status, 200);
+    const file = staged.body.output.files.find(function (entry) { return entry.path === 'specs.xml'; });
+    // 'A' = added to the index; a doubled path (docs/docs/specs.xml) would have staged nothing.
+    assert.equal(file?.index, 'A');
 });
 
 test('every git route answers 400 "Not a git repository" outside a repo', async function () {

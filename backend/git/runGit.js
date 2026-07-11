@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { simpleGit } from 'simple-git';
 
 // A fresh simple-git instance bound to `cwd`. simple-git spawns git itself, buffers large output (diffs, status), and
@@ -19,8 +21,30 @@ const isGitRepoAsync = async function (cwd) {
 // Current branch plus the list of changed files, as simple-git's native StatusResult: `current` is the branch (null on
 // a detached HEAD) and `files` holds one `{ path, index, working_dir }` per change (index = staged column, working_dir =
 // worktree column; "??" marks an untracked file).
-const statusAsync = function (cwd) {
-    return gitFor(cwd).status();
+//
+// git reports those paths relative to the REPO ROOT, but the app - path validation (resolveWithinCwd) and every
+// stage/unstage/discard/diff, which run git from `cwd` with cwd-relative pathspecs - works relative to `cwd`, which may
+// be a SUBDIRECTORY of the repo. So remap each file to a cwd-relative path and drop the ones outside `cwd` (the served
+// folder cannot edit them, and a file-scoped op on them would target the wrong path). When `cwd` is the repo root this
+// is the identity, so the common case is unchanged.
+const statusAsync = async function (cwd) {
+    const git = gitFor(cwd);
+    const status = await git.status();
+    let toplevel;
+    try {
+        toplevel = (await git.revparse(['--show-toplevel'])).trim();
+    } catch {
+        return status; // toplevel not resolvable (unusual); leave the repo-root-relative paths as-is
+    }
+    const files = [];
+    for (const file of status.files) {
+        const relativePath = path.relative(cwd, path.join(toplevel, file.path));
+        if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+            continue; // outside the served folder
+        }
+        files.push({ ...file, path: relativePath.split(path.sep).join('/') });
+    }
+    return { ...status, files };
 };
 
 // The staged diff ("--cached") or the unstaged working-tree diff, optionally narrowed to one path (the Status
