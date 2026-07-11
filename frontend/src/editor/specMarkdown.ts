@@ -1,7 +1,7 @@
 import { type Spec } from '../xml/vibraryXml.ts';
 
 // Render one entry as readable Markdown for pasting into a PR description, doc, or chat. The title becomes a heading
-// (falling back to the same "untitled <type>" placeholder the card shows), the content becomes the body, and the
+// (falling back to an "untitled <type>" placeholder for a titleless entry), the content becomes the body, and the
 // optional fields (notes, labels, relates-to) become their own labeled sections only when present. Bookkeeping fields
 // (timestamps, approval, ids) are deliberately left out - this shares the substance of an entry, not its metadata.
 const specToMarkdown = function (spec: Spec): string {

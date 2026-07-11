@@ -10,7 +10,7 @@ import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
-import { approvalState, type ApprovalState, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
+import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
 import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
@@ -377,9 +377,8 @@ const SpecsEditor = function (
 
     // How many entries are currently approved (human sign-off matching the current content). Drives the footer's
     // approval progress meter - an at-a-glance sense of how much of the file is signed off, live as edits change it.
-    const approvedCount = specs.filter(function (spec) {
-        return approvalState(spec) === 'current';
-    }).length;
+    // Uses the shared counter (the same one the sidebar badges use) so the "approved = current" rule lives in one place.
+    const approvedCount = countApprovedSpecs(specs);
     const approvedPercent = specs.length === 0 ? 0 : Math.round((approvedCount / specs.length) * 100);
 
     // The subset of the selection the batch "Apply changes" can faithfully run: SPEC entries only. The batch goes
