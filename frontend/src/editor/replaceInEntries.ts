@@ -35,21 +35,18 @@ const replaceInEntries = function (specs: Spec[], find: string, replace: string,
         if (!selectedIds.has(spec.id)) {
             return spec;
         }
-        const hits = countOccurrences(spec.content, find) + countOccurrences(spec.notes, find);
-        if (hits === 0) {
-            return spec;
-        }
-        occurrences += hits;
-        entriesChanged += 1;
         // split/join does a purely literal replacement (matching countOccurrences' own split): no regex, and no "$&"
         // / "$1" interpretation that a string replaceAll would apply to the user's `replace` text.
-        return {
-            ...spec,
-            content: spec.content.split(find).join(replace),
-            notes: spec.notes.split(find).join(replace),
-            updated: now,
-            updatedBy: 'Human' as const
-        };
+        const content = spec.content.split(find).join(replace);
+        const notes = spec.notes.split(find).join(replace);
+        // Skip an entry whose text did not actually change - the term was absent, OR find === replace, which produces
+        // byte-identical text and must not stamp a spurious edit or inflate the count.
+        if (content === spec.content && notes === spec.notes) {
+            return spec;
+        }
+        occurrences += countOccurrences(spec.content, find) + countOccurrences(spec.notes, find);
+        entriesChanged += 1;
+        return { ...spec, content, notes, updated: now, updatedBy: 'Human' as const };
     });
     return { specs: nextSpecs, occurrences, entriesChanged };
 };

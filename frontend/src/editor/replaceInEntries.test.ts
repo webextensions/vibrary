@@ -44,6 +44,14 @@ test('an empty find term is a no-op', function () {
     assert.equal(result.specs, specs);
 });
 
+test('find === replace changes nothing: the entry is not re-stamped nor counted', function () {
+    const specs = [specOf('a', { content: 'the cat' })];
+    const result = replaceInEntries(specs, 'cat', 'cat', new Set(['a']), 'now');
+    assert.equal(result.occurrences, 0);
+    assert.equal(result.entriesChanged, 0);
+    assert.equal(result.specs[0], specs[0]); // same object - no spurious updated stamp
+});
+
 test('countReplaceable counts occurrences across the selected entries only', function () {
     const specs = [
         specOf('a', { content: 'aa', notes: 'a' }),
