@@ -1004,7 +1004,9 @@ const SpecsEditor = function (
                 <div className={styles.actionsAnchor} ref={operationsReference}>
                     {operationsOpen &&
                     <MenuPanel className={styles.actionsPopup}>
-                        <p className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
+                        {/* role=presentation: a role=menu may only contain menuitems/groups/separators, so this count
+                            line must not read as a menu child (MenuPanel already skips it when focusing the first item). */}
+                        <p role="presentation" className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
