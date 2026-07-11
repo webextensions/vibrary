@@ -1,8 +1,38 @@
+import { networkInterfaces } from 'node:os';
+
 import getPort, { portNumbers } from 'get-port';
 import open from 'open';
 
 import { createApp } from './app.js';
 import { terminateActiveClaudeRunsAsync } from './shared/spawnClaude.js';
+
+// A wildcard bind means the server answers on every interface, so the loopback URL it prints is useless from another
+// device - the documented phone-on-the-LAN case (`--host 0.0.0.0`) needs the machine's actual address. Enumerate the
+// non-internal IPv4 interfaces and build a reachable URL for each, so the user can read one straight off the terminal.
+// Returns [] for a specific bind (the printed host URL already suffices) or when no external IPv4 address exists.
+const WILDCARD_HOSTS = new Set(['0.0.0.0', '::']);
+
+// Only the three fields this reads are required, so a test can pass a minimal fixture; the real networkInterfaces()
+// result carries more and is structurally compatible.
+/**
+ * @param {string} host
+ * @param {number} port
+ * @param {Record<string, ReadonlyArray<{ address: string; family: string; internal: boolean }> | undefined>} [interfaces]
+ * @returns {string[]}
+ */
+const lanUrlsForHost = function (host, port, interfaces = networkInterfaces()) {
+    if (!WILDCARD_HOSTS.has(host)) {
+        return [];
+    }
+    return Object.values(interfaces)
+        .flat()
+        .filter(function (address) {
+            return address !== undefined && address.family === 'IPv4' && !address.internal;
+        })
+        .map(function (address) {
+            return `http://${address.address}:${port}/`;
+        });
+};
 
 // The default bind is loopback: the API is unauthenticated and its agent routes execute commands (with permission
 // prompts disabled), so exposing it must be an explicit choice - `--host 0.0.0.0` for the LAN/phone case - not a side
@@ -43,6 +73,9 @@ const startServer = async function ({ port = 3000, host = '127.0.0.1', open: sho
 
             // Name the bind address so the exposure state is visible at a glance in the startup line.
             console.log(`vibrary-server running at ${url} (bound to ${host}, serving ${cwd})`);
+            for (const lanUrl of lanUrlsForHost(host, resolvedPort)) {
+                console.log(`  reachable on your network at ${lanUrl}`);
+            }
 
             if (shouldOpen) {
                 // The server is already up; a failed browser launch (e.g. headless environment) should not crash it.
@@ -63,4 +96,4 @@ const startServer = async function ({ port = 3000, host = '127.0.0.1', open: sho
     });
 };
 
-export { startServer };
+export { lanUrlsForHost, startServer };
