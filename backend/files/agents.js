@@ -65,25 +65,31 @@ const createAgentsRouter = function ({ cwd }) {
             return sendErrorResponse(response, 409, 'Another agent run is already in progress');
         }
         isAgentRunActive = true;
-        const controller = abortOnDisconnect(request, response);
-        response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
-        response.setHeader('Cache-Control', 'no-transform');
-        response.flushHeaders();
-        const writeLine = function (line) {
-            if (response.writableEnded) {
-                return;
-            }
-            response.write(`${line}\n`);
-            // Flush so each line reaches the browser immediately rather than sitting in the compression middleware's
-            // buffer (no-transform disables gzip, but the wrapper still needs the explicit flush).
-            response.flush?.();
-        };
+        // Everything after the flag is set lives inside this try so the finally ALWAYS releases the slot. The header
+        // prologue (flushHeaders on a socket that just went away) can throw, and if that escaped before the try the
+        // flag would stay stuck true and answer every future run 409 forever - a permanent denial of the app's core
+        // feature until a restart.
         try {
-            await runner({ signal: controller.signal, onLine: writeLine });
-            writeLine(JSON.stringify({ type: '_exit', code: 0, error: null }));
-        } catch (error) {
-            if (!controller.signal.aborted) {
-                writeLine(JSON.stringify({ type: '_exit', code: 1, error: error.message }));
+            const controller = abortOnDisconnect(request, response);
+            response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+            response.setHeader('Cache-Control', 'no-transform');
+            response.flushHeaders();
+            const writeLine = function (line) {
+                if (response.writableEnded) {
+                    return;
+                }
+                response.write(`${line}\n`);
+                // Flush so each line reaches the browser immediately rather than sitting in the compression
+                // middleware's buffer (no-transform disables gzip, but the wrapper still needs the explicit flush).
+                response.flush?.();
+            };
+            try {
+                await runner({ signal: controller.signal, onLine: writeLine });
+                writeLine(JSON.stringify({ type: '_exit', code: 0, error: null }));
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    writeLine(JSON.stringify({ type: '_exit', code: 1, error: error.message }));
+                }
             }
         } finally {
             isAgentRunActive = false;
