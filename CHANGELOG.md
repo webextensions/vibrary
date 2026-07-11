@@ -22,8 +22,9 @@ All notable changes to this project are documented here. The format loosely foll
   (un-clamping its content and opening its extra fields) so the match is visible where you land.
 - A **Referenced by** section on each entry - the reverse of "Relates to" - listing the entries folder-wide that point
   at it, each a chip that opens the referencing entry. It tracks unsaved edits to the open file live.
-- A **Back** button in the editor toolbar, shown after you follow a "Relates to" or "Referenced by" chip, retraces the
-  relation-navigation path (across files, one hop per press) so you can explore an entry's relations and return.
+- A **Back** button in the editor toolbar (or Alt+ArrowLeft), shown after you follow a "Relates to" or "Referenced by"
+  chip, retraces the relation-navigation path (across files, one hop per press) so you can explore an entry's relations
+  and return. Alt+ArrowLeft only intervenes when there is a hop to return to, so the browser's own Back still works.
 - Deleting a file now warns in the confirmation when entries in other files reference the ones being removed (e.g.
   "2 references from other files will break"), so an irreversible delete no longer silently strands cross-file links.
 - The file-list footer shows a folder-wide approval total ("3 files, 12/40 approved") alongside the per-file badges,

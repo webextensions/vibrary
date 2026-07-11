@@ -44,8 +44,9 @@ controls:
   across every vibrary file in the folder (the current entry's own title is excluded). The option list refreshes
   after a save. In review mode each reference renders as a chip; clicking it opens the target entry's file (switching
   files if needed) and scrolls to / highlights it. Following a relation chip (here or in **Referenced by**) reveals a
-  **Back** button in the editor toolbar that returns you along the path you took - across files, and one hop per press -
-  so you can explore the relation graph and retrace your steps. A reference whose title matches no entry (a broken link
+  **Back** button in the editor toolbar (or press Alt+ArrowLeft) that returns you along the path you took - across
+  files, and one hop per press - so you can explore the relation graph and retrace your steps. A reference whose title
+  matches no entry (a broken link
   left by a
   renamed or removed target) renders instead as an inert amber chip with a tooltip explaining it points to nothing, and
   the card's header shows a **N broken references** badge (naming the missing titles on hover) with a **Remove** action

@@ -674,6 +674,27 @@ const App = function () {
     // The entry the Back button would return to (the top of the stack), or undefined when there is nowhere to go back.
     const backTop = backStack.at(-1);
 
+    // Alt+ArrowLeft retraces a relation hop, the keyboard twin of the Back button. It claims the key ONLY when there is
+    // a hop to return to (otherwise the browser's own Back and a text field's word-left caret keep it) and never while
+    // typing. A separate listener, like the "?" and "/" keys above, so its guard stays isolated.
+    useEffect(function () {
+        const handleBackKey = function (event: KeyboardEvent) {
+            if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.key !== 'ArrowLeft' || backStack.length === 0) {
+                return;
+            }
+            const target = event.target;
+            if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+                return;
+            }
+            event.preventDefault();
+            handleGoBack();
+        };
+        window.addEventListener('keydown', handleBackKey);
+        return function () {
+            window.removeEventListener('keydown', handleBackKey);
+        };
+    }, [backStack, handleGoBack]);
+
     // Everything the quick-open palette (Cmd/Ctrl+K) can jump to: every listed file, then every entry by title (with
     // its file as the muted hint). Files open the tab; entries open the file and scroll to the entry.
     const quickOpenItems = useMemo(function (): QuickOpenItem[] {

@@ -43,7 +43,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
         heading: 'Navigation',
         shortcuts: [
             { keys: [MOD, 'K'], description: 'Quick-open a file or entry by name' },
-            { keys: ['Up', 'Down'], description: 'Move between results in the Search panel (Enter opens)' }
+            { keys: ['Up', 'Down'], description: 'Move between results in the Search panel (Enter opens)' },
+            { keys: ['Alt', 'Left'], description: 'Back: retrace a "Relates to" / "Referenced by" jump' }
         ]
     },
     {
