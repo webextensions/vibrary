@@ -79,4 +79,4 @@ const runTaskAsync = async function ({ cwd, title, content, notes, options, inst
     }
 };
 
-export { runTaskAsync };
+export { isRalphLoopSelected, runTaskAsync };
