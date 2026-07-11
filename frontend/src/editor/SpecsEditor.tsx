@@ -685,7 +685,10 @@ const SpecsEditor = function (
         // gated on the same reorderable condition below). Distinct from Alt+Arrow, which merely steps focus between cards.
         const isMove = event.altKey && event.shiftKey && isArrow;
         const isJump = !event.altKey && !event.ctrlKey && !event.metaKey && (event.key === 'Home' || event.key === 'End');
-        if (!isStep && !isMove && !isJump) {
+        // Bare "a" approves (or reapproves) the focused entry - a fast path for reviewing down a list with Alt+Arrow.
+        // It only ever adds or refreshes a sign-off, never removes one (that needs the confirm the button enforces).
+        const isApprove = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && (event.key === 'a' || event.key === 'A');
+        if (!isStep && !isMove && !isJump && !isApprove) {
             return;
         }
         // Never steal the key from text entry or a dropdown: the scroll area also holds the filter box, every
@@ -696,6 +699,18 @@ const SpecsEditor = function (
         const isEditable = target instanceof HTMLElement && target.isContentEditable;
         const isInDropdown = target instanceof Element && target.closest('[role="combobox"], [role="listbox"]') !== null;
         if (isTextInput || isEditable || isInDropdown || target instanceof HTMLTextAreaElement) {
+            return;
+        }
+        if (isApprove) {
+            const activeCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
+            const cardId = activeCard instanceof HTMLElement ? activeCard.dataset.specId ?? '' : '';
+            const index = specs.findIndex(function (spec) { return spec.id === cardId; });
+            // No-op when no card is focused, or the entry is already approved against its current content (approving
+            // again would only re-stamp its updated time). Otherwise approve/reapprove, mirroring the header button.
+            if (index !== -1 && specs[index].approved !== hashContent(specs[index])) {
+                event.preventDefault();
+                updateAt(index, { ...specs[index], approved: hashContent(specs[index]) });
+            }
             return;
         }
         if (isMove) {

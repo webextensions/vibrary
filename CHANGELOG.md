@@ -28,6 +28,8 @@ All notable changes to this project are documented here. The format loosely foll
   for an at-a-glance sense of overall progress; it tracks the open files' live edits like the badges do.
 - Editing the title of an entry that other entries reference now shows a "renaming breaks N links" hint, since
   `relatesTo` references resolve by exact title - a heads-up before an edit silently strands those links.
+- Press **A** to approve (or re-approve a stale) focused entry - a keyboard fast path for reviewing down a list with
+  Alt+ArrowUp/Down. It never removes an approval and is ignored while typing.
 
 ### Changed
 

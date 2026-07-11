@@ -25,6 +25,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
             { keys: ['Home', 'End'], description: 'Jump to the first / last entry card (not while typing)' },
             { keys: ['Alt', 'Shift', 'Up'], description: 'Move the focused entry up (file order only)' },
             { keys: ['Alt', 'Shift', 'Down'], description: 'Move the focused entry down (file order only)' },
+            { keys: ['A'], description: 'Approve / reapprove the focused entry (not while typing)' },
             { keys: ['/'], description: 'Filter the entries by text (not while typing)' }
         ]
     },
