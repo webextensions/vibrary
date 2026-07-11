@@ -5,10 +5,14 @@
     flex-direction: column;
 }
 
-/* The scrolling list region. Holds the filter row and the entry cards; the footer below it stays put. */
+/* The scrolling list region. Holds the filter row and the entry cards; the footer below it stays put. Only vertical
+   scrolling is intended - cards wrap to fit - so clip the horizontal axis: without this, overflow-y:auto makes the
+   browser compute overflow-x to auto too, and a 1px sub-pixel rounding of a card's width raises a stray horizontal
+   scrollbar under the list (most visible on a narrow phone viewport). */
 .scroll-area {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 16px;
