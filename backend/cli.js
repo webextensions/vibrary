@@ -60,4 +60,4 @@ const run = function (argv = process.argv) {
     program.parse(argv);
 };
 
-export { buildProgram, run };
+export { buildProgram, parsePort, run };
