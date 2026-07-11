@@ -21,17 +21,21 @@ Initial release. A globally-installable local web app for browsing and editing v
 
 - Structured entry editor and a read-only Raw XML view (with copy and line-wrap), both backed by one model.
 - Per-entry: approve / re-approve with content-hash staleness, duplicate, copy as Markdown, a live word/character
-  count, a one-click "make unique" fix for duplicate titles, and up/down reordering.
-- Bulk selection operations (approve, remove approval, copy as Markdown, duplicate, delete) and a batch agent apply.
+  count, a one-click "make unique" fix for a title duplicated within or across files, and up/down reordering.
+- Broken "Relates to" references (pointing at a title no entry has) are flagged - an amber chip on the reference, a
+  header badge on the entry, and a per-file count in the sidebar - and cleared in one click on a card or in bulk.
+- Bulk selection operations (approve, remove approval, add / remove label, remove broken references, copy as Markdown,
+  duplicate, delete) and a batch agent apply.
 - Filter entries by approval status, type, label, creator (Human / AI), or free text, with a one-click clear; a
   per-file approval meter; and a view-only sort (file order, title, recently updated, or approval status).
-- Concurrent-change detection: a save is refused if the file changed on disk since it was opened.
+- Save the active file (Ctrl/Cmd+S) or, when several are unsaved, every open file at once (Save all in the Open
+  Editors list). Concurrent-change detection: a save is refused if the file changed on disk since it was opened.
 
 ### Navigation
 
-- Quick-open palette (`Cmd/Ctrl+K`) to jump to any file or entry by name, a keyboard-shortcuts help dialog (`?`),
-  full-text search across files (matching entry title, content, notes, and labels), and per-folder session restore
-  of open tabs.
+- Quick-open palette (`Cmd/Ctrl+K`) to jump to any file or entry by name, `/` to jump to the entry text filter, a
+  keyboard-shortcuts help dialog (`?`), full-text search across files (matching entry title, content, notes, and
+  labels, and labelling each result with its entry type), and per-folder session restore of open tabs.
 
 ### Git and agents
 
