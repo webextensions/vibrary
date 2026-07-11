@@ -413,6 +413,15 @@ const SettingsIcon = function () {
     );
 };
 
+const CopyIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="5.5" y="5.5" width="8.5" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <path d="M10.5 5.5V3.5A1.5 1.5 0 0 0 9 2H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
+};
+
 const HelpIcon = function () {
     return (
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -431,6 +440,7 @@ export {
     ClickIcon,
     CloseIcon,
     CodeIcon,
+    CopyIcon,
     DiscardIcon,
     EditIcon,
     ExplorerIcon,

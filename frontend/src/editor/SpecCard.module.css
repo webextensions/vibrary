@@ -76,6 +76,7 @@
 
 .spec-card .remove,
 .spec-card .edit,
+.spec-card .copy,
 .spec-card .duplicate,
 .spec-card .approve {
     display: inline-flex;
@@ -97,6 +98,7 @@
     color: #0969da;
 }
 
+.spec-card .copy,
 .spec-card .duplicate {
     color: #656d76;
 }
@@ -346,9 +348,10 @@
         margin-left: auto;
     }
 
-    /* Tight on width: drop the Remove/Edit/Duplicate labels and keep just their icons. */
+    /* Tight on width: drop the Remove/Edit/Copy/Duplicate labels and keep just their icons. */
     .remove .action-text,
     .edit .action-text,
+    .copy .action-text,
     .duplicate .action-text {
         display: none;
     }

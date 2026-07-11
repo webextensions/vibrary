@@ -3,15 +3,18 @@ import { type ReactNode, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
 import { populateTitle } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
+import { copyText } from '../shared/copyText.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
+import { specToMarkdown } from './specMarkdown.ts';
 import { AGENTS, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
-import { ApproveIcon, ChevronIcon, ClickIcon, EditIcon, PlusIcon, RemoveIcon, TypeIcon } from '../shared/Icons.tsx';
+import { ApproveIcon, ChevronIcon, ClickIcon, CopyIcon, EditIcon, PlusIcon, RemoveIcon, TypeIcon } from '../shared/Icons.tsx';
 import { RunActionSection } from './RunActionSection.tsx';
 
 import formStyles from './forms.module.css';
@@ -196,6 +199,17 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
         update({ approved: currentHash });
     };
 
+    // Copy this entry to the clipboard as readable Markdown, for pasting into a PR, doc, or chat. copyText falls back
+    // to the legacy path on a plain-HTTP LAN origin where the async Clipboard API is absent (the phone case).
+    const handleCopyMarkdown = async function () {
+        const copied = await copyText(specToMarkdown(value));
+        if (copied) {
+            toast.success('Copied as Markdown');
+        } else {
+            toast.error('Could not copy to the clipboard');
+        }
+    };
+
     // Confirm before deleting the whole spec - removal is destructive and not undoable.
     const confirmRemove = async function () {
         const confirmed = await confirmDialog(
@@ -291,6 +305,9 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                     </button>
                     <button type="button" className={styles.edit} onClick={onToggleMode}>
                         <EditIcon /><span className={styles.actionText}>{isEditing ? 'Done' : 'Edit'}</span>
+                    </button>
+                    <button type="button" className={styles.copy} title="Copy this entry as Markdown" onClick={handleCopyMarkdown}>
+                        <CopyIcon /><span className={styles.actionText}>Copy</span>
                     </button>
                     <button type="button" className={styles.duplicate} title="Duplicate this entry" onClick={onDuplicate}>
                         <PlusIcon /><span className={styles.actionText}>Duplicate</span>
