@@ -165,6 +165,9 @@ does not block the others).
 - A - approve (or re-approve a stale) focused entry, the keyboard equivalent of its Approve button, for reviewing down a
   list with Alt+ArrowUp/Down. It only ever adds or refreshes an approval, never removes one (that needs the button's
   confirm); a no-op on an already-approved entry. Ignored while typing in a text field.
+- E - toggle the focused entry between edit and review mode, the keyboard equivalent of its Edit button, so a keyboard
+  review can fix an entry in place. To leave edit mode, focus the card itself (not one of its fields) and press it
+  again. Ignored while typing in a text field.
 - Escape - closes the open popup, menu, or dialog first; with none open, clears the entry or file selection.
 - ArrowLeft/ArrowRight/Home/End on a focused editor tab - switch tabs (wrapping at the ends); the whole strip is a
   single Tab stop, so keyboarding past it costs one press however many files are open.

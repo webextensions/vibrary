@@ -691,7 +691,11 @@ const SpecsEditor = function (
         // Bare "a" approves (or reapproves) the focused entry - a fast path for reviewing down a list with Alt+Arrow.
         // It only ever adds or refreshes a sign-off, never removes one (that needs the confirm the button enforces).
         const isApprove = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && (event.key === 'a' || event.key === 'A');
-        if (!isStep && !isMove && !isJump && !isApprove) {
+        // Bare "e" toggles the focused entry between edit and review, the keyboard twin of its Edit button, so a
+        // keyboard review can fix an entry in place. (To leave edit mode, focus the card - not one of its fields,
+        // where "e" types normally - and press it again.)
+        const isEdit = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && (event.key === 'e' || event.key === 'E');
+        if (!isStep && !isMove && !isJump && !isApprove && !isEdit) {
             return;
         }
         // Never steal the key from text entry or a dropdown: the scroll area also holds the filter box, every
@@ -713,6 +717,15 @@ const SpecsEditor = function (
             if (index !== -1 && specs[index].approved !== hashContent(specs[index])) {
                 event.preventDefault();
                 updateAt(index, { ...specs[index], approved: hashContent(specs[index]) });
+            }
+            return;
+        }
+        if (isEdit) {
+            const activeCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
+            const cardId = activeCard instanceof HTMLElement ? activeCard.dataset.specId ?? '' : '';
+            if (cardId !== '') {
+                event.preventDefault();
+                toggleMode(cardId);
             }
             return;
         }

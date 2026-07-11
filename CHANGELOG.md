@@ -30,6 +30,8 @@ All notable changes to this project are documented here. The format loosely foll
   `relatesTo` references resolve by exact title - a heads-up before an edit silently strands those links.
 - Press **A** to approve (or re-approve a stale) focused entry - a keyboard fast path for reviewing down a list with
   Alt+ArrowUp/Down. It never removes an approval and is ignored while typing.
+- Press **E** to toggle the focused entry between edit and review mode (the keyboard equivalent of its Edit button),
+  ignored while typing.
 
 ### Changed
 
