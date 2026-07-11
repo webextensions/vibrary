@@ -705,6 +705,7 @@ const SpecsEditor = function (
                     {showFilters &&
                     <input
                         type="text"
+                        id="entry-text-filter"
                         className={styles.textFilter}
                         placeholder="Filter text..."
                         aria-label="Filter entries by text"

@@ -327,6 +327,39 @@ const App = function () {
         };
     }, []);
 
+    // "/" jumps to the structured editor's text filter - the find-in-view gesture GitHub and many apps bind to it -
+    // opening the filter panel first if it is closed. Bare keypress only, never while typing into a field (the editor
+    // is full of inputs where "/" is just a character), never as part of a chord, and only when a structured file
+    // editor with entries is actually showing, so the key is swallowed only when it will land somewhere. The input
+    // renders lazily with the panel, so focus on the next frame once it has mounted (mirrors focusSpecContent). A
+    // separate listener, like the "?" help key, to keep its editable-target guard isolated.
+    useEffect(function () {
+        const handleFilterKey = function (event: KeyboardEvent) {
+            if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) {
+                return;
+            }
+            const target = event.target;
+            if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+                return;
+            }
+            if (activeTab === null || activeTab.kind !== 'file' || activeTab.loading || activeTab.innerTab !== 'structured' || activeTab.parseError !== null || activeTab.specs.length === 0) {
+                return;
+            }
+            event.preventDefault();
+            setShowFilters(true);
+            requestAnimationFrame(function () {
+                const input = document.getElementById('entry-text-filter');
+                if (input instanceof HTMLInputElement) {
+                    input.focus();
+                }
+            });
+        };
+        window.addEventListener('keydown', handleFilterKey);
+        return function () {
+            window.removeEventListener('keydown', handleFilterKey);
+        };
+    }, [activeTab]);
+
     // Generate entries of the chosen type with the backend AI agent, then refresh the editor from disk. The agent reads
     // the file from disk, so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile).
     const handleGenerate = useCallback(async function (type: EntryType, count: number, instructions: string) {

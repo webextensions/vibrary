@@ -110,6 +110,8 @@ model to XML (see [vibrary-file-format.md](vibrary-file-format.md)), regardless 
   Enter to open).
 - `?` - open the keyboard-shortcuts help dialog (also reachable from the `?` button at the foot of the navigation
   rail). Ignored while typing in a field.
+- `/` - jump to the structured editor's text filter, opening the filter panel first if it is closed. Ignored while
+  typing in a field, and a no-op unless a structured editor with entries is showing.
 - Alt+ArrowUp / Alt+ArrowDown - move to the previous / next entry card, and Home / End jump to the first / last, landing
   on the card's selection checkbox and scrolling it into view. Walks the entries currently shown, so an entry hidden by
   a filter is skipped. Ignored while typing in a text field or using a dropdown, so it never disturbs editing.

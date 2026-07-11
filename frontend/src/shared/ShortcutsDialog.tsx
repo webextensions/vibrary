@@ -22,7 +22,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
             { keys: [MOD, 'S'], description: 'Save the current file' },
             { keys: ['Alt', 'Up'], description: 'Move to the previous entry card (not while typing)' },
             { keys: ['Alt', 'Down'], description: 'Move to the next entry card (not while typing)' },
-            { keys: ['Home', 'End'], description: 'Jump to the first / last entry card (not while typing)' }
+            { keys: ['Home', 'End'], description: 'Jump to the first / last entry card (not while typing)' },
+            { keys: ['/'], description: 'Filter the entries by text (not while typing)' }
         ]
     },
     {
