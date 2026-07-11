@@ -846,6 +846,7 @@ const App = function () {
                                         onChange={onSpecsChange}
                                         onGenerate={handleGenerate}
                                         onOpenRelated={handleOpenRelated}
+                                        onOpenBacklink={openEntryByTitle}
                                         showFilters={showFilters}
                                         statusFilter={statusFilter}
                                         onStatusFilterChange={setStatusFilter}

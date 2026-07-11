@@ -54,6 +54,9 @@ type SpecCardProperties = {
     referencedBy: BacklinkSource[];
     // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
     onOpenRelated: (title: string) => void;
+    // Navigate to a "Referenced by" source by its exact file + title (so a title duplicated across files still lands on
+    // the file that actually holds the referencing entry).
+    onOpenBacklink: (file: string, title: string) => void;
     // Toggle a clicked label chip into/out of the active label filter.
     onLabelClick: (label: string) => void;
     onChange: (next: Spec) => void;
@@ -168,7 +171,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, referencedBy, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
@@ -594,7 +597,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                                         className={cx(styles.chip, styles.chipLink)}
                                         title={`Go to "${source.title}" in ${source.file}`}
                                         onClick={function () {
-                                            onOpenRelated(source.title);
+                                            onOpenBacklink(source.file, source.title);
                                         }}
                                     >
                                         {source.title}

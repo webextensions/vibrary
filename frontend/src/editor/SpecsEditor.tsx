@@ -68,6 +68,9 @@ type SpecsEditorProperties = {
     onGenerate: (type: EntryType, count: number, instructions: string) => Promise<void>;
     // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
     onOpenRelated: (title: string) => void;
+    // Navigate to a "Referenced by" source entry by its exact file AND title - unlike onOpenRelated, which resolves a
+    // bare title folder-wide, this lands on the right file even when the source title is duplicated across files.
+    onOpenBacklink: (file: string, title: string) => void;
     // Whether the filter dropdowns are open. Toggled by the Filter button in the toolbar (see App.tsx).
     showFilters: boolean;
     // Selected status filters, owned by App so the toolbar's Filter button can show an "active" badge.
@@ -150,7 +153,7 @@ const CREATOR_FILTER_OPTIONS: Option[] = [
 // sorts that never touch the saved order.
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, backlinks, currentFilePath, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, backlinks, currentFilePath, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, onOpenBacklink, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -1165,6 +1168,7 @@ const SpecsEditor = function (
                             takenTitles={takenTitles}
                             referencedBy={backlinksFor(spec)}
                             onOpenRelated={onOpenRelated}
+                            onOpenBacklink={onOpenBacklink}
                             onLabelClick={handleLabelClick}
                             onChange={function (next) {
                                 updateAt(index, next);
