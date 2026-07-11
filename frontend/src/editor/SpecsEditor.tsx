@@ -485,18 +485,19 @@ const SpecsEditor = function (
         setSelectedIds(new Set());
     };
 
-    // Alt+ArrowUp/Down moves focus between visible cards (landing on the target card's select checkbox and scrolling
-    // it into view), so a keyboard user can traverse the list without Tabbing through every control of each card. Only
-    // fires when focus is already inside a card; every other key passes through untouched. Alt is used so the arrows
-    // stay free for text fields and native controls.
+    // Keyboard navigation between visible cards, so a keyboard user can traverse the list without Tabbing through every
+    // control of each card: Alt+ArrowUp/Down steps to the previous/next card, Home/End jumps to the first/last. Each
+    // lands on the target card's select checkbox and scrolls it into view. Alt guards the arrows (on macOS Option+Up/Down
+    // is move-caret-by-paragraph); Home/End are bare but the text-entry guard below keeps them free for editing.
     const handleListKeyDown = function (event: ReactKeyboardEvent<HTMLDivElement>) {
-        if (!event.altKey || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) {
+        const isStep = event.altKey && (event.key === 'ArrowDown' || event.key === 'ArrowUp');
+        const isJump = !event.altKey && !event.ctrlKey && !event.metaKey && (event.key === 'Home' || event.key === 'End');
+        if (!isStep && !isJump) {
             return;
         }
         // Never steal the key from text entry or a dropdown: the scroll area also holds the filter box, every
-        // textarea/title input, and the react-select menus (whose own ArrowDown ignores altKey). On macOS Option+Up/Down
-        // is move-caret-by-paragraph, so hijacking it mid-typing would lose the user's place. Checkboxes and buttons -
-        // where this navigation actually lands - are deliberately still eligible.
+        // textarea/title input, and the react-select menus (whose own ArrowDown ignores altKey; Home/End move the
+        // caret there). Checkboxes and buttons - where this navigation actually lands - are deliberately still eligible.
         const target = event.target;
         const isTextInput = target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'radio';
         const isEditable = target instanceof HTMLElement && target.isContentEditable;
@@ -508,13 +509,18 @@ const SpecsEditor = function (
         if (order.length === 0) {
             return;
         }
-        const activeCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
-        const currentId = activeCard instanceof HTMLElement ? activeCard.dataset.specId ?? '' : '';
-        const currentIndex = order.indexOf(currentId);
-        const delta = event.key === 'ArrowDown' ? 1 : -1;
-        const nextIndex = currentIndex === -1 ?
-            (delta === 1 ? 0 : order.length - 1) :
-            Math.min(order.length - 1, Math.max(0, currentIndex + delta));
+        let nextIndex;
+        if (isJump) {
+            nextIndex = event.key === 'Home' ? 0 : order.length - 1;
+        } else {
+            const activeCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
+            const currentId = activeCard instanceof HTMLElement ? activeCard.dataset.specId ?? '' : '';
+            const currentIndex = order.indexOf(currentId);
+            const delta = event.key === 'ArrowDown' ? 1 : -1;
+            nextIndex = currentIndex === -1 ?
+                (delta === 1 ? 0 : order.length - 1) :
+                Math.min(order.length - 1, Math.max(0, currentIndex + delta));
+        }
         event.preventDefault();
         const card = document.getElementById(`spec-${order[nextIndex]}`);
         card?.scrollIntoView({ block: 'center', behavior: 'smooth' });
