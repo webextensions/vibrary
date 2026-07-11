@@ -25,7 +25,12 @@ controls:
   **Approved** when approved against the current content, and yellow **Reapprove** when the content changed since
   approval (hover for the hash-mismatch details). Clicking **Reapprove** re-signs against the current text; removing
   an existing approval is confirmed first.
-- **Content** - multi-line textarea. In edit mode a live word/character count shows below it.
+- **Content** - multi-line textarea. In edit mode a live word/character count shows below it. In review mode a long
+  content is clamped to a preview with a **Show more** / **Show less** toggle, so one wall-of-text entry cannot bury
+  the rest of the list; a short entry is shown in full with no toggle.
+- **Type** - the entry's kind (`spec` / `review` / `task` / `idea`), shown as the icon on the collapsed card and
+  editable as a dropdown in the expanded fields. Changing it turns the headless-agent run action on or off (only
+  `spec`/`task` entries have one) and updates the type icon immediately.
 - **Copy** - copies the entry to the clipboard as Markdown (the title as a heading, the content, and any notes, labels
   and relations), for pasting into a PR, doc, or chat.
 - **Notes** - multi-line textarea.
@@ -53,12 +58,13 @@ controls:
   agent's prompt alongside the entry's own content. Like every agent action, the run executes with permission prompts
   disabled - see "Agent runs and permissions" in [README.md](README.md).
 
-The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry, and **Create
+The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry of the file's
+own type family (specs.xml adds a spec, tasks.xml a task, and so on - the type stays editable afterward), and **Create
 entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks / ideas - defaulting to the
 open file's name family), how many, and optional custom instructions for the run; a headless agent then appends that
 many entries of the chosen type to the file. **Duplicate** on a card clones it (a fresh entry with the same content,
-notes, labels and relations, but its own id, timestamps and an unapproved state) as a starting point for a similar
-one. **Remove** on a card deletes that entry. The stacked up/down control at the start of a card's actions moves the
+notes, labels and relations, but its own id, timestamps, an unapproved state, and a unique `-copy` title) as a
+starting point for a similar one. **Remove** on a card deletes that entry (with a brief **Undo** toast to restore it). The stacked up/down control at the start of a card's actions moves the
 entry one position in the file (disabled at the ends, and hidden while a filter or a non-default sort is active, since
 moving relative to hidden or re-ordered entries would be ambiguous).
 
@@ -74,11 +80,14 @@ status. The sort is view-only and never changes the saved file. Two buttons act 
 
 - **Operations** - **Approve**, **Remove Approval**, **Add label** / **Remove label** (prompt for a label and add it
   to, or strip it from, every ticked entry), **Remove broken references** (drops every dangling `relatesTo` reference -
-  see below - from the ticked entries, touching only those that have one), **Find & replace** (opens a dialog to
+  see below - from the ticked entries, touching only those that have one), **Change type** (opens a dialog to set every
+  ticked entry to a chosen type at once), **Find & replace** (opens a dialog to
   replace a term across the ticked entries' content and notes - titles are left alone since they are `relatesTo`
   identifiers - with a **Match case** toggle and a live occurrence count), **Copy as Markdown** (copies the ticked entries as one Markdown
   document, so **Select all** then this copies the whole file), **Duplicate** (each ticked entry's copy is inserted
-  right after its own source), and **Delete**. These apply to any entry type.
+  right after its own source), and **Delete**. These apply to any entry type. The operations that lose information -
+  **Delete**, **Change type**, **Find & replace**, and **Remove broken references** - each offer a brief **Undo** toast
+  that restores exactly what they changed, leaving any edit you made in the meantime untouched.
 - **Actions** - **Apply changes**, which queues the same headless-agent apply run as the single-card button over
   every ticked `spec` entry as one combined job, with its own **Provide custom one time instructions** checkbox
   applying the entered guidance to the whole batch. Only `spec` entries batch: a `task`'s action is "run" (with its
