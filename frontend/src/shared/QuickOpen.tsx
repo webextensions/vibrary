@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import styles from './QuickOpen.module.css';
@@ -15,6 +15,10 @@ type QuickOpenItem = { key: string; label: string; hint?: string; select: () => 
 const QuickOpen = function ({ items, onClose }: { items: QuickOpenItem[]; onClose: () => void }) {
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
+    // Ids tying the query box to the highlighted row, so a screen reader announces the active option as the highlight
+    // moves (the ARIA combobox/listbox pattern - focus stays in the input, aria-activedescendant points at the row).
+    const listId = useId();
+    const optionId = function (index: number) { return `${listId}-option-${index}`; };
     const inputReference = useRef<HTMLInputElement>(null);
     const listReference = useRef<HTMLUListElement>(null);
     const previouslyFocusedReference = useRef<Element | null>(null);
@@ -94,6 +98,11 @@ const QuickOpen = function ({ items, onClose }: { items: QuickOpenItem[]; onClos
                     type="text"
                     placeholder="Go to file or entry..."
                     aria-label="Go to file or entry"
+                    role="combobox"
+                    aria-expanded={matches.length > 0}
+                    aria-controls={listId}
+                    aria-activedescendant={matches.length > 0 ? optionId(safeIndex) : undefined}
+                    aria-autocomplete="list"
                     value={query}
                     onChange={function (event) {
                         setQuery(event.target.value);
@@ -103,13 +112,16 @@ const QuickOpen = function ({ items, onClose }: { items: QuickOpenItem[]; onClos
                 />
                 {matches.length === 0 ?
                     <p className={styles.empty}>No matches</p> :
-                    <ul className={styles.list} ref={listReference}>
+                    <ul id={listId} role="listbox" aria-label="Go to file or entry" className={styles.list} ref={listReference}>
                         {matches.map(function (item, index) {
                             return (
-                                <li key={item.key}>
+                                <li key={item.key} role="presentation">
                                     <button
                                         type="button"
                                         tabIndex={-1}
+                                        role="option"
+                                        id={optionId(index)}
+                                        aria-selected={index === safeIndex}
                                         className={cx(styles.row, index === safeIndex && styles.active)}
                                         onMouseMove={function () { setActiveIndex(index); }}
                                         onClick={function () { chooseAt(index); }}
