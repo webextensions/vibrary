@@ -8,20 +8,24 @@ import styles from './SpecsEditor.module.css';
 type FindReplaceDialogProperties = {
     onClose: () => void;
     // How many entries the replace will cover (the current selection) and a live count of the term's occurrences among
-    // them, both owned by SpecsEditor which holds the specs and the selection.
+    // them (honoring the Match case toggle), both owned by SpecsEditor which holds the specs and the selection.
     selectedCount: number;
-    countFor: (find: string) => number;
+    countFor: (find: string, isCaseSensitive: boolean) => number;
     // Replace every occurrence of `find` with `replace` in the selected entries' content and notes.
-    onReplace: (find: string, replace: string) => void
+    onReplace: (find: string, replace: string, isCaseSensitive: boolean) => void
 };
 
 // Find & replace across the selected entries' content and notes (never titles - they are relatesTo identifiers). A
 // bulk Operation: SpecsEditor mounts this only while open, so its form state always starts fresh. The live occurrence
-// count updates as the Find term is typed, and Replace all is disabled until the term matches something.
+// count updates as the Find term (and the Match case toggle) change, and Replace all is disabled until the term
+// matches something.
 const FindReplaceDialog = function ({ onClose, selectedCount, countFor, onReplace }: FindReplaceDialogProperties) {
     const [find, setFind] = useState('');
     const [replace, setReplace] = useState('');
-    const occurrences = countFor(find);
+    // Case-sensitive by default, so a bulk replace matches exactly what was typed rather than silently touching other
+    // casings; unticking Match case broadens it.
+    const [matchCase, setMatchCase] = useState(true);
+    const occurrences = countFor(find, matchCase);
     const entryWord = selectedCount === 1 ? 'entry' : 'entries';
 
     const handleSubmit = function (event: FormEvent) {
@@ -29,7 +33,7 @@ const FindReplaceDialog = function ({ onClose, selectedCount, countFor, onReplac
         if (find === '' || occurrences === 0) {
             return;
         }
-        onReplace(find, replace);
+        onReplace(find, replace, matchCase);
         onClose();
     };
 
@@ -57,6 +61,17 @@ const FindReplaceDialog = function ({ onClose, selectedCount, countFor, onReplac
                             setReplace(changeEvent.target.value);
                         }}
                     />
+                </label>
+                <label className={styles.aiField} htmlFor="find-match-case">
+                    <input
+                        id="find-match-case"
+                        type="checkbox"
+                        checked={matchCase}
+                        onChange={function (changeEvent) {
+                            setMatchCase(changeEvent.target.checked);
+                        }}
+                    />
+                    Match case
                 </label>
                 <p className={styles.muted}>
                     {find === '' ?

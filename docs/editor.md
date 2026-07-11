@@ -76,7 +76,7 @@ status. The sort is view-only and never changes the saved file. Two buttons act 
   to, or strip it from, every ticked entry), **Remove broken references** (drops every dangling `relatesTo` reference -
   see below - from the ticked entries, touching only those that have one), **Find & replace** (opens a dialog to
   replace a term across the ticked entries' content and notes - titles are left alone since they are `relatesTo`
-  identifiers - with a live occurrence count), **Copy as Markdown** (copies the ticked entries as one Markdown
+  identifiers - with a **Match case** toggle and a live occurrence count), **Copy as Markdown** (copies the ticked entries as one Markdown
   document, so **Select all** then this copies the whole file), **Duplicate** (each ticked entry's copy is inserted
   right after its own source), and **Delete**. These apply to any entry type.
 - **Actions** - **Apply changes**, which queues the same headless-agent apply run as the single-card button over

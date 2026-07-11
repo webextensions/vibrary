@@ -15,7 +15,7 @@ test('replaces in content and notes of selected entries, stamping only the ones 
         specOf('c', { content: 'another cat' })
     ];
     const selected = new Set(['a', 'b']); // c is not selected, so its "cat" is untouched
-    const result = replaceInEntries(specs, 'cat', 'dog', selected, '2026-07-11T00:00:00.000Z');
+    const result = replaceInEntries(specs, 'cat', 'dog', selected, '2026-07-11T00:00:00.000Z', true);
 
     assert.equal(result.occurrences, 2); // one in a.content, one in a.notes; b has none
     assert.equal(result.entriesChanged, 1); // only a changed
@@ -31,7 +31,7 @@ test('replaces in content and notes of selected entries, stamping only the ones 
 
 test('titles are never rewritten (they are relatesTo identifiers)', function () {
     const specs = [specOf('a', { title: 'cat-spec', content: 'cat body' })];
-    const result = replaceInEntries(specs, 'cat', 'dog', new Set(['a']), 'now');
+    const result = replaceInEntries(specs, 'cat', 'dog', new Set(['a']), 'now', true);
     assert.equal(result.specs[0].title, 'cat-spec');
     assert.equal(result.specs[0].content, 'dog body');
     assert.equal(result.occurrences, 1);
@@ -39,14 +39,14 @@ test('titles are never rewritten (they are relatesTo identifiers)', function () 
 
 test('an empty find term is a no-op', function () {
     const specs = [specOf('a', { content: 'x' })];
-    const result = replaceInEntries(specs, '', 'y', new Set(['a']), 'now');
+    const result = replaceInEntries(specs, '', 'y', new Set(['a']), 'now', true);
     assert.equal(result.occurrences, 0);
     assert.equal(result.specs, specs);
 });
 
 test('find === replace changes nothing: the entry is not re-stamped nor counted', function () {
     const specs = [specOf('a', { content: 'the cat' })];
-    const result = replaceInEntries(specs, 'cat', 'cat', new Set(['a']), 'now');
+    const result = replaceInEntries(specs, 'cat', 'cat', new Set(['a']), 'now', true);
     assert.equal(result.occurrences, 0);
     assert.equal(result.entriesChanged, 0);
     assert.equal(result.specs[0], specs[0]); // same object - no spurious updated stamp
@@ -57,7 +57,19 @@ test('countReplaceable counts occurrences across the selected entries only', fun
         specOf('a', { content: 'aa', notes: 'a' }),
         specOf('b', { content: 'aaa' })
     ];
-    assert.equal(countReplaceable(specs, 'a', new Set(['a'])), 3); // 2 in content + 1 in notes
-    assert.equal(countReplaceable(specs, 'a', new Set(['a', 'b'])), 6);
-    assert.equal(countReplaceable(specs, '', new Set(['a', 'b'])), 0);
+    assert.equal(countReplaceable(specs, 'a', new Set(['a']), true), 3); // 2 in content + 1 in notes
+    assert.equal(countReplaceable(specs, 'a', new Set(['a', 'b']), true), 6);
+    assert.equal(countReplaceable(specs, '', new Set(['a', 'b']), true), 0);
+});
+
+test('case-insensitive matches every casing and swaps only the matched runs, keeping surrounding text', function () {
+    const specs = [specOf('a', { content: 'Cat CAT cat' })];
+    // Case-sensitive 'cat' hits only the lowercase word (not Cat or CAT).
+    assert.equal(countReplaceable(specs, 'cat', new Set(['a']), true), 1);
+    // Case-insensitive 'cat' hits all three casings.
+    assert.equal(countReplaceable(specs, 'cat', new Set(['a']), false), 3);
+    const result = replaceInEntries(specs, 'cat', 'dog', new Set(['a']), 'now', false);
+    assert.equal(result.occurrences, 3);
+    // Each matched run becomes the literal 'dog'; the surrounding spaces are preserved.
+    assert.equal(result.specs[0].content, 'dog dog dog');
 });

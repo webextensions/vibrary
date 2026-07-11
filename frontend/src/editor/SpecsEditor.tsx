@@ -762,8 +762,8 @@ const SpecsEditor = function (
 
     // Apply the Find & replace dialog's terms across the selected entries' content and notes. replaceInEntries rewrites
     // (and re-stamps) only entries that actually contained the term; a toast reports the result.
-    const handleReplaceAll = function (find: string, replace: string) {
-        const result = replaceInEntries(specs, find, replace, selectedIds, nowTimestamp());
+    const handleReplaceAll = function (find: string, replace: string, isCaseSensitive: boolean) {
+        const result = replaceInEntries(specs, find, replace, selectedIds, nowTimestamp(), isCaseSensitive);
         if (result.entriesChanged === 0) {
             return;
         }
@@ -1117,8 +1117,8 @@ const SpecsEditor = function (
                     setFindReplaceOpen(false);
                 }}
                 selectedCount={selectedSpecs.length}
-                countFor={function (find) {
-                    return countReplaceable(specs, find, selectedIds);
+                countFor={function (find, isCaseSensitive) {
+                    return countReplaceable(specs, find, selectedIds, isCaseSensitive);
                 }}
                 onReplace={handleReplaceAll}
             />}
