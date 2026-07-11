@@ -8,6 +8,7 @@
         "vibrary-server": "./bin/vibrary-server.js"
     },
     "files": [
+        "CHANGELOG.md",
         "backend",
         "bin",
         "dist",
