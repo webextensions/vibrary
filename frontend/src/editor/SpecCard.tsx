@@ -1,5 +1,6 @@
 import cx from 'classnames';
 import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -36,6 +37,9 @@ type SpecCardProperties = {
     // The Search term to emphasize (<mark>) within this card's content and notes - set only on the entry a Search
     // result jumped to, so the exact match is visible in the (possibly long) text; undefined for every other card.
     matchQuery?: string;
+    // Render the content as Markdown in review mode (a display preference toggled in the toolbar) rather than as plain
+    // pre-wrapped text; the clamp and Search mark, which act on the raw text, do not apply in this mode.
+    renderMarkdown?: boolean;
     // Another entry in this file bears the same title; references by that title are ambiguous, so the card says so.
     hasDuplicateTitle?: boolean;
     schemas: SchemaMap;
@@ -161,7 +165,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, hasDuplicateTitle = false, schemas, allTitles, takenTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
@@ -310,6 +314,32 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
         `Approved against content ${humanHash}; content is now ${currentHash}. Reapprove to confirm the current text.` :
         undefined;
 
+    // Review-mode content: rendered Markdown when the toolbar toggle is on (the clamp and Search mark, which act on the
+    // raw text, do not apply then), otherwise the plain pre-wrapped text with its clamp and optional Show more/less.
+    const contentReview = renderMarkdown ?
+        <div className={styles.markdownBody}><ReactMarkdown>{value.content}</ReactMarkdown></div> :
+        (
+            <>
+                <span
+                    ref={contentReference}
+                    className={cx(styles.multiline, !contentExpanded && styles.clamped)}
+                >
+                    {renderText(orDash(value.content))}
+                </span>
+                {contentOverflows &&
+                <button
+                    type="button"
+                    className={styles.contentToggle}
+                    aria-expanded={contentExpanded}
+                    onClick={function () {
+                        setContentExpanded(function (previous) { return !previous; });
+                    }}
+                >
+                    {contentExpanded ? 'Show less' : 'Show more'}
+                </button>}
+            </>
+        );
+
     return (
         <fieldset id={`spec-${value.id}`} data-spec-id={value.id} className={cx(styles.specCard, highlighted && styles.highlighted)}>
             <div className={styles.specCardHead}>
@@ -455,27 +485,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                                 <span className={styles.contentMeta}>{countWords(value.content)} words, {value.content.length} chars</span>
                             </>
                         ) :
-                        (
-                            <>
-                                <span
-                                    ref={contentReference}
-                                    className={cx(styles.multiline, !contentExpanded && styles.clamped)}
-                                >
-                                    {renderText(orDash(value.content))}
-                                </span>
-                                {contentOverflows &&
-                                <button
-                                    type="button"
-                                    className={styles.contentToggle}
-                                    aria-expanded={contentExpanded}
-                                    onClick={function () {
-                                        setContentExpanded(function (previous) { return !previous; });
-                                    }}
-                                >
-                                    {contentExpanded ? 'Show less' : 'Show more'}
-                                </button>}
-                            </>
-                        )}
+                        contentReview}
                 </div>
 
                 {expanded &&

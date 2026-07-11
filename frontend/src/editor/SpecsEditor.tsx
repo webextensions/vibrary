@@ -93,7 +93,11 @@ type SpecsEditorProperties = {
     sourceDirty: boolean;
     // Move the entries at `indexes` (positions in this file) into `targetName`; App runs it on the server and reloads
     // both files, returning an outcome the dialog surfaces (a failure keeps the dialog open with the reason).
-    onMoveEntries: (indexes: number[], targetName: string) => Promise<{ ok: boolean; message?: string }>
+    onMoveEntries: (indexes: number[], targetName: string) => Promise<{ ok: boolean; message?: string }>;
+    // Render each entry's content as Markdown in review mode (the toolbar's Markdown toggle, owned by App so it holds
+    // across tab switches).
+    renderMarkdown: boolean;
+    onRenderMarkdownChange: (isEnabled: boolean) => void
 };
 
 // Human-readable label per approval state, shown as the filter option text.
@@ -147,7 +151,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 ];
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -1092,6 +1096,7 @@ const SpecsEditor = function (
                             mode={editingIds.has(spec.id) ? 'edit' : 'review'}
                             highlighted={spec.id === highlightId}
                             matchQuery={!highlightExactTitle && spec.id === highlightMatchId ? highlightQuery : undefined}
+                            renderMarkdown={renderMarkdown}
                             hasDuplicateTitle={spec.title !== '' && (duplicateTitles.has(spec.title) || crossFileTitles.has(spec.title))}
                             value={spec}
                             schemas={schemas}
@@ -1188,6 +1193,14 @@ const SpecsEditor = function (
                             return <option key={option.value} value={option.value}>{option.label}</option>;
                         })}
                     </select>
+                </label>
+                <label className={styles.sortControl} title="Render each entry's content as Markdown">
+                    <input
+                        type="checkbox"
+                        checked={renderMarkdown}
+                        onChange={function (changeEvent) { onRenderMarkdownChange(changeEvent.target.checked); }}
+                    />
+                    Markdown
                 </label>
                 <div className={styles.actionsAnchor} ref={operationsReference}>
                     {operationsOpen &&

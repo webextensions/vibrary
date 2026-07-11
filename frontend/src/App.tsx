@@ -67,6 +67,9 @@ const App = function () {
     // The entry sort order, held here (like the filters) so it persists across tab switches - the per-tab editor
     // remounts on switch, so a sort kept inside it would reset to file order every time.
     const [sortMode, setSortMode] = useState<SortMode>('file');
+    // Whether entry content renders as Markdown in review mode (a display preference); held here so it, too, holds
+    // across tab switches. Off by default - the plain-text view with its content clamp and Search mark.
+    const [renderMarkdown, setRenderMarkdown] = useState(false);
     // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
@@ -820,6 +823,8 @@ const App = function () {
                                         otherFiles={files.filter(function (name) { return name !== activeTab.path; })}
                                         sourceDirty={activeTab.dirty}
                                         onMoveEntries={handleMoveEntries}
+                                        renderMarkdown={renderMarkdown}
+                                        onRenderMarkdownChange={setRenderMarkdown}
                                     />
                                 ) :
                                 (
