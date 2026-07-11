@@ -1,6 +1,7 @@
 import cx from 'classnames';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useActivityQueueState } from '../activity/activityQueue.ts';
 import { commitChanges, discardPaths, generateCommitMessage, getGitDiff, getGitStatus, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listStashes, pullChanges, pushChanges, stagePaths, stashAction, stashChanges, unstagePaths } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { promptDialog } from '../shared/promptDialog.ts';
@@ -234,6 +235,35 @@ const SourceControlPanel = function () {
             isActive = false;
         };
     }, []);
+
+    // Auto-refresh when an agent job that edits the working tree finishes, so the panel does not sit on stale status
+    // while an apply/run-task/generate run rewrites files under it. Only FINISHED file-touching jobs count, tracked by
+    // id so each triggers at most one refresh; the first pass just seeds the seen-set (the mount load already ran) so
+    // pre-existing finished jobs do not fire a redundant refresh. The panel only mounts on the Source Control view, so
+    // this is a no-op cost while the user is elsewhere - switching back remounts and reloads anyway.
+    const { jobs } = useActivityQueueState();
+    const seenFinishedReference = useRef<Set<string> | null>(null);
+    useEffect(function () {
+        const fileTouching = new Set(['apply-spec', 'run-task', 'apply-batch', 'generate']);
+        const finishedStatuses = new Set(['success', 'error', 'aborted']);
+        const finishedIds = jobs
+            .filter(function (job) {
+                return fileTouching.has(job.kind) && finishedStatuses.has(job.status);
+            })
+            .map(function (job) { return job.id; });
+        if (seenFinishedReference.current === null) {
+            seenFinishedReference.current = new Set(finishedIds);
+            return;
+        }
+        const seen = seenFinishedReference.current;
+        const hasNew = finishedIds.some(function (id) { return !seen.has(id); });
+        for (const id of finishedIds) {
+            seen.add(id);
+        }
+        if (hasNew) {
+            void refresh();
+        }
+    }, [jobs, refresh]);
 
     // Staged entries carry an index change; Changes are tracked files with a worktree change; Untracked are new files.
     // A file mid-edit after staging (e.g. "MM") legitimately appears in both Staged and Changes. Untracked is git's "??"
