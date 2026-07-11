@@ -39,7 +39,9 @@
 }
 
 .row {
-    display: block;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
     width: 100%;
     padding: 7px 10px;
     border: 0;
@@ -48,15 +50,34 @@
     color: #1f2328;
     font: inherit;
     text-align: left;
+    cursor: pointer;
+}
+
+.row-label {
+    flex-shrink: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    cursor: pointer;
+}
+
+/* The file an entry lives in, muted and right-aligned; truncates first when space is tight. */
+.row-hint {
+    margin-left: auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: #8c959f;
+    font-size: 12px;
 }
 
 .row.active {
     background: #0969da;
     color: #fff;
+}
+
+.row.active .row-hint {
+    color: #d7e6fb;
 }
 
 .empty {

@@ -4,28 +4,32 @@ import { createPortal } from 'react-dom';
 
 import styles from './QuickOpen.module.css';
 
-// A command-palette-style quick file switcher (Cmd/Ctrl+K): type to filter the file list, Up/Down to move the
-// highlight, Enter to open, Esc or a backdrop click to close. The input keeps focus the whole time and an active
+// One row in the palette: a primary label plus an optional muted hint (e.g. the file an entry lives in). `key` is a
+// stable identity for React and dedup; `select` runs when the row is chosen.
+type QuickOpenItem = { key: string; label: string; hint?: string; select: () => void };
+
+// A command-palette-style "go to anything" (Cmd/Ctrl+K): type to filter files and entries, Up/Down to move the
+// highlight, Enter to choose, Esc or a backdrop click to close. The input keeps focus the whole time and an active
 // index tracks the highlight (a controlled combobox) rather than roving DOM focus between rows, so typing and
 // navigating never fight; focus is restored to whatever had it when the palette closes.
-const QuickOpen = function ({ files, onOpen, onClose }: { files: string[]; onOpen: (name: string) => void; onClose: () => void }) {
+const QuickOpen = function ({ items, onClose }: { items: QuickOpenItem[]; onClose: () => void }) {
     const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
     const inputReference = useRef<HTMLInputElement>(null);
     const listReference = useRef<HTMLUListElement>(null);
     const previouslyFocusedReference = useRef<Element | null>(null);
 
-    // Case-insensitive substring match on the path, preserving listing order - the goal is fast keyboard reach, not
-    // fuzzy scoring.
+    // Case-insensitive substring match over the label AND hint (so typing a file name surfaces the file and its
+    // entries), preserving the given order - the goal is fast keyboard reach, not fuzzy scoring.
     const matches = useMemo(function () {
         const needle = query.trim().toLowerCase();
         if (needle === '') {
-            return files;
+            return items;
         }
-        return files.filter(function (name) {
-            return name.toLowerCase().includes(needle);
+        return items.filter(function (item) {
+            return `${item.label} ${item.hint ?? ''}`.toLowerCase().includes(needle);
         });
-    }, [files, query]);
+    }, [items, query]);
 
     // Derive the in-range index rather than storing a clamped one: a narrower query can shrink the list past the raw
     // index, so clamp it here (typing also resets it to 0 in the input's onChange). Everything below reads this.
@@ -50,10 +54,10 @@ const QuickOpen = function ({ files, onOpen, onClose }: { files: string[]; onOpe
         }
     }, [safeIndex]);
 
-    const openAt = function (index: number) {
-        const name = matches[index];
-        if (name !== undefined) {
-            onOpen(name);
+    const chooseAt = function (index: number) {
+        const item = matches[index];
+        if (item !== undefined) {
+            item.select();
             onClose();
         }
     };
@@ -67,7 +71,7 @@ const QuickOpen = function ({ files, onOpen, onClose }: { files: string[]; onOpe
             setActiveIndex(matches.length === 0 ? 0 : (safeIndex <= 0 ? matches.length : safeIndex) - 1);
         } else if (event.key === 'Enter') {
             event.preventDefault();
-            openAt(safeIndex);
+            chooseAt(safeIndex);
         } else if (event.key === 'Escape') {
             event.preventDefault();
             onClose();
@@ -81,15 +85,15 @@ const QuickOpen = function ({ files, onOpen, onClose }: { files: string[]; onOpe
                 className={styles.palette}
                 role="dialog"
                 aria-modal="true"
-                aria-label="Quick open file"
+                aria-label="Go to file or entry"
                 onMouseDown={function (event) { event.stopPropagation(); }}
             >
                 <input
                     ref={inputReference}
                     className={styles.input}
                     type="text"
-                    placeholder="Go to file..."
-                    aria-label="Go to file"
+                    placeholder="Go to file or entry..."
+                    aria-label="Go to file or entry"
                     value={query}
                     onChange={function (event) {
                         setQuery(event.target.value);
@@ -98,19 +102,20 @@ const QuickOpen = function ({ files, onOpen, onClose }: { files: string[]; onOpe
                     onKeyDown={handleKeyDown}
                 />
                 {matches.length === 0 ?
-                    <p className={styles.empty}>No matching files</p> :
+                    <p className={styles.empty}>No matches</p> :
                     <ul className={styles.list} ref={listReference}>
-                        {matches.map(function (name, index) {
+                        {matches.map(function (item, index) {
                             return (
-                                <li key={name}>
+                                <li key={item.key}>
                                     <button
                                         type="button"
                                         tabIndex={-1}
                                         className={cx(styles.row, index === safeIndex && styles.active)}
                                         onMouseMove={function () { setActiveIndex(index); }}
-                                        onClick={function () { openAt(index); }}
+                                        onClick={function () { chooseAt(index); }}
                                     >
-                                        {name}
+                                        <span className={styles.rowLabel}>{item.label}</span>
+                                        {item.hint !== undefined && <span className={styles.rowHint}>{item.hint}</span>}
                                     </button>
                                 </li>
                             );
@@ -122,4 +127,4 @@ const QuickOpen = function ({ files, onOpen, onClose }: { files: string[]; onOpe
     );
 };
 
-export { QuickOpen };
+export { QuickOpen, type QuickOpenItem };

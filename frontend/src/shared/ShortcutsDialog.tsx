@@ -25,7 +25,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     {
         heading: 'Navigation',
         shortcuts: [
-            { keys: [MOD, 'K'], description: 'Quick-open a file by name' }
+            { keys: [MOD, 'K'], description: 'Quick-open a file or entry by name' }
         ]
     },
     {

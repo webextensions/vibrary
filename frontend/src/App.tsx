@@ -11,7 +11,7 @@ import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
 import { confirmDialog } from './shared/confirmDialog.ts';
 import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
-import { QuickOpen } from './shared/QuickOpen.tsx';
+import { QuickOpen, type QuickOpenItem } from './shared/QuickOpen.tsx';
 import { ShortcutsDialog } from './shared/ShortcutsDialog.tsx';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './explorer/useFileCounts.ts';
@@ -419,9 +419,16 @@ const App = function () {
         setDrawerOpen(false);
     }, [openOrFocus]);
 
-    // Open the entry a clicked "Relates to" chip points at: resolve its title to a file via titleIndex, then reuse
-    // the open+scroll+highlight mechanism with EXACT-title matching - a substring match would let an earlier entry
-    // that merely MENTIONS the title (which related entries do by definition) win over the entry bearing it. A stale
+    // Open a specific entry (its file is known) and scroll to / highlight it by EXACT title - the mechanism shared by
+    // the "Relates to" chip navigation and the quick-open palette's entry rows. Exact-title matching is load-bearing:
+    // a substring match would let an earlier entry that merely MENTIONS the title win over the entry bearing it.
+    const openEntryByTitle = useCallback(function (path: string, title: string) {
+        openOrFocus(path);
+        setSearchTarget({ path, query: title, matchIndex: 0, exactTitle: true });
+        setDrawerOpen(false);
+    }, [openOrFocus]);
+
+    // Open the entry a clicked "Relates to" chip points at: resolve its title to a file via titleIndex first. A stale
     // reference (the target renamed or removed since the chip was set) gets a toast instead of a silent dead click.
     const handleOpenRelated = useCallback(function (title: string) {
         const entry = titleIndex.find(function (candidate) {
@@ -431,10 +438,20 @@ const App = function () {
             toast(`No entry titled "${title}" found - it may have been renamed or removed.`);
             return;
         }
-        openOrFocus(entry.path);
-        setSearchTarget({ path: entry.path, query: title, matchIndex: 0, exactTitle: true });
-        setDrawerOpen(false);
-    }, [titleIndex, openOrFocus]);
+        openEntryByTitle(entry.path, title);
+    }, [titleIndex, openEntryByTitle]);
+
+    // Everything the quick-open palette (Cmd/Ctrl+K) can jump to: every listed file, then every entry by title (with
+    // its file as the muted hint). Files open the tab; entries open the file and scroll to the entry.
+    const quickOpenItems = useMemo(function (): QuickOpenItem[] {
+        const fileItems = files.map(function (name) {
+            return { key: `file:${name}`, label: name, select: function () { handleOpen(name); } };
+        });
+        const entryItems = titleIndex.map(function (entry, index) {
+            return { key: `entry:${index}:${entry.path}`, label: entry.title, hint: entry.path, select: function () { openEntryByTitle(entry.path, entry.title); } };
+        });
+        return [...fileItems, ...entryItems];
+    }, [files, titleIndex, handleOpen, openEntryByTitle]);
 
     // The open tabs in tab-bar shape, shared by the editor's TabBar and the Explorer's "Open Editors" list so the two
     // stay in sync. Activity tabs carry the job's title; file tabs fall back to their basename in the consumer.
@@ -661,8 +678,7 @@ const App = function () {
 
             {quickOpenOpen &&
             <QuickOpen
-                files={files}
-                onOpen={handleOpen}
+                items={quickOpenItems}
                 onClose={function () {
                     setQuickOpenOpen(false);
                 }}
