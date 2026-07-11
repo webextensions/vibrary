@@ -3,6 +3,29 @@
 All notable changes to this project are documented here. The format loosely follows
 [Keep a Changelog](https://keepachangelog.com/), and the project aims to follow semantic versioning.
 
+## Unreleased
+
+### Added
+
+- Undo for the editor's destructive actions: single-card Remove and the bulk Delete, Change type, Find & replace, and
+  Remove broken references operations each show a brief Undo toast that restores exactly what changed, leaving any
+  edit made in the meantime untouched.
+- Editable entry type - a Type dropdown on each card and a bulk "Change type" operation over the selected entries.
+- A "Show more" / "Show less" clamp on long entry content in review mode, so one wall-of-text entry no longer buries
+  the rest of the list.
+- The Search panel now marks the matched term in a jumped-to entry's title, content, and notes, and reveals the entry
+  (un-clamping its content and opening its extra fields) so the match is visible where you land.
+
+### Changed
+
+- The entry sort order persists across tab switches, like the filters, instead of resetting to file order.
+- A manually added entry takes the file's own type family (a task in `tasks.xml`, an idea in `ideas.xml`), and a
+  duplicated entry gets a unique `-copy` title instead of one that collides with an existing copy.
+
+### Fixed
+
+- A Search result whose only match was a label now jumps to the correct entry instead of silently doing nothing.
+
 ## 1.0.0
 
 Initial release. A globally-installable local web app for browsing and editing vibrary files - `reviews` / `specs` /
