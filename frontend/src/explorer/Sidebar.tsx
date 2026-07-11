@@ -344,6 +344,22 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
         }));
     }, [rawSelectedPaths, files]);
 
+    // Folder-wide approval tally for the footer: the per-file badges show each file, but nothing sums them into an
+    // at-a-glance sense of overall progress. Uses the same live-or-saved countForFile as the badges; files still loading
+    // or unreadable contribute nothing (their own badge already flags that), so the total covers only counted files.
+    let approvedTotal = 0;
+    let entryTotal = 0;
+    for (const name of files) {
+        const count = countForFile(name);
+        if (count.kind === 'ready') {
+            approvedTotal += count.approved;
+            entryTotal += count.total;
+        }
+    }
+    const filesLabel = entryTotal > 0 ?
+        `${files.length} files, ${approvedTotal}/${entryTotal} approved` :
+        `${files.length} files`;
+
     // Close the open menu on any click outside it, or on Escape. The menu's own buttons stop propagation, so the click
     // listener only fires for clicks elsewhere; the toggle button also stops propagation so opening one menu does not
     // immediately re-close it.
@@ -540,7 +556,7 @@ const Sidebar = function ({ files, hasVibraryInclude, selected, refreshing, coun
                                 <span className={styles.footerCount}>
                                     {selectedPaths.size > 0 ?
                                         `${selectedPaths.size}/${files.length} files selected` :
-                                        `${files.length} files`}
+                                        filesLabel}
                                 </span>
                                 <button
                                     type="button"
