@@ -78,7 +78,7 @@ const collectMatchesInFile = function (entries, needle, limit) {
         if (matches.length >= limit) {
             return { matches, hitLimit: true };
         }
-        matches.push({ entryIndex, title: entry.title, field: match.field, snippet: match.snippet });
+        matches.push({ entryIndex, type: entry.type, title: entry.title, field: match.field, snippet: match.snippet });
     }
     return { matches, hitLimit: false };
 };

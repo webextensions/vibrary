@@ -43,8 +43,8 @@ test('an empty or too-short query answers an empty result set, not an error', as
 test('a match carries the entry index, matched field, and snippet the editor needs', async function () {
     const { body } = await requestJsonAsync('/search?q=needle');
     assert.deepEqual(body.output.results, [
-        { path: 'specs-other.xml', matches: [{ entryIndex: 0, title: 'third-entry', field: 'content', snippet: 'another needle' }] },
-        { path: 'specs.xml', matches: [{ entryIndex: 1, title: 'second-entry', field: 'content', snippet: 'the needle sits here' }] }
+        { path: 'specs-other.xml', matches: [{ entryIndex: 0, type: 'spec', title: 'third-entry', field: 'content', snippet: 'another needle' }] },
+        { path: 'specs.xml', matches: [{ entryIndex: 1, type: 'spec', title: 'second-entry', field: 'content', snippet: 'the needle sits here' }] }
     ]);
     assert.equal(body.output.truncated, false);
 });

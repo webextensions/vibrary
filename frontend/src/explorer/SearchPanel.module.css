@@ -101,6 +101,14 @@
     background: #f3f4f6;
 }
 
+/* The matched entry's type glyph, leading the row so a mixed-type file's results are distinguishable at a glance. */
+.match-type {
+    flex-shrink: 0;
+    align-self: center;
+    display: inline-flex;
+    color: #656d76;
+}
+
 .match-entry-title {
     flex-shrink: 0;
     max-width: 40%;

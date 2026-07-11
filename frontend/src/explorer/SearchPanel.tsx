@@ -4,7 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
-import { SearchIcon } from '../shared/Icons.tsx';
+import { SearchIcon, TypeIcon } from '../shared/Icons.tsx';
 
 import styles from './SearchPanel.module.css';
 
@@ -215,11 +215,12 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                                             <button
                                                 type="button"
                                                 className={styles.matchRow}
-                                                title={`Open ${match.title || 'this entry'} (match in ${match.field})`}
+                                                title={`Open ${match.title || 'this entry'} (${match.type}, match in ${match.field})`}
                                                 onClick={function () {
                                                     onOpenMatch(file.path, searchedQuery, match.entryIndex);
                                                 }}
                                             >
+                                                <span className={styles.matchType} title={match.type}><TypeIcon type={match.type} /></span>
                                                 <span className={styles.matchEntryTitle}>{highlight(match.title || '(untitled)', searchedQuery)}</span>
                                                 {match.field !== 'title' &&
                                                 <span className={styles.matchText}>{highlight(match.snippet, searchedQuery)}</span>}

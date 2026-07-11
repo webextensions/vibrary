@@ -29,6 +29,8 @@ test('search matches entries (not lines): one match per entry with its index and
     assert.equal(results.length, 1);
     assert.deepEqual(results[0].matches.map(function (match) { return match.entryIndex; }), [0, 2]);
     assert.deepEqual(results[0].matches.map(function (match) { return match.field; }), ['content', 'notes']);
+    // Each match carries its entry's type (entry 0 is a spec, entry 2 a task), so the UI can label mixed results.
+    assert.deepEqual(results[0].matches.map(function (match) { return match.type; }), ['spec', 'task']);
     assert.equal(results[0].matches[0].title, 'first-entry');
     // The snippet is the line around the FIRST occurrence, not a count of occurrences.
     assert.equal(results[0].matches[0].snippet, 'needle here');
