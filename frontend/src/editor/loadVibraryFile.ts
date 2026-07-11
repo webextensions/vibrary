@@ -85,4 +85,4 @@ const loadVibraryFile = async function (filePath: string): Promise<{ content: st
     return { content, fileHash, specs, schemas, parseError: null };
 };
 
-export { loadVibraryFile, type SchemaMap };
+export { directoryOf, loadVibraryFile, parseSchemaReference, type SchemaMap };
