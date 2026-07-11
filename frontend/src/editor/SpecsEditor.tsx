@@ -605,6 +605,29 @@ const SpecsEditor = function (
         setOperationsOpen(false);
     };
 
+    // Remove a label from every selected entry that has it (the bulk counterpart of Add label; the per-card editor
+    // removes labels one entry at a time). An entry that lacks the label is left unchanged.
+    const handleBulkRemoveLabel = async function () {
+        const label = await promptDialog({
+            message: `Remove a label from ${selectedSpecs.length} selected ${selectedSpecs.length === 1 ? 'entry' : 'entries'}:`,
+            placeholder: 'label',
+            confirmLabel: 'Remove label'
+        });
+        if (label === null) {
+            return;
+        }
+        const trimmed = label.trim();
+        if (trimmed === '') {
+            return;
+        }
+        updateSelected(function (spec) {
+            return spec.labels.includes(trimmed) ?
+                { ...spec, labels: spec.labels.filter(function (existing) { return existing !== trimmed; }) } :
+                spec;
+        });
+        setOperationsOpen(false);
+    };
+
     const handleBulkRemoveApproval = async function () {
         const confirmed = await confirmDialog(
             `Remove approval from ${selectedSpecs.length} ${selectedSpecs.length === 1 ? 'entry' : 'entries'}?`,
@@ -810,6 +833,7 @@ const SpecsEditor = function (
                         <button type="button" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
+                        <button type="button" className={styles.operationButton} onClick={handleBulkRemoveLabel}><LabelIcon /><span>Remove label</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
                         <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
