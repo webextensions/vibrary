@@ -695,7 +695,10 @@ const SpecsEditor = function (
         // keyboard review can fix an entry in place. (To leave edit mode, focus the card - not one of its fields,
         // where "e" types normally - and press it again.)
         const isEdit = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && (event.key === 'e' || event.key === 'E');
-        if (!isStep && !isMove && !isJump && !isApprove && !isEdit) {
+        // Bare "c" copies the focused entry to the clipboard as Markdown, the keyboard twin of its Copy button. (Not
+        // Ctrl/Cmd+C, which stays the browser's copy of any selected text.)
+        const isCopy = !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && (event.key === 'c' || event.key === 'C');
+        if (!isStep && !isMove && !isJump && !isApprove && !isEdit && !isCopy) {
             return;
         }
         // Never steal the key from text entry or a dropdown: the scroll area also holds the filter box, every
@@ -726,6 +729,23 @@ const SpecsEditor = function (
             if (cardId !== '') {
                 event.preventDefault();
                 toggleMode(cardId);
+            }
+            return;
+        }
+        if (isCopy) {
+            const activeCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
+            const cardId = activeCard instanceof HTMLElement ? activeCard.dataset.specId ?? '' : '';
+            const spec = specs.find(function (candidate) { return candidate.id === cardId; });
+            if (spec !== undefined) {
+                event.preventDefault();
+                void copyText(specToMarkdown(spec)).then(function (copied) {
+                    if (copied) {
+                        toast.success('Copied as Markdown');
+                    } else {
+                        toast.error('Could not copy to the clipboard');
+                    }
+                    return copied;
+                });
             }
             return;
         }

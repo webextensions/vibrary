@@ -32,6 +32,8 @@ All notable changes to this project are documented here. The format loosely foll
   Alt+ArrowUp/Down. It never removes an approval and is ignored while typing.
 - Press **E** to toggle the focused entry between edit and review mode (the keyboard equivalent of its Edit button),
   ignored while typing.
+- Press **C** to copy the focused entry as Markdown (the keyboard equivalent of its Copy button; Ctrl/Cmd+C still
+  copies selected text), ignored while typing.
 
 ### Changed
 

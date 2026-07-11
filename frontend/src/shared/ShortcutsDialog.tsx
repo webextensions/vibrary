@@ -27,6 +27,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
             { keys: ['Alt', 'Shift', 'Down'], description: 'Move the focused entry down (file order only)' },
             { keys: ['A'], description: 'Approve / reapprove the focused entry (not while typing)' },
             { keys: ['E'], description: 'Edit / stop editing the focused entry (not while typing)' },
+            { keys: ['C'], description: 'Copy the focused entry as Markdown (not while typing)' },
             { keys: ['/'], description: 'Filter the entries by text (not while typing)' }
         ]
     },
