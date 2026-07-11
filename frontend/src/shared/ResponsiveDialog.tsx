@@ -35,8 +35,12 @@ const useFocusTrap = function (isOpen: boolean, panelReference: { current: HTMLD
             if (panel === null) {
                 return;
             }
-            const [firstFocusable] = getFocusableElements(panel);
-            (firstFocusable ?? panel).focus({ preventScroll: true });
+            // Land on the first field in the dialog BODY rather than the Close button in the header (which is first in
+            // DOM order) - so a form dialog opens ready to type, and Enter does not immediately hit Close. Falls back to
+            // the first focusable (e.g. a content-less dialog whose only control is Close), then the panel itself.
+            const focusable = getFocusableElements(panel);
+            const firstBodyField = focusable.find(function (element) { return element.closest('header') === null; });
+            (firstBodyField ?? focusable[0] ?? panel).focus({ preventScroll: true });
         });
         return function () {
             cancelAnimationFrame(frame);
