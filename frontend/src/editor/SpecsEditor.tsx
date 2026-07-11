@@ -375,6 +375,13 @@ const SpecsEditor = function (
         return selectedIds.has(spec.id);
     });
 
+    // How many entries are currently approved (human sign-off matching the current content). Drives the footer's
+    // approval progress meter - an at-a-glance sense of how much of the file is signed off, live as edits change it.
+    const approvedCount = specs.filter(function (spec) {
+        return approvalState(spec) === 'current';
+    }).length;
+    const approvedPercent = specs.length === 0 ? 0 : Math.round((approvedCount / specs.length) * 100);
+
     // The subset of the selection the batch "Apply changes" can faithfully run: SPEC entries only. The batch goes
     // through the apply prompt ("make the project conform to these specs"), which misrepresents every other type - a
     // review/idea has no run semantics at all, and a task's action is "carry out the work" with its own per-run
@@ -630,6 +637,16 @@ const SpecsEditor = function (
                     {selectedSpecs.length > 0 ?
                         `${selectedSpecs.length}/${specs.length} entries selected` :
                         `${specs.length} entries`}
+                </span>
+                <span
+                    className={styles.approval}
+                    title={`${approvedCount} of ${specs.length} entries approved (${approvedPercent}%)`}
+                    aria-label={`${approvedCount} of ${specs.length} entries approved`}
+                >
+                    <span className={styles.approvalTrack}>
+                        <span className={styles.approvalFill} style={{ width: `${approvedPercent}%` }} />
+                    </span>
+                    <span className={styles.approvalCount}>{approvedCount}/{specs.length}</span>
                 </span>
                 <button
                     type="button"

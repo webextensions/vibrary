@@ -32,6 +32,36 @@
     color: #656d76;
 }
 
+/* Compact approval progress meter beside the entry count: a thin track with a green fill and a "X/Y" tally, giving an
+   at-a-glance read of how much of the file is signed off. Green matches the approve affordance elsewhere. */
+.approval {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #656d76;
+}
+
+.approval-track {
+    width: 48px;
+    height: 6px;
+    border-radius: 3px;
+    background: #eaeef2;
+    overflow: hidden;
+}
+
+.approval-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: #1f883d;
+    transition: width 0.2s ease;
+}
+
+.approval-count {
+    font-variant-numeric: tabular-nums;
+}
+
 /* Plain text-link buttons in the footer for bulk selection, sitting just after the entry count. */
 .select-link {
     padding: 0;
