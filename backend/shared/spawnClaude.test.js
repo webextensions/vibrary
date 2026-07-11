@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { spawnClaudeAsync, terminateActiveClaudeRunsAsync } from './spawnClaude.js';
+import { beginShutdown, spawnClaudeAsync, terminateActiveClaudeRunsAsync } from './spawnClaude.js';
 
 // Exercise the real process lifecycle - clean-exit resolve, stderr-carrying reject, timeout kill, abort, missing
 // CLI - against a fake `claude` executable prepended to PATH. The fake keys its behavior off the prompt argument, so
@@ -96,4 +96,12 @@ test('rejects with a clear message when the CLI is not on PATH', async function 
     } finally {
         process.env.PATH = savedPath;
     }
+});
+
+// MUST BE LAST: beginShutdown() latches a one-way, module-scoped "no new runs" flag, so every spawn after it in this
+// file would reject. It guards the SIGINT-race window where a request past its validation would otherwise spawn a
+// detached child after the fleet was already swept.
+test('refuses to spawn once shutdown has begun', async function () {
+    beginShutdown();
+    await assert.rejects(spawnClaudeAsync(baseOptions('hello')), { message: 'Server is shutting down' });
 });

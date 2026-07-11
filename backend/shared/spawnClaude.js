@@ -16,6 +16,15 @@ const KILL_ESCALATION_GRACE_MS = 5 * 1000;
 // watching. Entries are removed by each run's own cleanup as it closes.
 const activeChildren = new Set();
 
+// Set by beginShutdown() when the server takes a termination signal. Once set, runClaudeProcess refuses to start a new
+// run: without this, a request that raced past its validation (e.g. was awaiting the .vibraryinclude read when the
+// signal fired) could spawn a fresh detached child AFTER terminateActiveClaudeRunsAsync already swept the fleet - an
+// orphan process group nobody signals, left editing files after the server is gone.
+const shutdownState = { begun: false };
+const beginShutdown = function () {
+    shutdownState.begun = true;
+};
+
 // Signal a child's whole process group (negative pid); fall back to the direct child if the group is already gone.
 const signalProcessGroup = function (child, signalName) {
     try {
@@ -67,6 +76,11 @@ const terminateActiveClaudeRunsAsync = async function () {
 // raw stdout chunk for callers that stream; the resolved value is always the full accumulated stdout.
 const runClaudeProcess = function ({ cwd, args, timeoutMs, timeoutMessage, signal, onStdoutChunk }) {
     return new Promise(function (resolve, reject) {
+        if (shutdownState.begun) {
+            // Refuse to spawn during shutdown so a signal-racing request cannot leave an orphaned detached child.
+            reject(new Error('Server is shutting down'));
+            return;
+        }
         if (signal && signal.aborted) {
             reject(new Error('Aborted by user'));
             return;
@@ -216,4 +230,4 @@ const runStreamedAgentAsync = function ({ cwd, prompt, extraArguments = [], time
     });
 };
 
-export { runStreamedAgentAsync, spawnClaudeAsync, terminateActiveClaudeRunsAsync };
+export { beginShutdown, runStreamedAgentAsync, spawnClaudeAsync, terminateActiveClaudeRunsAsync };

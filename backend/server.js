@@ -4,7 +4,7 @@ import getPort, { portNumbers } from 'get-port';
 import open from 'open';
 
 import { createApp } from './app.js';
-import { terminateActiveClaudeRunsAsync } from './shared/spawnClaude.js';
+import { beginShutdown, terminateActiveClaudeRunsAsync } from './shared/spawnClaude.js';
 
 // A wildcard bind means the server answers on every interface, so the loopback URL it prints is useless from another
 // device - the documented phone-on-the-LAN case (`--host 0.0.0.0`) needs the machine's actual address. Enumerate the
@@ -50,6 +50,9 @@ const startServer = async function ({ port = 3000, host = '127.0.0.1', open: sho
     // Node's default handling and terminates with the conventional 128+signal status. The unref'd failsafe re-raise
     // covers a wedged child keeping terminateActiveClaudeRunsAsync from resolving.
     const shutdownAsync = async function (signalName) {
+        // Latch "no new agent runs" synchronously, before the first await, so a request that raced this signal past
+        // its own validation is refused a spawn rather than orphaning a detached child after the sweep below.
+        beginShutdown();
         console.log(`\n${signalName} received, shutting down (stopping agent runs)...`);
         setTimeout(function () {
             process.kill(process.pid, signalName);
