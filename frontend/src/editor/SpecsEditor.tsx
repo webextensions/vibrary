@@ -17,6 +17,7 @@ import { promptForCustomInstructions } from './customInstructions.ts';
 import { moveEntry } from './moveEntry.ts';
 import { reinsertEntries } from './reinsertEntries.ts';
 import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
+import { restoreReplacedEntries } from './restoreReplacedEntries.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
@@ -794,8 +795,31 @@ const SpecsEditor = function (
         if (result.entriesChanged === 0) {
             return;
         }
+        // Record each rewritten entry (replaceInEntries preserves order and returns the SAME object for entries it did
+        // not touch, so a reference change pinpoints the changed ones) with its pre-replace spec and post-replace text -
+        // enough for the Undo to revert only the entries the user has not edited since. See restoreReplacedEntries.
+        const replaced = specs.flatMap(function (before, index) {
+            const after = result.specs[index];
+            return after === undefined || after === before ? [] : [{ before, afterContent: after.content, afterNotes: after.notes }];
+        });
         onChange(result.specs);
-        toast.success(`Replaced ${result.occurrences} ${result.occurrences === 1 ? 'occurrence' : 'occurrences'} across ${result.entriesChanged} ${result.entriesChanged === 1 ? 'entry' : 'entries'}`);
+        toast.success(function ({ closeToast }) {
+            return (
+                <span className={styles.undoToast}>
+                    Replaced {result.occurrences} {result.occurrences === 1 ? 'occurrence' : 'occurrences'} across {result.entriesChanged} {result.entriesChanged === 1 ? 'entry' : 'entries'}
+                    <button
+                        type="button"
+                        className={styles.undoButton}
+                        onClick={function () {
+                            onChange(restoreReplacedEntries(specsReference.current, replaced));
+                            closeToast();
+                        }}
+                    >
+                        Undo
+                    </button>
+                </span>
+            );
+        }, { autoClose: 8000 });
     };
 
     // Duplicate every selected entry in place, each inserted right after its own source - the bulk counterpart to the
