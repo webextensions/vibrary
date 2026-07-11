@@ -10,6 +10,7 @@ import { TabBar } from './tabs/TabBar.tsx';
 import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
 import { confirmDialog } from './shared/confirmDialog.ts';
 import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
+import { titlesInOtherFiles } from './editor/crossFileTitles.ts';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
 import { QuickOpen, type QuickOpenItem } from './shared/QuickOpen.tsx';
 import { ShortcutsDialog } from './shared/ShortcutsDialog.tsx';
@@ -100,6 +101,13 @@ const App = function () {
     const allTitles = titleIndex.map(function (entry) {
         return entry.title;
     });
+
+    // Titles used in files OTHER than the open one, so the editor can flag a title that collides across files (a
+    // relatesTo reference resolves by exact title folder-wide, so a cross-file duplicate is ambiguous too). Memoized so
+    // it recomputes only when the workspace summary or the active file changes, not on every keystroke.
+    const crossFileTitles = useMemo(function () {
+        return titlesInOtherFiles(fileSummaries, activeTab?.kind === 'file' ? activeTab.path : null);
+    }, [fileSummaries, activeTab]);
 
     // Live tallies use each open, parsed tab's in-memory model; loading tabs fall through to the cached count.
     const openTabsForCounts = tabs
@@ -688,6 +696,7 @@ const App = function () {
                                         specs={activeTab.specs}
                                         schemas={activeTab.schemas}
                                         allTitles={allTitles}
+                                        crossFileTitles={crossFileTitles}
                                         highlightQuery={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.query : undefined}
                                         highlightMatchIndex={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.matchIndex : 0}
                                         highlightExactTitle={searchTarget !== null && searchTarget.path === activeTab.path && searchTarget.exactTitle}

@@ -34,6 +34,9 @@ type SpecsEditorProperties = {
     // Resolved option-form schemas for this file's entries, keyed by formSchemaRef; forwarded to each SpecCard.
     schemas: SchemaMap;
     allTitles: string[];
+    // Titles used in OTHER files in the folder, so a card can flag a title that collides across files (not just
+    // within this one) - relatesTo references resolve by exact title folder-wide.
+    crossFileTitles: Set<string>;
     // A Search query whose matching entry the editor scrolls to and briefly highlights. Set when this file was opened
     // from a Search result; undefined otherwise.
     highlightQuery?: string;
@@ -109,7 +112,7 @@ const CREATOR_FILTER_OPTIONS: Option[] = [
 ];
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -776,7 +779,7 @@ const SpecsEditor = function (
                             index={index}
                             mode={editingIds.has(spec.id) ? 'edit' : 'review'}
                             highlighted={spec.id === highlightId}
-                            hasDuplicateTitle={duplicateTitles.has(spec.title) && spec.title !== ''}
+                            hasDuplicateTitle={spec.title !== '' && (duplicateTitles.has(spec.title) || crossFileTitles.has(spec.title))}
                             value={spec}
                             schemas={schemas}
                             allTitles={allTitles}

@@ -13,9 +13,10 @@ get saved, and the Raw tab is generated from this form.
 Each entry is shown as a card. A card opens in review mode (fields read-only); **Edit** switches it to edit mode, and
 a freshly added or duplicated entry opens in edit mode directly. Collapsed, a card shows its selection checkbox, type
 icon, title, header actions (Remove / Edit / Copy / Duplicate / Approve) and content; the chevron at its top-left
-expands the remaining fields and the run action. When another entry in the file has the same title (which makes
-`relatesTo` references ambiguous) a **duplicate title** warning appears next to it, with a **Make unique** action that
-appends the first free numeric suffix. The controls:
+expands the remaining fields and the run action. When another entry - in this file or any other file in the folder -
+has the same title (which makes `relatesTo` references, resolved by exact title folder-wide, ambiguous) a **duplicate
+title** warning appears next to it, with a **Make unique** action that appends the first free numeric suffix. The
+controls:
 
 - **Title** - text input in edit mode. On blur it is normalized to a hyphenated form: lowercase, with every run of
   non-alphanumeric characters (whitespace and punctuation alike) collapsed to a single `-` - the same rule the

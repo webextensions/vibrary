@@ -313,13 +313,13 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                     {hasDuplicateTitle &&
                     <span
                         className={styles.duplicateTitleWarning}
-                        title="Another entry in this file has the same title. Titles are how entries reference each other (relatesTo), so a duplicated title makes those references ambiguous."
+                        title="Another entry - in this file or another - has the same title. Titles are how entries reference each other (relatesTo), so a duplicated title makes those references ambiguous."
                     >
                         duplicate title
                         <button
                             type="button"
                             className={styles.duplicateTitleFix}
-                            title="Append a numeric suffix to make this title unique in the file"
+                            title="Append a numeric suffix to make this title unique across the folder"
                             onClick={function () {
                                 update({ title: uniqueTitle(value.title, takenTitles) });
                             }}
