@@ -422,6 +422,15 @@ const CopyIcon = function () {
     );
 };
 
+const LabelIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2.5 3.5h5l6 6-4.5 4.5-6-6v-4a0.5 0.5 0 0 1 0.5-0.5z" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+            <circle cx="5" cy="6" r="1" fill="currentColor" />
+        </svg>
+    );
+};
+
 const HelpIcon = function () {
     return (
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -446,6 +455,7 @@ export {
     ExplorerIcon,
     FilterIcon,
     HelpIcon,
+    LabelIcon,
     ListIcon,
     MenuIcon,
     MoreIcon,

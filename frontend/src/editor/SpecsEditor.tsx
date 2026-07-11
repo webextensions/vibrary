@@ -10,13 +10,14 @@ import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
+import { promptDialog } from '../shared/promptDialog.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { moveEntry } from './moveEntry.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
-import { AiIcon, ClickIcon, CloseIcon, CopyIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
+import { AiIcon, ClickIcon, CloseIcon, CopyIcon, LabelIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 
@@ -583,6 +584,27 @@ const SpecsEditor = function (
         setOperationsOpen(false);
     };
 
+    // Add a label to every selected entry at once (deduped per entry), for tagging a set in one go. Labels are freeform
+    // (the per-card editor is a creatable select), so this just takes text; the prompt enforces a non-empty value.
+    const handleBulkAddLabel = async function () {
+        const label = await promptDialog({
+            message: `Add a label to ${selectedSpecs.length} selected ${selectedSpecs.length === 1 ? 'entry' : 'entries'}:`,
+            placeholder: 'label',
+            confirmLabel: 'Add label'
+        });
+        if (label === null) {
+            return;
+        }
+        const trimmed = label.trim();
+        if (trimmed === '') {
+            return;
+        }
+        updateSelected(function (spec) {
+            return spec.labels.includes(trimmed) ? spec : { ...spec, labels: [...spec.labels, trimmed] };
+        });
+        setOperationsOpen(false);
+    };
+
     const handleBulkRemoveApproval = async function () {
         const confirmed = await confirmDialog(
             `Remove approval from ${selectedSpecs.length} ${selectedSpecs.length === 1 ? 'entry' : 'entries'}?`,
@@ -787,6 +809,7 @@ const SpecsEditor = function (
                         <p className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
                         <button type="button" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
+                        <button type="button" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
                         <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
