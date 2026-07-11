@@ -23,7 +23,8 @@ Initial release. A globally-installable local web app for browsing and editing v
 - Per-entry: approve / re-approve with content-hash staleness, duplicate, copy as Markdown, a live word/character
   count, a one-click "make unique" fix for duplicate titles, and up/down reordering.
 - Bulk selection operations (approve, remove approval, copy as Markdown, duplicate, delete) and a batch agent apply.
-- Filter entries by approval status, type, label, or free text, with a one-click clear; a per-file approval meter.
+- Filter entries by approval status, type, label, creator (Human / AI), or free text, with a one-click clear; a
+  per-file approval meter.
 - Concurrent-change detection: a save is refused if the file changed on disk since it was opened.
 
 ### Navigation

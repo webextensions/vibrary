@@ -62,7 +62,11 @@ type SpecsEditorProperties = {
     // Selected label filters, owned by App alongside statusFilter/typeFilter. Options are derived from whatever labels
     // are actually present on this file's entries (labels are freeform, unlike the fixed status/type enums).
     labelFilter: Option[];
-    onLabelFilterChange: (next: Option[]) => void
+    onLabelFilterChange: (next: Option[]) => void;
+    // Selected "Created by" filters, owned by App alongside the others. Fixed options (Human / AI / Unspecified),
+    // like the status and type enums.
+    creatorFilter: Option[];
+    onCreatorFilterChange: (next: Option[]) => void
 };
 
 // Human-readable label per approval state, shown as the filter option text.
@@ -95,8 +99,17 @@ const TYPE_FILTER_OPTIONS: Option[] = ENTRY_TYPES.map(function (type) {
     return { value: type, label: TYPE_LABELS[type] };
 });
 
+// The "Created by" filter's options, one per provenance value a spec's createdBy can hold: 'Human', 'AI', or '' (never
+// set). The option value is the createdBy string itself, so a selection maps straight back to it when matching - the
+// empty-string option catches entries whose creator was never recorded.
+const CREATOR_FILTER_OPTIONS: Option[] = [
+    { value: 'Human', label: 'Human' },
+    { value: 'AI', label: 'AI' },
+    { value: '', label: 'Unspecified' }
+];
+
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange }:
+    { defaultEntryType, specs, schemas, allTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -302,8 +315,9 @@ const SpecsEditor = function (
         focusSpecContent(spec.id);
     };
 
-    // A spec matches when its approval state is among the selected statuses, its type is among the selected types, AND
-    // it carries at least one of the selected labels. An empty selection in any dimension imposes no constraint there.
+    // A spec matches when its approval state is among the selected statuses, its type is among the selected types, its
+    // creator is among the selected creators, AND it carries at least one of the selected labels. An empty selection in
+    // any dimension imposes no constraint there.
     const selectedKeys = new Set(statusFilter.map(function (option) {
         return option.value;
     }));
@@ -313,13 +327,17 @@ const SpecsEditor = function (
     const selectedLabelKeys = new Set(labelFilter.map(function (option) {
         return option.value;
     }));
-    // Whether any of the four filter dimensions is constraining the list, and a one-click reset of all of them (today
+    const selectedCreatorKeys = new Set(creatorFilter.map(function (option) {
+        return option.value;
+    }));
+    // Whether any of the filter dimensions is constraining the list, and a one-click reset of all of them (today
     // the user must clear each Select and the text box separately).
-    const hasActiveFilter = statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || textFilter !== '';
+    const hasActiveFilter = statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || creatorFilter.length > 0 || textFilter !== '';
     const clearAllFilters = function () {
         onStatusFilterChange([]);
         onTypeFilterChange([]);
         onLabelFilterChange([]);
+        onCreatorFilterChange([]);
         setTextFilter('');
     };
 
@@ -330,8 +348,9 @@ const SpecsEditor = function (
         const isLabelMatch = selectedLabelKeys.size === 0 || spec.labels.some(function (label) {
             return selectedLabelKeys.has(label);
         });
+        const isCreatorMatch = selectedCreatorKeys.size === 0 || selectedCreatorKeys.has(spec.createdBy);
         const isTextMatch = textNeedle === '' || `${spec.title}\n${spec.content}\n${spec.notes}`.toLowerCase().includes(textNeedle);
-        return isStatusMatch && isTypeMatch && isLabelMatch && isTextMatch;
+        return isStatusMatch && isTypeMatch && isLabelMatch && isCreatorMatch && isTextMatch;
     };
 
     // Every distinct label currently used across this file's entries, alphabetized, as the label filter's option
@@ -728,6 +747,18 @@ const SpecsEditor = function (
                         value={labelFilter}
                         onChange={function (options: MultiValue<Option>) {
                             onLabelFilterChange([...options]);
+                        }}
+                    />}
+                    {showFilters &&
+                    <Select<Option, true>
+                        classNamePrefix="rs"
+                        isMulti
+                        placeholder="Created by"
+                        aria-label="Filter entries by creator"
+                        options={CREATOR_FILTER_OPTIONS}
+                        value={creatorFilter}
+                        onChange={function (options: MultiValue<Option>) {
+                            onCreatorFilterChange([...options]);
                         }}
                     />}
                 </div>}
