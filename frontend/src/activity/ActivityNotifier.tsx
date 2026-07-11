@@ -39,6 +39,12 @@ const ActivityNotifier = function () {
                 }
             }
         }
+
+        // Forget ids no longer in the queue (cleared/removed jobs) so the two sets do not grow without bound over a
+        // long session of hundreds of runs. Safe because a dropped job's id can never return - a retry mints a new one.
+        const liveIds = new Set(jobs.map(function (job) { return job.id; }));
+        startNotifiedReference.current = new Set([...startNotifiedReference.current].filter(function (id) { return liveIds.has(id); }));
+        finishNotifiedReference.current = new Set([...finishNotifiedReference.current].filter(function (id) { return liveIds.has(id); }));
     }, [jobs, isKindEnabled]);
 
     return null;
