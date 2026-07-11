@@ -2,17 +2,20 @@ import cx from 'classnames';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
+import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
 import { applySpecs } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
+import { copyText } from '../shared/copyText.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
+import { specToMarkdown } from './specMarkdown.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
-import { AiIcon, ClickIcon, CloseIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
+import { AiIcon, ClickIcon, CloseIcon, CopyIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
 
@@ -496,6 +499,19 @@ const SpecsEditor = function (
         setOperationsOpen(false);
     };
 
+    // Copy every selected entry as one Markdown document (each entry's specToMarkdown, separated by a horizontal rule),
+    // for pasting a whole set into a PR or doc - the bulk counterpart of the single-card Copy. Select all first to copy
+    // the entire file. copyText falls back to the legacy path on a plain-HTTP LAN origin (the phone case).
+    const handleBulkCopyMarkdown = async function () {
+        const copied = await copyText(selectedSpecs.map(function (spec) { return specToMarkdown(spec); }).join('\n---\n\n'));
+        if (copied) {
+            toast.success(`Copied ${selectedSpecs.length} ${selectedSpecs.length === 1 ? 'entry' : 'entries'} as Markdown`);
+        } else {
+            toast.error('Could not copy to the clipboard');
+        }
+        setOperationsOpen(false);
+    };
+
     const handleBulkRemoveApproval = async function () {
         const confirmed = await confirmDialog(
             `Remove approval from ${selectedSpecs.length} ${selectedSpecs.length === 1 ? 'entry' : 'entries'}?`,
@@ -677,6 +693,7 @@ const SpecsEditor = function (
                         <p className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
                         <button type="button" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
+                        <button type="button" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
                         <button type="button" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
                         <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
                     </div>}
