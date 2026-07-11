@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
@@ -78,6 +78,43 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
         }
     }, []);
 
+    // Arrow-key roving focus over the results: ArrowDown from the query box drops into the first result, then
+    // ArrowUp/ArrowDown walk the result rows (ArrowUp from the first returns to the query box), so a keyboard user
+    // can reach any match without tabbing through every one. Enter opens the focused row (it is a plain button). Only
+    // acts when the query box or a result row is focused, so it never hijacks the react-select's own arrow handling.
+    const resultListReference = useRef<HTMLUListElement>(null);
+    const handleResultsKeyDown = function (event: ReactKeyboardEvent<HTMLDivElement>) {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+            return;
+        }
+        const buttons = resultListReference.current === null ?
+            [] :
+            [...resultListReference.current.querySelectorAll('button')];
+        if (buttons.length === 0) {
+            return;
+        }
+        const active = document.activeElement;
+        if (active === inputReference.current) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                buttons[0].focus();
+            }
+            return;
+        }
+        const index = active instanceof HTMLButtonElement ? buttons.indexOf(active) : -1;
+        if (index === -1) {
+            return;
+        }
+        event.preventDefault();
+        if (event.key === 'ArrowDown') {
+            buttons[Math.min(index + 1, buttons.length - 1)].focus();
+        } else if (index === 0) {
+            inputReference.current?.focus();
+        } else {
+            buttons[index - 1].focus();
+        }
+    };
+
     useEffect(function () {
         let isCancelled = false;
         void (async function () {
@@ -147,7 +184,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
     }, 0);
 
     return (
-        <div className={styles.searchPanel}>
+        <div className={styles.searchPanel} onKeyDown={handleResultsKeyDown}>
             <div className={styles.searchField}>
                 <SearchIcon />
                 <input
@@ -203,7 +240,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                 {truncated && ' (showing the first results)'}
             </p>}
 
-            <ul className={cx(styles.resultList, searching && styles.resultListStale)}>
+            <ul ref={resultListReference} className={cx(styles.resultList, searching && styles.resultListStale)}>
                 {results.map(function (file) {
                     return (
                         <li key={file.path} className={styles.fileGroup}>
