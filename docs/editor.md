@@ -76,7 +76,7 @@ filter) and Escape clears the selection. The footer also shows a small approval 
 entries are currently approved), an **Expand all** / **Collapse all** link that opens or closes the extra-fields
 section of every shown entry at once, and a **Sort** control that reorders the list view - by file order (the
 default, and the only one in which the up/down reorder is available), title, most-recently-updated, or approval
-status. The sort is view-only and never changes the saved file. A **Markdown** checkbox renders each entry's content as
+status. The sort is view-only and never changes the saved file. A **Markdown** checkbox renders each entry's content and notes as
 formatted Markdown in review mode (headings, emphasis, code, lists, quotes) instead of plain text; it is off by default,
 and while it is on the long-content clamp and the Search-match emphasis (which work on the raw text) do not apply. Two
 buttons act on the ticked entries:

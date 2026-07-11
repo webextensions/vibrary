@@ -340,6 +340,11 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
             </>
         );
 
+    // Notes follow content: rendered Markdown when the toggle is on (no clamp on notes either way), else plain text.
+    const notesReview = renderMarkdown ?
+        <div className={styles.markdownBody}><ReactMarkdown>{value.notes}</ReactMarkdown></div> :
+        <span className={styles.multiline}>{renderText(orDash(value.notes))}</span>;
+
     return (
         <fieldset id={`spec-${value.id}`} data-spec-id={value.id} className={cx(styles.specCard, highlighted && styles.highlighted)}>
             <div className={styles.specCardHead}>
@@ -521,7 +526,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                                     }}
                                 />
                             ) :
-                            <span className={styles.multiline}>{renderText(orDash(value.notes))}</span>}
+                            notesReview}
                     </Row>
 
                     <Row label="Labels" htmlFor={isEditing ? fieldId('labels') : undefined}>
