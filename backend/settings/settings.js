@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -5,6 +6,10 @@ import { Router } from 'express';
 import writeFileAtomic from 'write-file-atomic';
 
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
+
+// Settings are a small object of UI preferences; this ceiling is far above any legitimate value but well under the
+// 10 MB body limit, so a client cannot persist a huge blob that every subsequent GET then re-parses.
+const MAX_SETTINGS_BYTES = 256 * 1024;
 
 // Per-project UI preferences (remembered task options, activity-start notification toggles) persisted to a single
 // machine-local file in the served folder. The ".local" suffix marks it as uncommitted (see .gitignore). The server
@@ -38,10 +43,17 @@ const createSettingsRouter = function ({ cwd }) {
             return sendErrorResponse(response, 400, 'Expected a "settings" object');
         }
 
+        // Serialize once (reused for the write) so the size check reflects exactly what lands on disk and is re-parsed
+        // on every GET; reject an over-large blob before writing it.
+        const serialized = JSON.stringify(settings, null, 4);
+        if (Buffer.byteLength(serialized, 'utf8') > MAX_SETTINGS_BYTES) {
+            return sendErrorResponse(response, 413, 'Settings are too large to save');
+        }
+
         try {
             await mkdir(path.dirname(settingsPath), { recursive: true });
             // Atomic replace, like the file save route: a crash mid-write must not leave a truncated settings file.
-            await writeFileAtomic(settingsPath, `${JSON.stringify(settings, null, 4)}\n`, { encoding: 'utf8' });
+            await writeFileAtomic(settingsPath, `${serialized}\n`, { encoding: 'utf8' });
             return sendSuccessResponse(response, {});
         } catch (error) {
             console.error('Failed to save settings:', error);

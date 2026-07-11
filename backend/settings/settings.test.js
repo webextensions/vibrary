@@ -42,3 +42,10 @@ test('PUT /settings rejects non-object payloads', async function () {
     assert.equal((await sendJsonAsync('/settings', { settings: null }, 'PUT')).status, 400);
     assert.equal((await sendJsonAsync('/settings', {}, 'PUT')).status, 400);
 });
+
+test('PUT /settings rejects an over-large settings blob without writing it', async function () {
+    const huge = { blob: 'x'.repeat(300 * 1024) };
+    assert.equal((await sendJsonAsync('/settings', { settings: huge }, 'PUT')).status, 413);
+    // The prior good value survives (the reject happens before the write), so GET still returns it.
+    assert.deepEqual((await requestJsonAsync('/settings')).body.output.settings, { notifications: { 'run-task': false }, taskOptions: {} });
+});
