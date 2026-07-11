@@ -195,6 +195,24 @@
     background: #ffebe9;
 }
 
+/* The bulk-delete "Undo" toast: the removed-count text with an inline link-style Undo button beside it. */
+.undo-toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.undo-button {
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 /* The status-filter controls, shown in their own row below the toolbar. Right-aligned to sit under the Filter toggle. */
 .spec-filter {
     display: flex;

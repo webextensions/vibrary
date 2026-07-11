@@ -15,6 +15,7 @@ import { promptDialog } from '../shared/promptDialog.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { moveEntry } from './moveEntry.ts';
+import { reinsertEntries } from './reinsertEntries.ts';
 import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
@@ -219,6 +220,14 @@ const SpecsEditor = function (
     // Find & replace across the selected entries; SpecsEditor owns whether the dialog is open (its form state lives in
     // the dialog, which is mounted only while open).
     const [findReplaceOpen, setFindReplaceOpen] = useState(false);
+
+    // The latest specs, read by the bulk-delete Undo toast so its restore re-inserts into the CURRENT list, not the
+    // render-time snapshot the click handler closed over - an edit the user makes to another entry while the toast is
+    // still up is then preserved rather than clobbered (the data-loss trap a whole-snapshot restore would fall into).
+    const specsReference = useRef(specs);
+    useEffect(function () {
+        specsReference.current = specs;
+    }, [specs]);
 
     // The "+" button expands into a speed-dial menu offering manual vs AI entry creation; the AI choice opens
     // CreateEntriesDialog, which owns its own form state.
@@ -814,11 +823,36 @@ const SpecsEditor = function (
         if (!confirmed) {
             return;
         }
+        // Capture each removed entry with the position it held, so the Undo can put it back exactly where it was. The
+        // restore re-inserts into the live specs ref rather than this snapshot, so it is surgical (see reinsertEntries).
+        const removed = specs
+            .map(function (spec, index) { return { index, spec }; })
+            .filter(function (entry) { return selectedIds.has(entry.spec.id); });
         onChange(specs.filter(function (spec) {
             return !selectedIds.has(spec.id);
         }));
         setSelectedIds(new Set());
         setOperationsOpen(false);
+        const removedCount = removed.length;
+        // A longer-than-default window here because the whole point is to give the user time to react to an accidental
+        // bulk delete; the toast carries the only recovery path (the entries are already gone from the editor).
+        toast.success(function ({ closeToast }) {
+            return (
+                <span className={styles.undoToast}>
+                    Removed {removedCount} {removedCount === 1 ? 'entry' : 'entries'}
+                    <button
+                        type="button"
+                        className={styles.undoButton}
+                        onClick={function () {
+                            onChange(reinsertEntries(specsReference.current, removed));
+                            closeToast();
+                        }}
+                    >
+                        Undo
+                    </button>
+                </span>
+            );
+        }, { autoClose: 8000 });
     };
 
     return (
