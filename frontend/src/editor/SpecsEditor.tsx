@@ -114,6 +114,11 @@ const SpecsEditor = function (
         return new Set();
     });
 
+    // Free-text filter that narrows the visible entries to those whose title/content/notes contain it, composing (AND)
+    // with the status/type/label filters. Local editor state like the sets above (reset on reload); distinct from the
+    // global Search panel, which jumps ACROSS files to one entry rather than narrowing the open file's list.
+    const [textFilter, setTextFilter] = useState('');
+
     const { enqueue } = useActivityQueueActions();
 
     // Id of the entry briefly ring-highlighted after the file was opened from a Search result; cleared on a timer.
@@ -306,13 +311,15 @@ const SpecsEditor = function (
     const selectedLabelKeys = new Set(labelFilter.map(function (option) {
         return option.value;
     }));
+    const textNeedle = textFilter.trim().toLowerCase();
     const isFilterMatch = function (spec: Spec): boolean {
         const isStatusMatch = selectedKeys.size === 0 || selectedKeys.has(approvalState(spec));
         const isTypeMatch = selectedTypeKeys.size === 0 || selectedTypeKeys.has(spec.type);
         const isLabelMatch = selectedLabelKeys.size === 0 || spec.labels.some(function (label) {
             return selectedLabelKeys.has(label);
         });
-        return isStatusMatch && isTypeMatch && isLabelMatch;
+        const isTextMatch = textNeedle === '' || `${spec.title}\n${spec.content}\n${spec.notes}`.toLowerCase().includes(textNeedle);
+        return isStatusMatch && isTypeMatch && isLabelMatch && isTextMatch;
     };
 
     // Every distinct label currently used across this file's entries, alphabetized, as the label filter's option
@@ -561,10 +568,21 @@ const SpecsEditor = function (
     return (
         <div className={styles.specsEditor}>
             <div className={styles.scrollArea}>
-                {specs.length > 0 && (showFilters || statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0) &&
+                {specs.length > 0 && (showFilters || statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || textFilter !== '') &&
                 <div className={styles.specFilter}>
-                    {(statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0) &&
+                    {(statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || textFilter !== '') &&
                     <span className={cx(styles.filterCount, styles.muted)}>{shown.length} of {specs.length} shown</span>}
+                    {showFilters &&
+                    <input
+                        type="text"
+                        className={styles.textFilter}
+                        placeholder="Filter text..."
+                        aria-label="Filter entries by text"
+                        value={textFilter}
+                        onChange={function (changeEvent) {
+                            setTextFilter(changeEvent.target.value);
+                        }}
+                    />}
                     {showFilters &&
                     <Select<Option, true>
                         classNamePrefix="rs"
