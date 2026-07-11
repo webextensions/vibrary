@@ -157,7 +157,8 @@ does not block the others).
 - `/` - jump to the structured editor's text filter, opening the filter panel first if it is closed. Ignored while
   typing in a field, and a no-op unless a structured editor with entries is showing.
 - Alt+ArrowUp / Alt+ArrowDown - move to the previous / next entry card, and Home / End jump to the first / last, landing
-  on the card's selection checkbox and scrolling it into view. Walks the entries currently shown, so an entry hidden by
+  on the card's selection checkbox and scrolling it into view. The focused card takes a subtle blue accent, so it is
+  clear which one the A / E / C / D actions above will act on. Walks the entries currently shown, so an entry hidden by
   a filter is skipped. Ignored while typing in a text field or using a dropdown, so it never disturbs editing.
 - Alt+Shift+ArrowUp / Alt+Shift+ArrowDown - move the focused entry one position up / down, the keyboard equivalent of a
   card's up/down buttons. Available only in file order (no filter or sort active), for the same reason those buttons
