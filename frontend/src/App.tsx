@@ -659,9 +659,17 @@ const App = function () {
         if (target === undefined) {
             return;
         }
+        // Consume the top hop whether or not it still resolves, so Back always advances rather than sticking.
         setBackStack(function (previous) { return previous.slice(0, -1); });
+        // Match the forward chips' contract: if the target was renamed, removed, or moved since it was recorded, say
+        // so, instead of silently resurrecting an empty/error tab for a file that no longer holds it.
+        const stillThere = titleIndex.some(function (entry) { return entry.title === target.title && entry.path === target.path; });
+        if (!stillThere) {
+            toast(`Cannot go back to "${target.title}" - it is no longer in ${target.path} (renamed, removed, or moved).`);
+            return;
+        }
         openEntryByTitle(target.path, target.title);
-    }, [backStack, openEntryByTitle]);
+    }, [backStack, titleIndex, openEntryByTitle]);
 
     // The entry the Back button would return to (the top of the stack), or undefined when there is nowhere to go back.
     const backTop = backStack.at(-1);
