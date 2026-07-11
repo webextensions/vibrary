@@ -211,6 +211,7 @@ const SpecsEditor = function (
     const [useCustomInstructions, setUseCustomInstructions] = useState(false);
     const [applyingBatch, setApplyingBatch] = useState(false);
     const actionsReference = useRef<HTMLDivElement>(null);
+    const actionsPopupReference = useRef<HTMLDivElement>(null);
 
     // The "Operations" popup above the footer: bulk approve / remove-approval / delete over the selected entries.
     const [operationsOpen, setOperationsOpen] = useState(false);
@@ -226,9 +227,25 @@ const SpecsEditor = function (
     const speedDialReference = useRef<HTMLDivElement>(null);
 
     // While the speed-dial menu / Actions popup / Operations popup is open, dismiss it on an outside press or Escape.
+    // The menu popups get their focus handling from MenuPanel; the Actions popup is a small form, so move focus into it
+    // when it opens (its content sits BEFORE its trigger in the DOM, so Tab alone would skip it) and hand focus back to
+    // the trigger on close - unless the custom-instructions prompt it launches has already claimed focus.
     useDismissablePopup(menuOpen, function () { setMenuOpen(false); }, speedDialReference);
     useDismissablePopup(actionsOpen, function () { setActionsOpen(false); }, actionsReference);
     useDismissablePopup(operationsOpen, function () { setOperationsOpen(false); }, operationsReference);
+    useEffect(function () {
+        if (!actionsOpen) {
+            return undefined;
+        }
+        const previouslyFocused = document.activeElement;
+        const popup = actionsPopupReference.current;
+        popup?.querySelector<HTMLElement>('input, button')?.focus();
+        return function () {
+            if (popup !== null && popup.contains(document.activeElement) && previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+                previouslyFocused.focus();
+            }
+        };
+    }, [actionsOpen]);
 
     // Escape clears the entry selection (the app-wide convention, shared with Sidebar's file selection via
     // useEscapeToClear, which also stands down while any dialog is open). Skipped while one of the popups above is
@@ -1016,7 +1033,7 @@ const SpecsEditor = function (
                 </div>
                 <div className={styles.actionsAnchor} ref={actionsReference}>
                     {actionsOpen &&
-                    <div className={styles.actionsPopup}>
+                    <div ref={actionsPopupReference} className={styles.actionsPopup} role="group" aria-label="Apply changes to the selected specs">
                         <p className={styles.actionsHeader}>
                             {applicableSpecs.length} {applicableSpecs.length === 1 ? 'entry' : 'entries'} selected
                             {selectedSpecs.length > applicableSpecs.length &&
