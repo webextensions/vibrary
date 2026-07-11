@@ -127,6 +127,9 @@ does not block the others).
 - Alt+ArrowUp / Alt+ArrowDown - move to the previous / next entry card, and Home / End jump to the first / last, landing
   on the card's selection checkbox and scrolling it into view. Walks the entries currently shown, so an entry hidden by
   a filter is skipped. Ignored while typing in a text field or using a dropdown, so it never disturbs editing.
+- Alt+Shift+ArrowUp / Alt+Shift+ArrowDown - move the focused entry one position up / down, the keyboard equivalent of a
+  card's up/down buttons. Available only in file order (no filter or sort active), for the same reason those buttons
+  are; the moved card keeps focus at its new position.
 - Escape - closes the open popup, menu, or dialog first; with none open, clears the entry or file selection.
 - ArrowLeft/ArrowRight/Home/End on a focused editor tab - switch tabs (wrapping at the ends); the whole strip is a
   single Tab stop, so keyboarding past it costs one press however many files are open.

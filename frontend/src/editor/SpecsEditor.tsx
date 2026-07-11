@@ -544,9 +544,13 @@ const SpecsEditor = function (
     // lands on the target card's select checkbox and scrolls it into view. Alt guards the arrows (on macOS Option+Up/Down
     // is move-caret-by-paragraph); Home/End are bare but the text-entry guard below keeps them free for editing.
     const handleListKeyDown = function (event: ReactKeyboardEvent<HTMLDivElement>) {
-        const isStep = event.altKey && (event.key === 'ArrowDown' || event.key === 'ArrowUp');
+        const isArrow = event.key === 'ArrowDown' || event.key === 'ArrowUp';
+        const isStep = event.altKey && !event.shiftKey && isArrow;
+        // Alt+Shift+Arrow MOVES the focused entry, the keyboard twin of a card's up/down buttons (which is why it is
+        // gated on the same reorderable condition below). Distinct from Alt+Arrow, which merely steps focus between cards.
+        const isMove = event.altKey && event.shiftKey && isArrow;
         const isJump = !event.altKey && !event.ctrlKey && !event.metaKey && (event.key === 'Home' || event.key === 'End');
-        if (!isStep && !isJump) {
+        if (!isStep && !isMove && !isJump) {
             return;
         }
         // Never steal the key from text entry or a dropdown: the scroll area also holds the filter box, every
@@ -557,6 +561,31 @@ const SpecsEditor = function (
         const isEditable = target instanceof HTMLElement && target.isContentEditable;
         const isInDropdown = target instanceof Element && target.closest('[role="combobox"], [role="listbox"]') !== null;
         if (isTextInput || isEditable || isInDropdown || target instanceof HTMLTextAreaElement) {
+            return;
+        }
+        if (isMove) {
+            // Only in true file order (no filter or sort), matching the up/down buttons: moving relative to a hidden or
+            // re-ordered list would be ambiguous. moveEntry addresses the FULL list by file index.
+            if (hasActiveFilter || sortMode !== 'file') {
+                return;
+            }
+            const movingCard = document.activeElement instanceof Element ? document.activeElement.closest('[data-spec-id]') : null;
+            const movingId = movingCard instanceof HTMLElement ? movingCard.dataset.specId ?? '' : '';
+            const fromIndex = specs.findIndex(function (spec) { return spec.id === movingId; });
+            const direction = event.key === 'ArrowDown' ? 1 : -1;
+            if (fromIndex === -1 || fromIndex + direction < 0 || fromIndex + direction >= specs.length) {
+                return;
+            }
+            event.preventDefault();
+            onChange(moveEntry(specs, fromIndex, direction));
+            // The card keeps its id across the reorder, so refocus it at its new position once React has committed.
+            requestAnimationFrame(function () {
+                const movedCheckbox = document.querySelector(`[data-spec-id="${CSS.escape(movingId)}"] input[type="checkbox"]`);
+                if (movedCheckbox instanceof HTMLElement) {
+                    movedCheckbox.focus({ preventScroll: true });
+                }
+                document.getElementById(`spec-${movingId}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            });
             return;
         }
         // Navigate in the order the cards are actually rendered (sortedShown), not file order, so Alt+Arrow steps and
