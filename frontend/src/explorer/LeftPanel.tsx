@@ -97,7 +97,9 @@ type LeftPanelProperties = {
     onClose: () => void;
     isCollapsed: boolean;
     onToggleCollapse: () => void;
-    onExpand: () => void
+    onExpand: () => void;
+    // Opens the keyboard-shortcuts help dialog; surfaced as a button at the foot of the navigation rail.
+    onShowHelp: () => void
 };
 
 // The left panel: the navigation rail beside a body that switches between Explorer, Search and Source Control. Owns the
@@ -172,7 +174,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
             {open && <div className={styles.overlay} onClick={onClose} />}
 
             <aside className={cx(styles.leftPanel, open && styles.open)}>
-                <NavigationRail active={activeView} onSelect={handleSelectView} badges={{ activity: activeCount }} onClose={isMobile ? onClose : undefined} />
+                <NavigationRail active={activeView} onSelect={handleSelectView} badges={{ activity: activeCount }} onClose={isMobile ? onClose : undefined} onShowHelp={properties.onShowHelp} />
 
                 {isMobile ?
                     body :

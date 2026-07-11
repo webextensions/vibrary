@@ -413,6 +413,16 @@ const SettingsIcon = function () {
     );
 };
 
+const HelpIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <path d="M6.1 6.2a1.9 1.9 0 1 1 2.4 2.4c-.5.3-.9.6-.9 1.3" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="8" cy="11.6" r="0.9" fill="currentColor" />
+        </svg>
+    );
+};
+
 export {
     ActivityIcon,
     AiIcon,
@@ -425,6 +435,7 @@ export {
     EditIcon,
     ExplorerIcon,
     FilterIcon,
+    HelpIcon,
     ListIcon,
     MenuIcon,
     MoreIcon,

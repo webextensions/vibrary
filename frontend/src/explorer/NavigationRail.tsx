@@ -1,7 +1,7 @@
 import cx from 'classnames';
 import type { ReactNode } from 'react';
 
-import { ActivityIcon, CloseIcon, ExplorerIcon, SearchIcon, SourceControlIcon } from '../shared/Icons.tsx';
+import { ActivityIcon, CloseIcon, ExplorerIcon, HelpIcon, SearchIcon, SourceControlIcon } from '../shared/Icons.tsx';
 
 import styles from './NavigationRail.module.css';
 
@@ -20,7 +20,7 @@ const RAIL_ITEMS: { view: LeftView; label: string; Icon: () => ReactNode }[] = [
 // a normal button (no disabled state). A view's badge (e.g. the running+queued job count) is shown over its icon. When
 // onClose is passed (the mobile drawer), a close button leads the rail so the drawer can be dismissed without reaching
 // back to the toolbar toggle.
-const NavigationRail = function ({ active, onSelect, badges, onClose }: { active: LeftView; onSelect: (view: LeftView) => void; badges?: Partial<Record<LeftView, number>>; onClose?: () => void }) {
+const NavigationRail = function ({ active, onSelect, badges, onClose, onShowHelp }: { active: LeftView; onSelect: (view: LeftView) => void; badges?: Partial<Record<LeftView, number>>; onClose?: () => void; onShowHelp?: () => void }) {
     return (
         <nav className={styles.rail} aria-label="Views">
             {onClose &&
@@ -54,6 +54,16 @@ const NavigationRail = function ({ active, onSelect, badges, onClose }: { active
                     </button>
                 );
             })}
+            {onShowHelp &&
+            <button
+                type="button"
+                className={cx(styles.railButton, styles.railButtonBottom)}
+                aria-label="Keyboard shortcuts"
+                title="Keyboard shortcuts (?)"
+                onClick={onShowHelp}
+            >
+                <HelpIcon />
+            </button>}
         </nav>
     );
 };

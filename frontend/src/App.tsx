@@ -11,6 +11,7 @@ import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
 import { confirmDialog } from './shared/confirmDialog.ts';
 import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
+import { ShortcutsDialog } from './shared/ShortcutsDialog.tsx';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './explorer/useFileCounts.ts';
 import { useFileOperations } from './explorer/useFileOperations.ts';
@@ -63,6 +64,8 @@ const App = function () {
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
     const [searchTarget, setSearchTarget] = useState<{ path: string; query: string; matchIndex: number; exactTitle: boolean } | null>(null);
+    // The keyboard-shortcuts help dialog, opened by the "?" key or the rail's help button.
+    const [shortcutsOpen, setShortcutsOpen] = useState<boolean>(false);
 
     const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab, getTab } =
         useOpenTabs();
@@ -285,6 +288,27 @@ const App = function () {
         };
     }, [activeTab, onSave, closedTabCount, reopenClosedTab]);
 
+    // "?" opens the keyboard-shortcuts help - but only as a bare keypress, never while the user is typing into a field
+    // (the editor is full of inputs where "?" is just a character) and not as part of a modified chord. A separate
+    // listener from the Ctrl/Cmd shortcuts above so its editable-target guard does not entangle with theirs.
+    useEffect(function () {
+        const handleHelpKey = function (event: KeyboardEvent) {
+            if (event.key !== '?' || event.ctrlKey || event.metaKey || event.altKey) {
+                return;
+            }
+            const target = event.target;
+            if (target instanceof HTMLElement && (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+                return;
+            }
+            event.preventDefault();
+            setShortcutsOpen(true);
+        };
+        window.addEventListener('keydown', handleHelpKey);
+        return function () {
+            window.removeEventListener('keydown', handleHelpKey);
+        };
+    }, []);
+
     // Generate entries of the chosen type with the backend AI agent, then refresh the editor from disk. The agent reads
     // the file from disk, so flush any unsaved edits first; afterwards reload the agent's additions (mirrors reloadFile).
     const handleGenerate = useCallback(async function (type: EntryType, count: number, instructions: string) {
@@ -437,6 +461,9 @@ const App = function () {
                 onCloseTab={handleCloseTab}
                 onOpenActivity={openActivity}
                 onOpenMatch={handleOpenMatch}
+                onShowHelp={function () {
+                    setShortcutsOpen(true);
+                }}
             />
 
             <main className={styles.editor}>
@@ -614,6 +641,13 @@ const App = function () {
                         </>
                     ))}
             </main>
+
+            <ShortcutsDialog
+                open={shortcutsOpen}
+                onClose={function () {
+                    setShortcutsOpen(false);
+                }}
+            />
         </div>
     );
 };

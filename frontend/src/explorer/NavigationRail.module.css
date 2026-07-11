@@ -28,6 +28,12 @@
     color: #1f2328;
 }
 
+/* Pushed to the foot of the rail (VS Code puts its account/settings there); a small bottom gap keeps it off the edge. */
+.rail-button-bottom {
+    margin-top: auto;
+    margin-bottom: 8px;
+}
+
 .rail-button.active {
     color: #1f2328;
 }
