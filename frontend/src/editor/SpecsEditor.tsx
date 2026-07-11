@@ -28,6 +28,7 @@ import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
 import { MoveEntriesDialog } from './MoveEntriesDialog.tsx';
 import { FindReplaceDialog } from './FindReplaceDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
+import { SORT_OPTIONS, type SortMode } from './sortMode.ts';
 
 import formStyles from './forms.module.css';
 import styles from './SpecsEditor.module.css';
@@ -147,13 +148,6 @@ const CREATOR_FILTER_OPTIONS: Option[] = [
 // View-only orderings for the entry list. 'file' is the on-disk order (the default, and the only one in which the
 // manual up/down reorder makes sense - so reorder is disabled under any other). The rest are derived, non-destructive
 // sorts that never touch the saved order.
-type SortMode = 'file' | 'title' | 'updated' | 'approval';
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-    { value: 'file', label: 'File order' },
-    { value: 'title', label: 'Title (A-Z)' },
-    { value: 'updated', label: 'Recently updated' },
-    { value: 'approval', label: 'Approval status' }
-];
 
 const SpecsEditor = function (
     { defaultEntryType, specs, schemas, allTitles, crossFileTitles, backlinks, currentFilePath, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
@@ -1421,4 +1415,4 @@ const SpecsEditor = function (
 };
 
 export { SpecsEditor };
-export type { Option, SortMode };
+export type { Option };

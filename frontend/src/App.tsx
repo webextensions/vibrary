@@ -7,7 +7,8 @@ import { ApiError, generateSpecs, moveEntries, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './explorer/LeftPanel.tsx';
 import { TabBar } from './tabs/TabBar.tsx';
-import { SpecsEditor, type Option, type SortMode } from './editor/SpecsEditor.tsx';
+import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
+import { isSortMode, type SortMode } from './editor/sortMode.ts';
 import { confirmDialog } from './shared/confirmDialog.ts';
 import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { titlesInOtherFiles } from './editor/crossFileTitles.ts';
@@ -39,6 +40,7 @@ const ActivityDetail = lazy(async function () {
 // Persist the desktop collapse choice so it survives reloads. Defaults to expanded when nothing is stored.
 const SIDEBAR_STORAGE_KEY = 'vibrary:sidebar-collapsed';
 const MARKDOWN_STORAGE_KEY = 'vibrary:render-markdown';
+const SORT_STORAGE_KEY = 'vibrary:sort-mode';
 
 // Below this width the sidebar is an off-canvas drawer; above it, an inline panel that collapses in place.
 const MOBILE_QUERY = '(max-width: 700px)';
@@ -67,7 +69,14 @@ const App = function () {
     const [textFilter, setTextFilter] = useState<string>('');
     // The entry sort order, held here (like the filters) so it persists across tab switches - the per-tab editor
     // remounts on switch, so a sort kept inside it would reset to file order every time.
-    const [sortMode, setSortMode] = useState<SortMode>('file');
+    const [sortMode, setSortMode] = useState<SortMode>(function (): SortMode {
+        try {
+            const stored = window.localStorage.getItem(SORT_STORAGE_KEY);
+            return stored !== null && isSortMode(stored) ? stored : 'file';
+        } catch {
+            return 'file';
+        }
+    });
     // Whether entry content and notes render as Markdown in review mode (a display preference); held here so it holds
     // across tab switches, and persisted so it survives a reload. Off by default - the plain-text view with its content
     // clamp and Search mark. localStorage can throw when blocked, so fall back to the default.
@@ -568,6 +577,16 @@ const App = function () {
         }
     }, []);
 
+    // Set the entry sort preference and persist it, so a chosen sort survives a reload like the other view preferences.
+    const applySortMode = useCallback(function (next: SortMode) {
+        setSortMode(next);
+        try {
+            window.localStorage.setItem(SORT_STORAGE_KEY, next);
+        } catch {
+            // ignore persistence failures; the sort still applies for this session
+        }
+    }, []);
+
     // One toggle for both layouts: on mobile it opens/closes the off-canvas drawer; on desktop it collapses/expands
     // the inline panel and persists that choice. The breakpoint is read at click time so render stays flash-free.
     const toggleSidebar = function () {
@@ -839,7 +858,7 @@ const App = function () {
                                         textFilter={textFilter}
                                         onTextFilterChange={setTextFilter}
                                         sortMode={sortMode}
-                                        onSortModeChange={setSortMode}
+                                        onSortModeChange={applySortMode}
                                         otherFiles={files.filter(function (name) { return name !== activeTab.path; })}
                                         sourceDirty={activeTab.dirty}
                                         onMoveEntries={handleMoveEntries}

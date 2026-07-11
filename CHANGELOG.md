@@ -25,7 +25,7 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Changed
 
-- The entry sort order persists across tab switches, like the filters, instead of resetting to file order.
+- The entry sort order persists across tab switches and survives a reload, instead of resetting to file order.
 - A manually added entry takes the file's own type family (a task in `tasks.xml`, an idea in `ideas.xml`), and a
   duplicated entry gets a unique `-copy` title instead of one that collides with an existing copy.
 
