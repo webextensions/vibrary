@@ -269,7 +269,7 @@ type TitleIndexEntry = { title: string; path: string };
 // One-request workspace summary: every included file's name, entry titles, and approved/total tallies, plus whether
 // a .vibraryinclude exists. Replaces the old pattern of re-downloading every file's full content client-side to
 // derive the title index and the sidebar badges. Null tallies mark a file the server could not read/parse.
-type FileSummary = { name: string; titles: string[]; approved: number | null; total: number | null };
+type FileSummary = { name: string; titles: string[]; approved: number | null; total: number | null; brokenReferences: number | null };
 type FilesSummary = { files: FileSummary[]; hasVibraryInclude: boolean };
 
 const getFilesSummary = function (): Promise<FilesSummary> {

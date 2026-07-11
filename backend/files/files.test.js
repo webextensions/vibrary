@@ -57,8 +57,31 @@ test('GET /files lists only included files, honoring "!" re-exclusion', async fu
 test('GET /files-summary tallies parseable files and marks a malformed one with null counts', async function () {
     const { body } = await requestJsonAsync('/files-summary');
     const byName = new Map(body.output.files.map(function (file) { return [file.name, file]; }));
-    assert.deepEqual(byName.get('specs.xml'), { name: 'specs.xml', titles: ['first-spec'], approved: 0, total: 1 });
-    assert.deepEqual(byName.get('specs-broken.xml'), { name: 'specs-broken.xml', titles: [], approved: null, total: null });
+    assert.deepEqual(byName.get('specs.xml'), { name: 'specs.xml', titles: ['first-spec'], approved: 0, total: 1, brokenReferences: 0 });
+    assert.deepEqual(byName.get('specs-broken.xml'), { name: 'specs-broken.xml', titles: [], approved: null, total: null, brokenReferences: null });
+});
+
+test('GET /files-summary counts each file\'s dangling relatesTo references (folder-wide)', async function () {
+    const brokenCwd = mkdtempSync(path.join(tmpdir(), 'vibrary-broken-refs-'));
+    writeFileSync(path.join(brokenCwd, '.vibraryinclude'), 'specs*.xml\n');
+    // 'real' and 'other' exist (the latter in a sibling file); 'ghostA'/'ghostB' resolve to nothing.
+    writeFileSync(path.join(brokenCwd, 'specs.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>real</title><content>x</content></entry>',
+        '  <entry type="spec"><title>src</title><content>y</content><relatesTo><ref>real</ref><ref>other</ref><ref>ghostA</ref><ref>ghostB</ref></relatesTo></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    writeFileSync(path.join(brokenCwd, 'specs-two.xml'), '<root><entries><entry type="spec"><title>other</title><content>z</content></entry></entries></root>');
+    const app = await startAppAsync(brokenCwd);
+    try {
+        const { body } = await app.requestJsonAsync('/files-summary');
+        const file = body.output.files.find(function (entry) { return entry.name === 'specs.xml'; });
+        // 'real' (same file) and 'other' (sibling file) resolve; only 'ghostA' and 'ghostB' are broken.
+        assert.equal(file.brokenReferences, 2);
+    } finally {
+        app.server.close();
+        rmSync(brokenCwd, { recursive: true, force: true });
+    }
 });
 
 test('create -> save -> read -> rename -> delete round trip', async function () {

@@ -39,6 +39,8 @@ controls:
   renamed or removed target) renders instead as an inert amber chip with a tooltip explaining it points to nothing, and
   the card's header shows a **N broken references** badge (naming the missing titles on hover) with a **Remove** action
   that drops the dead references in one click, so the problem is both visible and fixable without expanding the card.
+  The file's row in the sidebar also carries an amber count of its broken references, so files with dead links stand
+  out across the whole folder without opening each one.
 - **Created by** - a `Human` / `AI` radio pair; clicking the selected option again clears it back to unset.
 - **Approved** - reads `Yes` / `No` in review mode; in edit mode a Yes/No radio pair mirroring the Approve button:
   **Yes** stores a hash of the current content, so the approval can later be detected as stale (see the Approve

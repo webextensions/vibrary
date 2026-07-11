@@ -42,9 +42,19 @@ type SidebarProperties = {
 const FileCountBadge = function ({ count }: { count: FileCount }) {
     if (count.kind === 'ready') {
         return (
-            <span className={styles.fileCount} title={`${count.approved} approved of ${count.total} entries`}>
-                {count.approved}/{count.total}
-            </span>
+            <>
+                <span className={styles.fileCount} title={`${count.approved} approved of ${count.total} entries`}>
+                    {count.approved}/{count.total}
+                </span>
+                {count.brokenReferences > 0 &&
+                <span
+                    className={styles.brokenReferencesBadge}
+                    title={`${count.brokenReferences} broken reference${count.brokenReferences === 1 ? '' : 's'} - a "Relates to" link in this file points to no entry`}
+                    aria-label={`${count.brokenReferences} broken references`}
+                >
+                    {count.brokenReferences}
+                </span>}
+            </>
         );
     }
     // The non-ready badges get their own tooltip too, so a bare "!" is not an unexplained glyph: the error case says

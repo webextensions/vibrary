@@ -95,6 +95,18 @@
     color: #656d76;
 }
 
+/* Amber pill beside a file's count when it has one or more dangling "Relates to" references, so broken links are
+   spottable across the file list without opening each file. Distinct from the green approved/total count. */
+.sidebar li .broken-references-badge {
+    flex-shrink: 0;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: #fff8c5;
+    color: #9a6700;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
 .sidebar li button:hover {
     background: #f3f4f6;
 }

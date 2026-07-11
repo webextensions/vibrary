@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { titlesInOtherFiles } from './crossFileTitles.ts';
 
 const summary = function (name: string, titles: string[]) {
-    return { name, titles, approved: null, total: null };
+    return { name, titles, approved: null, total: null, brokenReferences: null };
 };
 
 test('collects titles from every file except the current one', function () {

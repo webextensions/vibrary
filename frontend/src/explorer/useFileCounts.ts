@@ -4,8 +4,10 @@ import { type FileSummary } from '../api.ts';
 import { countApprovedSpecs, type Spec } from '../xml/vibraryXml.ts';
 
 // Per-file approved/total tally shown in the sidebar; 'loading' until the workspace summary arrives, 'error' for a
-// file the server could not read/parse.
-type FileCount = { kind: 'loading' } | { kind: 'ready'; approved: number; total: number } | { kind: 'error' };
+// file the server could not read/parse. `brokenReferences` is that file's count of dangling relatesTo references (targets
+// that resolve to no entry folder-wide), from the summary - so it reflects the saved state even for an open tab, whose
+// live broken references show on its cards.
+type FileCount = { kind: 'loading' } | { kind: 'ready'; approved: number; total: number; brokenReferences: number } | { kind: 'error' };
 
 // An open tab whose tally is derived from its live in-memory model rather than the summary.
 type OpenTab = { path: string; specs: Spec[]; parseError: string | null };
@@ -37,25 +39,28 @@ const useFileCounts = function (summaries: FileSummary[], openTabs: OpenTab[]) {
     // An open tab's count reflects unsaved in-memory edits so approving/unapproving updates the badge live; files with
     // no open tab use the recorded save, then the summary.
     const countForFile = function (name: string): FileCount {
+        const summary = summaries.find(function (file) {
+            return file.name === name;
+        });
+        // Broken-reference count is a folder-wide computation only the summary carries; use it for the badge whether the
+        // file is open or not (null - an unreadable file - contributes 0, though such files render as 'error' anyway).
+        const brokenReferences = summary?.brokenReferences ?? 0;
         const open = openTabs.find(function (tab) {
             return tab.path === name;
         });
         if (open !== undefined && open.parseError === null) {
-            return { kind: 'ready', approved: countApprovedSpecs(open.specs), total: open.specs.length };
+            return { kind: 'ready', approved: countApprovedSpecs(open.specs), total: open.specs.length, brokenReferences };
         }
         const saved = savedCounts[name];
         if (saved !== undefined) {
-            return { kind: 'ready', ...saved };
+            return { kind: 'ready', ...saved, brokenReferences };
         }
-        const summary = summaries.find(function (file) {
-            return file.name === name;
-        });
         if (summary === undefined) {
             return { kind: 'loading' };
         }
         return summary.approved === null || summary.total === null ?
             { kind: 'error' } :
-            { kind: 'ready', approved: summary.approved, total: summary.total };
+            { kind: 'ready', approved: summary.approved, total: summary.total, brokenReferences };
     };
 
     return { countForFile, markCounted };

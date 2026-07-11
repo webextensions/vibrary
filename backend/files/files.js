@@ -52,7 +52,9 @@ const createFilesRouter = function ({ cwd }) {
     router.get('/files-summary', async function (request, response) {
         try {
             const [files, hasVibraryInclude] = await Promise.all([listVibraryFiles(cwd), vibraryIncludeExistsAsync(cwd)]);
-            const summaries = [];
+            // First pass: parse each file's entries once, collecting its titles/tallies and the relatesTo references it
+            // makes. A file that cannot be read or parsed reports null tallies (its badge renders as errored).
+            const parsed = [];
             for (const name of files) {
                 const target = resolveWithinCwd(cwd, name);
                 if (target === null) {
@@ -60,16 +62,30 @@ const createFilesRouter = function ({ cwd }) {
                 }
                 try {
                     const entries = parseVibraryXml(await readFile(target, 'utf8'));
-                    summaries.push({
+                    parsed.push({
                         name,
                         titles: entries.map(function (entry) { return entry.title; }).filter(function (title) { return title !== ''; }),
                         approved: countApprovedSpecs(entries),
-                        total: entries.length
+                        total: entries.length,
+                        relatesTo: entries.flatMap(function (entry) { return entry.relatesTo; })
                     });
                 } catch {
-                    summaries.push({ name, titles: [], approved: null, total: null });
+                    parsed.push({ name, titles: [], approved: null, total: null, relatesTo: [] });
                 }
             }
+            // A relatesTo reference resolves by exact title across every file, so the set of known titles is folder-wide.
+            // Second pass: count each file's dangling references (targets absent from that set) so the sidebar can flag
+            // files with broken links; a file that failed to parse reports null (its references are unknown).
+            const knownTitles = new Set(parsed.flatMap(function (entry) { return entry.titles; }));
+            const summaries = parsed.map(function (entry) {
+                return {
+                    name: entry.name,
+                    titles: entry.titles,
+                    approved: entry.approved,
+                    total: entry.total,
+                    brokenReferences: entry.approved === null ? null : entry.relatesTo.filter(function (reference) { return !knownTitles.has(reference); }).length
+                };
+            });
             return sendSuccessResponse(response, { files: summaries, hasVibraryInclude });
         } catch (error) {
             console.error('Failed to summarize vibrary files:', error);
