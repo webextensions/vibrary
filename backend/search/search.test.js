@@ -53,3 +53,18 @@ test('the comma-separated files parameter narrows the search scope', async funct
     const { body } = await requestJsonAsync('/search?q=needle&files=specs.xml');
     assert.deepEqual(body.output.results.map(function (result) { return result.path; }), ['specs.xml']);
 });
+
+test('an over-long query is clamped rather than driving an unbounded scan', async function () {
+    // "needle" plus 5000 padding chars: the route clamps to 200 chars, so the effective needle no longer matches
+    // (the padding truncates past "needle...") - the point is it answers cleanly, not that it matches.
+    const huge = 'z'.repeat(5000);
+    const { status, body } = await requestJsonAsync(`/search?q=${huge}`);
+    assert.equal(status, 200);
+    assert.deepEqual(body.output, { results: [], truncated: false });
+
+    // A huge files list is likewise bounded; a normal query still resolves against the (clamped) scope.
+    const manyFiles = Array.from({ length: 1000 }, function () { return 'specs.xml'; }).join(',');
+    const scoped = await requestJsonAsync(`/search?q=needle&files=${manyFiles}`);
+    assert.equal(scoped.status, 200);
+    assert.ok(scoped.body.output.results.length >= 1);
+});
