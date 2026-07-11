@@ -108,9 +108,9 @@ model to XML (see [vibrary-file-format.md](vibrary-file-format.md)), regardless 
   Enter to open).
 - `?` - open the keyboard-shortcuts help dialog (also reachable from the `?` button at the foot of the navigation
   rail). Ignored while typing in a field.
-- Alt+ArrowUp / Alt+ArrowDown - move to the previous / next entry card (when focus is already inside a card), landing
-  on its selection checkbox and scrolling it into view. Walks the entries currently shown, so an entry hidden by a
-  filter is skipped.
+- Alt+ArrowUp / Alt+ArrowDown - move to the previous / next entry card, landing on its selection checkbox and scrolling
+  it into view. Walks the entries currently shown, so an entry hidden by a filter is skipped. Ignored while typing in a
+  text field or using a dropdown, so it never disturbs editing.
 - Escape - closes the open popup, menu, or dialog first; with none open, clears the entry or file selection.
 - ArrowLeft/ArrowRight/Home/End on a focused editor tab - switch tabs (wrapping at the ends); the whole strip is a
   single Tab stop, so keyboarding past it costs one press however many files are open.

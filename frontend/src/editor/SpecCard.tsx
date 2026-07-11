@@ -34,7 +34,12 @@ type SpecCardProperties = {
     // Another entry in this file bears the same title; references by that title are ambiguous, so the card says so.
     hasDuplicateTitle?: boolean;
     schemas: SchemaMap;
+    // Titles across every file, from the last-saved server summary; backs the "Relates to" option list.
     allTitles: string[];
+    // Every title a new one must avoid: allTitles UNIONED with this file's LIVE (in-memory, possibly unsaved) titles.
+    // The duplicate-title warning is computed from the in-memory entries, so the "Make unique" fix has to see them too
+    // - checking only the saved allTitles would find no collision for two freshly-typed duplicates and silently no-op.
+    takenTitles: string[];
     // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
     onOpenRelated: (title: string) => void;
     // Toggle a clicked label chip into/out of the active label filter.
@@ -139,7 +144,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
@@ -316,7 +321,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                             className={styles.duplicateTitleFix}
                             title="Append a numeric suffix to make this title unique in the file"
                             onClick={function () {
-                                update({ title: uniqueTitle(value.title, allTitles) });
+                                update({ title: uniqueTitle(value.title, takenTitles) });
                             }}
                         >
                             Make unique

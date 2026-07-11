@@ -349,6 +349,13 @@ const SpecsEditor = function (
         });
     }, [specs]);
 
+    // Every title a "Make unique" fix must avoid: the saved cross-file titles PLUS this file's live, possibly-unsaved
+    // ones. allTitles alone comes from the server's last-saved summary, so it cannot see two entries the user just
+    // typed the same title into - exactly the case the fix exists for.
+    const takenTitles = useMemo(function () {
+        return [...allTitles, ...specs.map(function (spec) { return spec.title; })];
+    }, [allTitles, specs]);
+
     // Titles duplicated within the open file. Titles are cross-file identifiers - relatesTo references resolve by
     // exact title - so a duplicate silently makes references ambiguous; nothing else enforces the format doc's
     // uniqueness rule (the create paths avoid collisions, but manual edits can introduce them). Flagged per card,
@@ -400,7 +407,8 @@ const SpecsEditor = function (
     // approval progress meter - an at-a-glance sense of how much of the file is signed off, live as edits change it.
     // Uses the shared counter (the same one the sidebar badges use) so the "approved = current" rule lives in one place.
     const approvedCount = countApprovedSpecs(specs);
-    const approvedPercent = specs.length === 0 ? 0 : Math.round((approvedCount / specs.length) * 100);
+    // Floor, not round: at 199/200 a rounded 100% would paint a FULL bar while the tally beside it still reads 199/200.
+    const approvedPercent = specs.length === 0 ? 0 : Math.floor((approvedCount / specs.length) * 100);
 
     // The subset of the selection the batch "Apply changes" can faithfully run: SPEC entries only. The batch goes
     // through the apply prompt ("make the project conform to these specs"), which misrepresents every other type - a
@@ -483,6 +491,17 @@ const SpecsEditor = function (
     // stay free for text fields and native controls.
     const handleListKeyDown = function (event: ReactKeyboardEvent<HTMLDivElement>) {
         if (!event.altKey || (event.key !== 'ArrowDown' && event.key !== 'ArrowUp')) {
+            return;
+        }
+        // Never steal the key from text entry or a dropdown: the scroll area also holds the filter box, every
+        // textarea/title input, and the react-select menus (whose own ArrowDown ignores altKey). On macOS Option+Up/Down
+        // is move-caret-by-paragraph, so hijacking it mid-typing would lose the user's place. Checkboxes and buttons -
+        // where this navigation actually lands - are deliberately still eligible.
+        const target = event.target;
+        const isTextInput = target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'radio';
+        const isEditable = target instanceof HTMLElement && target.isContentEditable;
+        const isInDropdown = target instanceof Element && target.closest('[role="combobox"], [role="listbox"]') !== null;
+        if (isTextInput || isEditable || isInDropdown || target instanceof HTMLTextAreaElement) {
             return;
         }
         const order = shown.map(function ({ spec }) { return spec.id; });
@@ -678,6 +697,7 @@ const SpecsEditor = function (
                             value={spec}
                             schemas={schemas}
                             allTitles={allTitles}
+                            takenTitles={takenTitles}
                             onOpenRelated={onOpenRelated}
                             onLabelClick={handleLabelClick}
                             onChange={function (next) {
