@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -40,17 +40,33 @@ writeFileSync(path.join(subRepoRoot, 'docs', 'specs.xml'), 'in the served subfol
 writeFileSync(path.join(subRepoRoot, 'root-file.txt'), 'at the repo root, outside the served folder\n');
 const subCwd = path.join(subRepoRoot, 'docs');
 
+// The repo reached through a SYMLINK, to pin that cwd is resolved to git's (symlink-resolved) toplevel: without that,
+// a symlinked working tree remaps every changed file to "../<realpath>/..." and drops them all.
+const symlinkParent = mkdtempSync(path.join(tmpdir(), 'vibrary-git-symlink-'));
+const symlinkCwd = path.join(symlinkParent, 'link');
+symlinkSync(subRepoRoot, symlinkCwd, 'dir');
+
 const repo = await startAppAsync(repoCwd);
 const plain = await startAppAsync(plainCwd);
 const sub = await startAppAsync(subCwd);
+const symlinked = await startAppAsync(symlinkCwd);
 
 after(function () {
     repo.server.close();
     plain.server.close();
     sub.server.close();
+    symlinked.server.close();
     rmSync(repoCwd, { recursive: true, force: true });
     rmSync(plainCwd, { recursive: true, force: true });
     rmSync(subRepoRoot, { recursive: true, force: true });
+    rmSync(symlinkParent, { recursive: true, force: true });
+});
+
+test('served through a symlinked working tree: the change list is not emptied by cwd/toplevel mismatch', async function () {
+    const { body } = await symlinked.requestJsonAsync('/git/status');
+    // subRepoRoot has changes; unless cwd is resolved to its real path they would all remap to "../<realpath>/..." and
+    // be dropped, leaving an empty list. Non-empty proves the symlink resolution.
+    assert.ok(body.output.files.length > 0, 'symlinked cwd must still report the repo changes');
 });
 
 test('served from a repo subdirectory: status paths are cwd-relative and out-of-folder changes are dropped', async function () {

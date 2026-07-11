@@ -1,3 +1,4 @@
+import { realpath } from 'node:fs/promises';
 import path from 'node:path';
 
 import { simpleGit } from 'simple-git';
@@ -36,9 +37,18 @@ const statusAsync = async function (cwd) {
     } catch {
         return status; // toplevel not resolvable (unusual); leave the repo-root-relative paths as-is
     }
+    // git reports `--show-toplevel` symlink-resolved, so resolve cwd the same way before comparing - otherwise a
+    // symlinked working tree (cwd a symlink git resolves to a different real path) would remap every file to
+    // "../real/..." and drop them all, showing an empty change list. Falls back to cwd if it cannot be resolved.
+    let realCwd;
+    try {
+        realCwd = await realpath(cwd);
+    } catch {
+        realCwd = cwd;
+    }
     const files = [];
     for (const file of status.files) {
-        const relativePath = path.relative(cwd, path.join(toplevel, file.path));
+        const relativePath = path.relative(realCwd, path.join(toplevel, file.path));
         if (relativePath === '' || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
             continue; // outside the served folder
         }
