@@ -11,7 +11,9 @@
         "backend",
         "bin",
         "dist",
-        "shared/vibraryXmlCore.js"
+        "shared/vibraryXmlCore.js",
+        "!backend/**/*.test.js",
+        "!backend/shared/testHelpers.js"
     ],
     "engines": {
         "node": ">=22.18.0"
