@@ -9,6 +9,7 @@ import { LeftPanel } from './explorer/LeftPanel.tsx';
 import { TabBar } from './tabs/TabBar.tsx';
 import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
 import { confirmDialog } from './shared/confirmDialog.ts';
+import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './explorer/useFileCounts.ts';
@@ -462,13 +463,15 @@ const App = function () {
                 {activeTab === null && <p className={styles.placeholder}>Select a file to edit.</p>}
 
                 {activeTab !== null && activeTab.kind === 'activity' &&
-                <Suspense fallback={null}>
-                    {/* Keyed by job so switching straight between two activity tabs remounts the detail: its composer
-                        draft is seeded from the provider only at mount, and an unkeyed instance would carry tab A's
-                        half-typed draft (and elapsed-timer/scroll state) over to tab B - and then mirror that draft
-                        into B's stored one. The editor below gets the same treatment via its own key. */}
-                    <ActivityDetail key={activeTab.jobId} jobId={activeTab.jobId ?? ''} />
-                </Suspense>}
+                <ErrorBoundary>
+                    <Suspense fallback={null}>
+                        {/* Keyed by job so switching straight between two activity tabs remounts the detail: its composer
+                            draft is seeded from the provider only at mount, and an unkeyed instance would carry tab A's
+                            half-typed draft (and elapsed-timer/scroll state) over to tab B - and then mirror that draft
+                            into B's stored one. The editor below gets the same treatment via its own key. */}
+                        <ActivityDetail key={activeTab.jobId} jobId={activeTab.jobId ?? ''} />
+                    </Suspense>
+                </ErrorBoundary>}
 
                 {activeTab !== null && activeTab.kind === 'file' &&
                 (activeTab.loading ?
@@ -578,9 +581,11 @@ const App = function () {
                                 (
                                     // The fallback stays empty: the chunk loads once, near-instantly from the local
                                     // server, so a spinner would only flash.
-                                    <Suspense fallback={null}>
-                                        <RawXmlView xml={rawXml} />
-                                    </Suspense>
+                                    <ErrorBoundary>
+                                        <Suspense fallback={null}>
+                                            <RawXmlView xml={rawXml} />
+                                        </Suspense>
+                                    </ErrorBoundary>
                                 )}
                         </>
                     ))}

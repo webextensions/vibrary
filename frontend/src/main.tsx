@@ -5,6 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import { ActivityQueueProvider } from './activity/ActivityQueueProvider.tsx';
 import { App } from './App.tsx';
 import { ActivityNotifier } from './activity/ActivityNotifier.tsx';
+import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { SettingsProvider } from './settings/SettingsProvider.tsx';
 import './index.css';
 
@@ -15,12 +16,14 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
     <StrictMode>
-        <SettingsProvider>
-            <ActivityQueueProvider>
-                <App />
-                <ActivityNotifier />
-                <ToastContainer />
-            </ActivityQueueProvider>
-        </SettingsProvider>
+        <ErrorBoundary>
+            <SettingsProvider>
+                <ActivityQueueProvider>
+                    <App />
+                    <ActivityNotifier />
+                    <ToastContainer />
+                </ActivityQueueProvider>
+            </SettingsProvider>
+        </ErrorBoundary>
     </StrictMode>
 );

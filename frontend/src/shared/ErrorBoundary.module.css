@@ -1,0 +1,25 @@
+/* Fallback shown in place of a crashed subtree: an inline notice, not a modal, so it fills whatever region the
+   boundary wraps (the whole app for the top-level one, a single pane for the nested ones). */
+.error-boundary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px 16px;
+    text-align: center;
+}
+
+.error-boundary .message {
+    margin: 0;
+    color: #57606a;
+    overflow-wrap: anywhere;
+}
+
+.error-boundary button {
+    padding: 6px 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
