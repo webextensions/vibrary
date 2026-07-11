@@ -104,11 +104,13 @@ const App = function () {
     });
 
     // Titles used in files OTHER than the open one, so the editor can flag a title that collides across files (a
-    // relatesTo reference resolves by exact title folder-wide, so a cross-file duplicate is ambiguous too). Memoized so
-    // it recomputes only when the workspace summary or the active file changes, not on every keystroke.
+    // relatesTo reference resolves by exact title folder-wide, so a cross-file duplicate is ambiguous too). Keyed on
+    // the active file's PATH rather than the whole tab object (which is a fresh reference on every keystroke), so it
+    // recomputes only when the workspace summary or the open file actually changes.
+    const activeFilePath = activeTab?.kind === 'file' ? activeTab.path : null;
     const crossFileTitles = useMemo(function () {
-        return titlesInOtherFiles(fileSummaries, activeTab?.kind === 'file' ? activeTab.path : null);
-    }, [fileSummaries, activeTab]);
+        return titlesInOtherFiles(fileSummaries, activeFilePath);
+    }, [fileSummaries, activeFilePath]);
 
     // Live tallies use each open, parsed tab's in-memory model; loading tabs fall through to the cached count.
     const openTabsForCounts = tabs
