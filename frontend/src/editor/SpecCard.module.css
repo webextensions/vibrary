@@ -349,6 +349,24 @@
     overflow: hidden;
 }
 
+/* The entry-type picker in the edit-mode "Type" row: a compact native select so it gets the platform picker on touch. */
+.type-select {
+    padding: 4px 6px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.type-select:focus {
+    outline: none;
+    border-color: #2684ff;
+    box-shadow: 0 0 0 1px #2684ff;
+}
+
 /* The "Show more / Show less" text button under a clamped content preview, styled like the other footer text links. */
 .content-toggle {
     margin-top: 4px;

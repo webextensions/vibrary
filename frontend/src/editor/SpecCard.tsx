@@ -13,7 +13,7 @@ import { danglingRelations } from './danglingRelations.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
-import { AGENTS, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
+import { AGENTS, ENTRY_TYPES, type EntryType, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
 
 import { ApprovedBy } from './ApprovedBy.tsx';
 import { ApproveIcon, ChevronIcon, ClickIcon, CopyIcon, EditIcon, PlusIcon, RemoveIcon, TypeIcon } from '../shared/Icons.tsx';
@@ -470,6 +470,25 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
 
                 {expanded &&
                 <div className={styles.specMore}>
+                    <Row label="Type" htmlFor={isEditing ? fieldId('type') : undefined} inline>
+                        {isEditing ?
+                            (
+                                <select
+                                    id={fieldId('type')}
+                                    className={styles.typeSelect}
+                                    value={value.type}
+                                    onChange={function (changeEvent) {
+                                        update({ type: changeEvent.target.value as EntryType });
+                                    }}
+                                >
+                                    {ENTRY_TYPES.map(function (entryType) {
+                                        return <option key={entryType} value={entryType}>{entryType}</option>;
+                                    })}
+                                </select>
+                            ) :
+                            <span>{value.type}</span>}
+                    </Row>
+
                     <Row label="Notes" htmlFor={isEditing ? fieldId('notes') : undefined}>
                         {isEditing ?
                             (
