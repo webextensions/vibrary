@@ -38,6 +38,7 @@ const ActivityDetail = lazy(async function () {
 
 // Persist the desktop collapse choice so it survives reloads. Defaults to expanded when nothing is stored.
 const SIDEBAR_STORAGE_KEY = 'vibrary:sidebar-collapsed';
+const MARKDOWN_STORAGE_KEY = 'vibrary:render-markdown';
 
 // Below this width the sidebar is an off-canvas drawer; above it, an inline panel that collapses in place.
 const MOBILE_QUERY = '(max-width: 700px)';
@@ -67,9 +68,16 @@ const App = function () {
     // The entry sort order, held here (like the filters) so it persists across tab switches - the per-tab editor
     // remounts on switch, so a sort kept inside it would reset to file order every time.
     const [sortMode, setSortMode] = useState<SortMode>('file');
-    // Whether entry content renders as Markdown in review mode (a display preference); held here so it, too, holds
-    // across tab switches. Off by default - the plain-text view with its content clamp and Search mark.
-    const [renderMarkdown, setRenderMarkdown] = useState(false);
+    // Whether entry content and notes render as Markdown in review mode (a display preference); held here so it holds
+    // across tab switches, and persisted so it survives a reload. Off by default - the plain-text view with its content
+    // clamp and Search mark. localStorage can throw when blocked, so fall back to the default.
+    const [renderMarkdown, setRenderMarkdown] = useState(function (): boolean {
+        try {
+            return window.localStorage.getItem(MARKDOWN_STORAGE_KEY) === 'true';
+        } catch {
+            return false;
+        }
+    });
     // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
@@ -550,6 +558,16 @@ const App = function () {
         }
     }, []);
 
+    // Set the Markdown display preference and persist it, mirroring applyCollapsed above.
+    const applyRenderMarkdown = useCallback(function (isEnabled: boolean) {
+        setRenderMarkdown(isEnabled);
+        try {
+            window.localStorage.setItem(MARKDOWN_STORAGE_KEY, String(isEnabled));
+        } catch {
+            // ignore persistence failures; the toggle still works for this session
+        }
+    }, []);
+
     // One toggle for both layouts: on mobile it opens/closes the off-canvas drawer; on desktop it collapses/expands
     // the inline panel and persists that choice. The breakpoint is read at click time so render stays flash-free.
     const toggleSidebar = function () {
@@ -824,7 +842,7 @@ const App = function () {
                                         sourceDirty={activeTab.dirty}
                                         onMoveEntries={handleMoveEntries}
                                         renderMarkdown={renderMarkdown}
-                                        onRenderMarkdownChange={setRenderMarkdown}
+                                        onRenderMarkdownChange={applyRenderMarkdown}
                                     />
                                 ) :
                                 (

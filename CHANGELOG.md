@@ -17,7 +17,7 @@ All notable changes to this project are documented here. The format loosely foll
 - A "Show more" / "Show less" clamp on long entry content in review mode, so one wall-of-text entry no longer buries
   the rest of the list.
 - A **Markdown** toggle (footer) that renders entry content and notes as formatted Markdown - headings, emphasis, code,
-  lists, quotes - in review mode; off by default.
+  lists, quotes - in review mode; off by default, and remembered across reloads.
 - The Search panel now marks the matched term in a jumped-to entry's title, content, and notes, and reveals the entry
   (un-clamping its content and opening its extra fields) so the match is visible where you land.
 
