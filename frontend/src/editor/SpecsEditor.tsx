@@ -22,7 +22,8 @@ import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
-import { AiIcon, ClickIcon, CloseIcon, CopyIcon, EditIcon, LabelIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
+import { AiIcon, ClickIcon, CloseIcon, CopyIcon, EditIcon, LabelIcon, PlusIcon, RemoveIcon, TypeIcon } from '../shared/Icons.tsx';
+import { ChangeTypeDialog } from './ChangeTypeDialog.tsx';
 import { CreateEntriesDialog } from './CreateEntriesDialog.tsx';
 import { FindReplaceDialog } from './FindReplaceDialog.tsx';
 import { SpecCard } from './SpecCard.tsx';
@@ -223,6 +224,8 @@ const SpecsEditor = function (
     // Find & replace across the selected entries; SpecsEditor owns whether the dialog is open (its form state lives in
     // the dialog, which is mounted only while open).
     const [findReplaceOpen, setFindReplaceOpen] = useState(false);
+    // Bulk "Change type" over the selected entries; like Find & replace, only the open/closed flag lives here.
+    const [changeTypeOpen, setChangeTypeOpen] = useState(false);
 
     // The latest specs, read by the bulk-delete Undo toast so its restore re-inserts into the CURRENT list, not the
     // render-time snapshot the click handler closed over - an edit the user makes to another entry while the toast is
@@ -873,6 +876,44 @@ const SpecsEditor = function (
         }, { autoClose: 8000 });
     };
 
+    // Set the type of every selected entry to `type`, skipping (and never re-stamping) entries already of that type.
+    // Types drive the Apply/Run actions, so reclassifying a batch is a real move; like the other lossy in-place bulk
+    // ops it offers Undo, since the change discards each entry's original (possibly differing) type.
+    const handleBulkChangeType = function (type: EntryType) {
+        const changes: { before: Spec; after: Spec }[] = [];
+        const next = specs.map(function (spec) {
+            if (!selectedIds.has(spec.id) || spec.type === type) {
+                return spec;
+            }
+            const after = { ...spec, type, updated: nowTimestamp(), updatedBy: 'Human' as const };
+            changes.push({ before: spec, after });
+            return after;
+        });
+        if (changes.length === 0) {
+            toast.info(`All selected entries are already ${type}s`);
+            return;
+        }
+        onChange(next);
+        const count = changes.length;
+        toast.success(function ({ closeToast }) {
+            return (
+                <span className={styles.undoToast}>
+                    Changed {count} {count === 1 ? 'entry' : 'entries'} to {type}
+                    <button
+                        type="button"
+                        className={styles.undoButton}
+                        onClick={function () {
+                            onChange(restoreEntries(specsReference.current, changes));
+                            closeToast();
+                        }}
+                    >
+                        Undo
+                    </button>
+                </span>
+            );
+        }, { autoClose: 8000 });
+    };
+
     // Duplicate every selected entry in place, each inserted right after its own source - the bulk counterpart to the
     // single-card Duplicate button. Unlike duplicateAt, no single card to scroll to or focus, so the new entries are
     // left in review mode and the selection is cleared (it described the originals, not the copies).
@@ -1128,6 +1169,7 @@ const SpecsEditor = function (
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveLabel}><LabelIcon /><span>Remove label</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveBrokenReferences}><CloseIcon /><span>Remove broken references</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setChangeTypeOpen(true); }}><TypeIcon type="spec" /><span>Change type...</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setFindReplaceOpen(true); }}><EditIcon /><span>Find &amp; replace...</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
                         <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
@@ -1261,6 +1303,14 @@ const SpecsEditor = function (
                     return countReplaceable(specs, find, selectedIds, isCaseSensitive);
                 }}
                 onReplace={handleReplaceAll}
+            />}
+            {changeTypeOpen &&
+            <ChangeTypeDialog
+                onClose={function () {
+                    setChangeTypeOpen(false);
+                }}
+                selectedCount={selectedSpecs.length}
+                onChangeType={handleBulkChangeType}
             />}
         </div>
     );
