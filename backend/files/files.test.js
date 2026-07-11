@@ -205,7 +205,7 @@ test('move-entries refuses the same file, a stale hash, an out-of-range index, a
     writeFileSync(path.join(cwd, 'tasks-mv2.xml'), VALID_XML);
 
     assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'specs-mv2.xml', indexes: [0] })).status, 400);
-    assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'specs-hidden.xml', indexes: [0] })).status, 404);
+    assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'specs-hidden.xml', indexes: [0] })).status, 400);
     assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'tasks-mv2.xml', indexes: [5] })).status, 409);
     assert.equal((await sendJsonAsync('/files/specs-mv2.xml/move-entries', { targetName: 'tasks-mv2.xml', indexes: [] })).status, 400);
 

@@ -368,8 +368,13 @@ const createFilesRouter = function ({ cwd }) {
         if (source === null || targetPath === null) {
             return sendErrorResponse(response, 400, 'Invalid file name');
         }
-        if (!(await isVibraryNameIncluded(cwd, name)) || !(await isVibraryNameIncluded(cwd, targetName))) {
+        if (!(await isVibraryNameIncluded(cwd, name))) {
             return sendErrorResponse(response, 404, 'File not found');
+        }
+        // A separate, clearer message for the target: when the user types a new name in the dialog, "File not found" is
+        // confusing (they are creating it, not looking for it) - the real problem is the name is outside .vibraryinclude.
+        if (!(await isVibraryNameIncluded(cwd, targetName))) {
+            return sendErrorResponse(response, 400, `"${targetName}" is not allowed by .vibraryinclude - use a name matching its patterns`);
         }
         // Reject a target that is the SAME on-disk file as the source under a different name - a case-only variant on a
         // case-insensitive filesystem passes the string check above. Moving an entry "into" its own file would, with the
