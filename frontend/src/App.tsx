@@ -818,6 +818,7 @@ const App = function () {
                                         sortMode={sortMode}
                                         onSortModeChange={setSortMode}
                                         otherFiles={files.filter(function (name) { return name !== activeTab.path; })}
+                                        sourceDirty={activeTab.dirty}
                                         onMoveEntries={handleMoveEntries}
                                     />
                                 ) :

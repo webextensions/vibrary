@@ -88,6 +88,9 @@ type SpecsEditorProperties = {
     onSortModeChange: (next: SortMode) => void;
     // Vibrary files other than this one, for the bulk "Move to file" destination picker.
     otherFiles: string[];
+    // Whether the open file has unsaved edits - the move reads the saved version, so the dialog says to save first
+    // rather than letting the user pick a destination and only then be refused.
+    sourceDirty: boolean;
     // Move the entries at `indexes` (positions in this file) into `targetName`; App runs it on the server and reloads
     // both files, returning an outcome the dialog surfaces (a failure keeps the dialog open with the reason).
     onMoveEntries: (indexes: number[], targetName: string) => Promise<{ ok: boolean; message?: string }>
@@ -144,7 +147,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 ];
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, onMoveEntries }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -1348,6 +1351,7 @@ const SpecsEditor = function (
                 }}
                 selectedCount={selectedSpecs.length}
                 otherFiles={otherFiles}
+                sourceDirty={sourceDirty}
                 onMove={handleMoveSelected}
             />}
         </div>
