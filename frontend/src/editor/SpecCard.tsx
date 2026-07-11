@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -9,6 +9,7 @@ import { useActivityQueueActions } from '../activity/activityQueue.ts';
 import { populateTitle } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
+import { danglingRelations } from './danglingRelations.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
@@ -113,10 +114,11 @@ const Row = function (
 
 // Plain read-only tags by default; when onItemClick is given, each chip becomes a button instead (Relates to
 // navigates to the referenced entry, a label toggles the label filter) - titleFor supplies the hover text for
-// whichever action onItemClick performs.
+// whichever action onItemClick performs. isDangling (used by Relates to) marks an item whose target does not exist:
+// it renders as an inert amber chip with a broken-reference tooltip instead of a navigable button.
 const Chips = function (
-    { items, onItemClick, titleFor }:
-    { items: string[]; onItemClick?: (item: string) => void; titleFor?: (item: string) => string }
+    { items, onItemClick, titleFor, isDangling }:
+    { items: string[]; onItemClick?: (item: string) => void; titleFor?: (item: string) => string; isDangling?: (item: string) => boolean }
 ) {
     if (items.length === 0) {
         return <span className={styles.muted}>-</span>;
@@ -124,6 +126,17 @@ const Chips = function (
     return (
         <span className={styles.chips}>
             {items.map(function (item) {
+                if (isDangling?.(item)) {
+                    return (
+                        <span
+                            key={item}
+                            className={cx(styles.chip, styles.chipDangling)}
+                            title={`No entry is titled "${item}" - this reference points to nothing (its target was renamed or removed).`}
+                        >
+                            {item}
+                        </span>
+                    );
+                }
                 return onItemClick ?
                     (
                         <button
@@ -185,6 +198,12 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
     const relatesToOptions = toOptions(allTitles.filter(function (title) {
         return title !== value.title;
     }));
+
+    // Which of this entry's relatesTo references point to no existing entry (broken links). takenTitles is every title
+    // that exists folder-wide plus the open file's live entries, so a reference outside it resolves to nothing.
+    const danglingReferences = useMemo(function () {
+        return new Set(danglingRelations(value.relatesTo, new Set(takenTitles)));
+    }, [value.relatesTo, takenTitles]);
 
     // Hash of the current content; the human approval stores the hash it was signed off against. A stored hash that no
     // longer matches means the content changed since approval (stale), surfaced as a yellow "Reapprove" button.
@@ -439,6 +458,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                                 items={value.relatesTo}
                                 onItemClick={onOpenRelated}
                                 titleFor={function (title) { return `Go to "${title}"`; }}
+                                isDangling={function (title) { return danglingReferences.has(title); }}
                             />}
                     </Row>
 

@@ -381,6 +381,17 @@
     border-color: #54aeff;
 }
 
+/* A "Relates to" chip whose title matches no entry (a broken reference - the target was renamed or removed). Amber,
+   like the duplicate-title warning, and inert (there is nothing to navigate to); the dashed border reads as "unresolved"
+   and cursor:help pairs with the explanatory tooltip. */
+.chip-dangling {
+    border-style: dashed;
+    border-color: #d4a72c;
+    background: #fff8c5;
+    color: #9a6700;
+    cursor: help;
+}
+
 .muted {
     color: #656d76;
 }

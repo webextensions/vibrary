@@ -35,7 +35,8 @@ controls:
 - **Relates to** - searchable multi-select. Type to filter; options are the titles of all entries
   across every vibrary file in the folder (the current entry's own title is excluded). The option list refreshes
   after a save. In review mode each reference renders as a chip; clicking it opens the target entry's file (switching
-  files if needed) and scrolls to / highlights it.
+  files if needed) and scrolls to / highlights it. A reference whose title matches no entry (a broken link left by a
+  renamed or removed target) renders instead as an inert amber chip with a tooltip explaining it points to nothing.
 - **Created by** - a `Human` / `AI` radio pair; clicking the selected option again clears it back to unset.
 - **Approved** - reads `Yes` / `No` in review mode; in edit mode a Yes/No radio pair mirroring the Approve button:
   **Yes** stores a hash of the current content, so the approval can later be detected as stale (see the Approve
