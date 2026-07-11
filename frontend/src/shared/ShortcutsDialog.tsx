@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+
+import { getVersion } from '../api.ts';
 import { ResponsiveDialog } from './ResponsiveDialog.tsx';
 
 import styles from './ShortcutsDialog.module.css';
@@ -43,6 +46,30 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
 ];
 
 const ShortcutsDialog = function ({ open, onClose }: { open: boolean; onClose: () => void }) {
+    // Fetch the running server's version the first time the dialog opens (this doubles as the app's "about" surface),
+    // then keep it. A fetch failure just leaves the footer hidden rather than surfacing an error in a help dialog.
+    const [version, setVersion] = useState<string | null>(null);
+    useEffect(function () {
+        if (!open || version !== null) {
+            return undefined;
+        }
+        let isActive = true;
+        const loadVersionAsync = async function () {
+            try {
+                const fetched = await getVersion();
+                if (isActive) {
+                    setVersion(fetched);
+                }
+            } catch {
+                // ignore - the footer stays hidden on failure
+            }
+        };
+        void loadVersionAsync();
+        return function () {
+            isActive = false;
+        };
+    }, [open, version]);
+
     return (
         <ResponsiveDialog open={open} onClose={onClose} title="Keyboard shortcuts" maxWidthWhenNotFullScreen={460} noPrimaryButton>
             <div className={styles.shortcuts}>
@@ -73,6 +100,7 @@ const ShortcutsDialog = function ({ open, onClose }: { open: boolean; onClose: (
                     );
                 })}
             </div>
+            {version !== null && <p className={styles.footer}>vibrary v{version}</p>}
         </ResponsiveDialog>
     );
 };

@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,9 +11,12 @@ import { createGitRouter } from './git/git.js';
 import { createSearchRouter } from './search/search.js';
 import { createSettingsRouter } from './settings/settings.js';
 import { blockCrossSiteRequests } from './shared/blockCrossSiteRequests.js';
-import { sendErrorResponse } from './shared/sendResponse.js';
+import { sendErrorResponse, sendSuccessResponse } from './shared/sendResponse.js';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json');
 
 // The prebuilt frontend (shipped in the published package) lives in <packageRoot>/dist
 const distributionDirectory = path.join(dirname, '..', 'dist');
@@ -25,6 +29,13 @@ const createApp = async function ({ cwd = process.cwd(), hmr = false } = {}) {
 
     // Registered ahead of every router so no API handler is reachable from a foreign web page (CSRF/DNS rebinding)
     app.use('/api', blockCrossSiteRequests);
+
+    // The running server's version, so a client can display it (the help dialog's footer) or check what it is talking
+    // to. Read from package.json rather than hardcoded, so it can never drift from the shipped version. Kept at the
+    // composition root because it describes the app itself, not any one feature.
+    app.get('/api/version', function (request, response) {
+        return sendSuccessResponse(response, { version: packageJson.version });
+    });
 
     app.use('/api', createFilesRouter({ cwd }));
     app.use('/api', createAgentsRouter({ cwd }));

@@ -40,6 +40,12 @@ after(function () {
     rmSync(cwd, { recursive: true, force: true });
 });
 
+test('GET /version answers the package version', async function () {
+    const { status, body } = await requestJsonAsync('/version');
+    assert.equal(status, 200);
+    assert.match(body.output.version, /^\d+\.\d+\.\d+/);
+});
+
 test('GET /files lists only included files, honoring "!" re-exclusion', async function () {
     const { status, body } = await requestJsonAsync('/files');
     assert.equal(status, 200);
