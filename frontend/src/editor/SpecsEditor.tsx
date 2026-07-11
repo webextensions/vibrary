@@ -69,7 +69,11 @@ type SpecsEditorProperties = {
     // Selected "Created by" filters, owned by App alongside the others. Fixed options (Human / AI / Unspecified),
     // like the status and type enums.
     creatorFilter: Option[];
-    onCreatorFilterChange: (next: Option[]) => void
+    onCreatorFilterChange: (next: Option[]) => void;
+    // The free-text filter, owned by App like the four dropdowns so the toolbar Filter button's active-dot reflects it
+    // too and it persists across tab switches with the rest.
+    textFilter: string;
+    onTextFilterChange: (next: string) => void
 };
 
 // Human-readable label per approval state, shown as the filter option text.
@@ -112,7 +116,7 @@ const CREATOR_FILTER_OPTIONS: Option[] = [
 ];
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -131,11 +135,6 @@ const SpecsEditor = function (
     const [expandedIds, setExpandedIds] = useState<Set<string>>(function () {
         return new Set();
     });
-
-    // Free-text filter that narrows the visible entries to those whose title/content/notes contain it, composing (AND)
-    // with the status/type/label filters. Local editor state like the sets above (reset on reload); distinct from the
-    // global Search panel, which jumps ACROSS files to one entry rather than narrowing the open file's list.
-    const [textFilter, setTextFilter] = useState('');
 
     const { enqueue } = useActivityQueueActions();
 
@@ -341,7 +340,7 @@ const SpecsEditor = function (
         onTypeFilterChange([]);
         onLabelFilterChange([]);
         onCreatorFilterChange([]);
-        setTextFilter('');
+        onTextFilterChange('');
     };
 
     const textNeedle = textFilter.trim().toLowerCase();
@@ -714,7 +713,7 @@ const SpecsEditor = function (
                         aria-label="Filter entries by text"
                         value={textFilter}
                         onChange={function (changeEvent) {
-                            setTextFilter(changeEvent.target.value);
+                            onTextFilterChange(changeEvent.target.value);
                         }}
                     />}
                     {showFilters &&

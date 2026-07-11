@@ -63,6 +63,7 @@ const App = function () {
     const [typeFilter, setTypeFilter] = useState<Option[]>([]);
     const [labelFilter, setLabelFilter] = useState<Option[]>([]);
     const [creatorFilter, setCreatorFilter] = useState<Option[]>([]);
+    const [textFilter, setTextFilter] = useState<string>('');
     // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
@@ -657,7 +658,7 @@ const App = function () {
                                     >
                                         <span className={styles.filterIconWrap}>
                                             <FilterIcon />
-                                            {(statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || creatorFilter.length > 0) && <span className={styles.filterDot} />}
+                                            {(statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || creatorFilter.length > 0 || textFilter !== '') && <span className={styles.filterDot} />}
                                         </span>
                                         <span className={styles.tabText}>Filter</span>
                                     </button>}
@@ -712,6 +713,8 @@ const App = function () {
                                         onLabelFilterChange={setLabelFilter}
                                         creatorFilter={creatorFilter}
                                         onCreatorFilterChange={setCreatorFilter}
+                                        textFilter={textFilter}
+                                        onTextFilterChange={setTextFilter}
                                     />
                                 ) :
                                 (
