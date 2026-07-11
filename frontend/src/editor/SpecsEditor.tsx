@@ -19,6 +19,7 @@ import { reinsertEntries } from './reinsertEntries.ts';
 import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
 import { restoreEntries } from './restoreEntries.ts';
 import { specToMarkdown } from './specMarkdown.ts';
+import { uniqueTitle } from './uniqueTitle.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
 import { AiIcon, ClickIcon, CloseIcon, CopyIcon, EditIcon, LabelIcon, PlusIcon, RemoveIcon } from '../shared/Icons.tsx';
@@ -340,15 +341,24 @@ const SpecsEditor = function (
         }, { autoClose: 8000 });
     };
 
+    // Every title a "Make unique" fix (and a Duplicate) must avoid: the saved cross-file titles PLUS this file's live,
+    // possibly-unsaved ones. allTitles alone comes from the server's last-saved summary, so it cannot see two entries
+    // the user just typed the same title into - exactly the case the fix exists for.
+    const takenTitles = useMemo(function () {
+        return [...allTitles, ...specs.map(function (spec) { return spec.title; })];
+    }, [allTitles, specs]);
+
     // Clone a source entry as a starting point for a similar one: same type/content/notes/labels/relatesTo, but a fresh
-    // id and timestamps, an unapproved state (a copy has not itself been signed off), and "-copy" appended to a
-    // non-empty title so it does not collide with the source's. Shared by the single-card Duplicate button and the
-    // bulk "Duplicate" operation below.
-    const cloneSpec = function (source: Spec, now: string): Spec {
+    // id and timestamps, an unapproved state (a copy has not itself been signed off), and a "-copy" title made unique
+    // against `taken` up front (foo -> foo-copy, or foo-copy-2 if that already exists). Duplicate is meant for spinning
+    // up variations, so duplicating a source twice - or one that already has a "-copy" - is routine; deriving a unique
+    // title here keeps each copy from being born with a colliding title that instantly trips the duplicate warning.
+    // Shared by the single-card Duplicate button and the bulk "Duplicate" operation below.
+    const cloneSpec = function (source: Spec, now: string, taken: string[]): Spec {
         return {
             ...source,
             id: randomId(),
-            title: source.title === '' ? '' : `${source.title}-copy`,
+            title: source.title === '' ? '' : uniqueTitle(`${source.title}-copy`, taken),
             approved: '',
             created: now,
             updated: now,
@@ -372,7 +382,7 @@ const SpecsEditor = function (
     // Duplicate one entry, inserted right after the source, opened in edit mode, scrolled into view and focused - same
     // finishing touches as addSpec.
     const duplicateAt = function (index: number) {
-        const duplicate = cloneSpec(specs[index], nowTimestamp());
+        const duplicate = cloneSpec(specs[index], nowTimestamp(), takenTitles);
         onChange([...specs.slice(0, index + 1), duplicate, ...specs.slice(index + 1)]);
         setEditingIds(function (previous) {
             return new Set(previous).add(duplicate.id);
@@ -447,13 +457,6 @@ const SpecsEditor = function (
             return { value: label, label };
         });
     }, [specs]);
-
-    // Every title a "Make unique" fix must avoid: the saved cross-file titles PLUS this file's live, possibly-unsaved
-    // ones. allTitles alone comes from the server's last-saved summary, so it cannot see two entries the user just
-    // typed the same title into - exactly the case the fix exists for.
-    const takenTitles = useMemo(function () {
-        return [...allTitles, ...specs.map(function (spec) { return spec.title; })];
-    }, [allTitles, specs]);
 
     // Titles duplicated within the open file. Titles are cross-file identifiers - relatesTo references resolve by
     // exact title - so a duplicate silently makes references ambiguous; nothing else enforces the format doc's
@@ -875,11 +878,18 @@ const SpecsEditor = function (
     // left in review mode and the selection is cleared (it described the originals, not the copies).
     const handleBulkDuplicate = function () {
         const now = nowTimestamp();
+        // Grow the taken-titles set as copies are made, so several copies in one pass stay unique against each other too
+        // (e.g. duplicating two entries that share a title yields foo-copy and foo-copy-2), not just against the file.
+        const taken = new Set(takenTitles);
         const next: Spec[] = [];
         for (const spec of specs) {
             next.push(spec);
             if (selectedIds.has(spec.id)) {
-                next.push(cloneSpec(spec, now));
+                const copy = cloneSpec(spec, now, [...taken]);
+                if (copy.title !== '') {
+                    taken.add(copy.title);
+                }
+                next.push(copy);
             }
         }
         onChange(next);
