@@ -346,6 +346,13 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                             Make unique
                         </button>
                     </span>}
+                    {danglingReferences.size > 0 &&
+                    <span
+                        className={styles.danglingRefsWarning}
+                        title={`Points to no entry: ${[...danglingReferences].join(', ')}. Expand the card to see (and fix) the broken "Relates to" reference${danglingReferences.size === 1 ? '' : 's'}.`}
+                    >
+                        {danglingReferences.size} broken {danglingReferences.size === 1 ? 'reference' : 'references'}
+                    </span>}
                 </div>
                 <div className={styles.specCardActions}>
                     {reorderable &&

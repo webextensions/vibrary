@@ -185,6 +185,23 @@
     cursor: pointer;
 }
 
+/* Header badge mirroring the duplicate-title warning, shown when this entry has one or more broken "Relates to"
+   references (their expanded chips are the amber .chip-dangling ones). Surfaces the problem without expanding the card;
+   the tooltip names the missing titles. */
+.dangling-refs-warning {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border: 1px solid #d4a72c;
+    border-radius: 10px;
+    background: #fff8c5;
+    color: #9a6700;
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: help;
+}
+
 /* Stale approval: content changed since sign-off, prompting a reapprove */
 .spec-card .approve.reapprove {
     color: #9a6700;
