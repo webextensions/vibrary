@@ -5,6 +5,7 @@ import Select from 'react-select';
 import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
+import { MenuPanel } from '../shared/MenuPanel.tsx';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
 import { applySpecs } from '../api.ts';
@@ -985,22 +986,23 @@ const SpecsEditor = function (
                 </label>
                 <div className={styles.actionsAnchor} ref={operationsReference}>
                     {operationsOpen &&
-                    <div className={styles.actionsPopup}>
+                    <MenuPanel className={styles.actionsPopup}>
                         <p className={styles.actionsHeader}>{selectedSpecs.length} entries selected</p>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkRemoveLabel}><LabelIcon /><span>Remove label</span></button>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkRemoveBrokenReferences}><CloseIcon /><span>Remove broken references</span></button>
-                        <button type="button" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setFindReplaceOpen(true); }}><EditIcon /><span>Find &amp; replace...</span></button>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
-                        <button type="button" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
-                        <button type="button" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
-                    </div>}
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkApprove}><ClickIcon /><span>Approve</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveApproval}><CloseIcon /><span>Remove Approval</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkAddLabel}><LabelIcon /><span>Add label</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveLabel}><LabelIcon /><span>Remove label</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkRemoveBrokenReferences}><CloseIcon /><span>Remove broken references</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={function () { setOperationsOpen(false); setFindReplaceOpen(true); }}><EditIcon /><span>Find &amp; replace...</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkCopyMarkdown}><CopyIcon /><span>Copy as Markdown</span></button>
+                        <button type="button" role="menuitem" className={styles.operationButton} onClick={handleBulkDuplicate}><PlusIcon /><span>Duplicate</span></button>
+                        <button type="button" role="menuitem" className={cx(styles.operationButton, styles.operationDanger)} onClick={handleBulkDelete}><RemoveIcon /><span>Delete</span></button>
+                    </MenuPanel>}
                     <button
                         type="button"
                         className={styles.actionsButton}
                         disabled={selectedSpecs.length === 0}
+                        aria-haspopup="menu"
                         aria-expanded={operationsOpen}
                         onClick={function () {
                             setActionsOpen(false);
