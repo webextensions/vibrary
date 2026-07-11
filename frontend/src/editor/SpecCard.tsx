@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -161,6 +161,23 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
+
+    // Clamp a long entry's review-mode content to a preview so one wall-of-text entry cannot dominate the list, with a
+    // "Show more" toggle to reveal the rest. Short entries never fill the clamp, so they render unchanged and get no
+    // toggle. Overflow is measured against the clamped box, and only while collapsed: once expanded the box grows to fit
+    // the text, so a re-measure there would read "no overflow" and wrongly hide the "Show less" control.
+    const contentReference = useRef<HTMLSpanElement>(null);
+    const [contentOverflows, setContentOverflows] = useState(false);
+    const [contentExpanded, setContentExpanded] = useState(false);
+    useLayoutEffect(function () {
+        if (contentExpanded) {
+            return;
+        }
+        const element = contentReference.current;
+        if (element !== null) {
+            setContentOverflows(element.scrollHeight > element.clientHeight + 1);
+        }
+    }, [value.content, contentExpanded, isEditing]);
 
     const update = function (patch: Partial<Spec>) {
         onChange({ ...value, ...patch });
@@ -416,7 +433,27 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                                 <span className={styles.contentMeta}>{countWords(value.content)} words, {value.content.length} chars</span>
                             </>
                         ) :
-                        <span className={styles.multiline}>{orDash(value.content)}</span>}
+                        (
+                            <>
+                                <span
+                                    ref={contentReference}
+                                    className={cx(styles.multiline, !contentExpanded && styles.clamped)}
+                                >
+                                    {orDash(value.content)}
+                                </span>
+                                {contentOverflows &&
+                                <button
+                                    type="button"
+                                    className={styles.contentToggle}
+                                    aria-expanded={contentExpanded}
+                                    onClick={function () {
+                                        setContentExpanded(function (previous) { return !previous; });
+                                    }}
+                                >
+                                    {contentExpanded ? 'Show less' : 'Show more'}
+                                </button>}
+                            </>
+                        )}
                 </div>
 
                 {expanded &&

@@ -338,6 +338,33 @@
     white-space: pre-wrap;
 }
 
+/* Clamp long review-mode content to a preview of a dozen lines so a single wall-of-text entry cannot dominate the
+   list. line-clamp caps by rendered line, so entries shorter than the cap are untouched and still show in full; the
+   "Show more" toggle below appears (via a measured overflow check) only when content is actually cut off. */
+.spec-content .multiline.clamped {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 12;
+    line-clamp: 12;
+    overflow: hidden;
+}
+
+/* The "Show more / Show less" text button under a clamped content preview, styled like the other footer text links. */
+.content-toggle {
+    margin-top: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #0969da;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+}
+
+.content-toggle:hover {
+    text-decoration: underline;
+}
+
 .spec-content {
     /* Indent to line up with the title text, which the expand-toggle (16px) plus the title-group gap (8px) push over */
     padding-left: 24px;
