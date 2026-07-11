@@ -311,6 +311,16 @@ const SpecsEditor = function (
     const selectedLabelKeys = new Set(labelFilter.map(function (option) {
         return option.value;
     }));
+    // Whether any of the four filter dimensions is constraining the list, and a one-click reset of all of them (today
+    // the user must clear each Select and the text box separately).
+    const hasActiveFilter = statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || textFilter !== '';
+    const clearAllFilters = function () {
+        onStatusFilterChange([]);
+        onTypeFilterChange([]);
+        onLabelFilterChange([]);
+        setTextFilter('');
+    };
+
     const textNeedle = textFilter.trim().toLowerCase();
     const isFilterMatch = function (spec: Spec): boolean {
         const isStatusMatch = selectedKeys.size === 0 || selectedKeys.has(approvalState(spec));
@@ -568,10 +578,12 @@ const SpecsEditor = function (
     return (
         <div className={styles.specsEditor}>
             <div className={styles.scrollArea}>
-                {specs.length > 0 && (showFilters || statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || textFilter !== '') &&
+                {specs.length > 0 && (showFilters || hasActiveFilter) &&
                 <div className={styles.specFilter}>
-                    {(statusFilter.length > 0 || typeFilter.length > 0 || labelFilter.length > 0 || textFilter !== '') &&
+                    {hasActiveFilter &&
                     <span className={cx(styles.filterCount, styles.muted)}>{shown.length} of {specs.length} shown</span>}
+                    {hasActiveFilter &&
+                    <button type="button" className={styles.selectLink} onClick={clearAllFilters}>Clear filters</button>}
                     {showFilters &&
                     <input
                         type="text"
