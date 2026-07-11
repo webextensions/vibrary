@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { access, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { Router } from 'express';
@@ -262,11 +262,19 @@ const createFilesRouter = function ({ cwd }) {
             return sendErrorResponse(response, 400, 'New file name is not included by .vibraryinclude');
         }
 
+        // Refuse to overwrite an existing target - but NOT when that "target" is the source file itself seen under a
+        // different name. On a case-insensitive filesystem a case-only rename (specs-foo.xml -> specs-Foo.xml) resolves
+        // the new name to the SAME inode, so a bare existence check would 409 a legitimate case fix. Compare identities
+        // (device + inode) and block only a target that is a genuinely different file; a missing target (the common
+        // case, and every case-only rename on a case-sensitive FS) just lets the rename proceed.
         try {
-            await access(target);
-            return sendErrorResponse(response, 409, 'A file with the new name already exists');
+            const [sourceStat, targetStat] = await Promise.all([stat(source), stat(target)]);
+            if (sourceStat.dev !== targetStat.dev || sourceStat.ino !== targetStat.ino) {
+                return sendErrorResponse(response, 409, 'A file with the new name already exists');
+            }
         } catch {
-            // Target does not exist - good, the rename can proceed.
+            // Target (or source) does not resolve to an existing file - the rename can proceed and will 404 below if it
+            // is the source that is missing.
         }
 
         try {

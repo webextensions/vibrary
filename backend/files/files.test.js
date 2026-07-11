@@ -107,6 +107,20 @@ test('save detects a concurrent on-disk change via the baseFileHash handshake', 
     assert.equal((await sendJsonAsync('/files/tasks-conflict.xml', { content: VALID_XML, baseFileHash: currentHash }, 'PUT')).status, 409);
 });
 
+test('rename allows a case-only change but still refuses a genuinely different existing target', async function () {
+    await sendJsonAsync('/files/tasks-case.xml', { content: VALID_XML }, 'PUT');
+
+    // A case-only rename must not be mistaken for an overwrite: on a case-insensitive FS the new name resolves to the
+    // same inode, and the identity check lets it through rather than returning a misleading 409.
+    const cased = await sendJsonAsync('/files/tasks-case.xml/rename', { newName: 'tasks-Case.xml' });
+    assert.equal(cased.status, 200);
+
+    // Renaming onto a DIFFERENT existing file is still refused.
+    await sendJsonAsync('/files/tasks-other.xml', { content: VALID_XML }, 'PUT');
+    const collide = await sendJsonAsync('/files/tasks-Case.xml/rename', { newName: 'tasks-other.xml' });
+    assert.equal(collide.status, 409);
+});
+
 test('create rejects invalid, non-included, and duplicate names with the right statuses', async function () {
     assert.equal((await sendJsonAsync('/files', { name: 'notes.xml' })).status, 400);
     assert.equal((await sendJsonAsync('/files', { name: 'ideas-new.xml' })).status, 400); // not included by the include file
