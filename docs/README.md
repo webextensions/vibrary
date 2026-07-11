@@ -42,6 +42,23 @@ specs*.xml
 !specs-archive*.xml
 ```
 
+## The explorer
+
+The file list (the files icon in the navigation rail) lists every included vibrary file, grouping nested files into
+folders by path. Each file carries a green approved/total badge; a file whose entries hold a dangling `relatesTo` (a
+reference to a title no entry has) also shows an amber broken-reference count, and a file the server cannot read or
+parse shows a `!`. The list footer sums the whole folder - "3 files, 12/40 approved" - for overall progress at a
+glance, and shows the selection count instead while files are ticked. Above the list, **Open Editors** tracks the open
+file tabs, with a **Save all** action when more than one has unsaved edits.
+
+The header's **+** prompts for a name and creates a new vibrary file (its family taken from the name, e.g.
+`tasks-auth.xml`), a refresh button re-reads the folder, and **Collapse all folders** folds the tree. Each file's
+**More options** menu renames, duplicates, or deletes it: a rename reopens the file from disk (so unsaved edits are
+lost, and it asks first), and a delete asks first and - because `relatesTo` references resolve by title folder-wide -
+warns when entries in other files point at the ones being removed ("2 references from other files will break"), so an
+irreversible delete never silently strands cross-file links. Ticking files' checkboxes enables a bulk **Delete** over
+the selection.
+
 ## Agent runs and permissions
 
 The AI actions ("Apply this spec", "Run this task", "Create entries with AI", chat follow-ups) run the Claude CLI

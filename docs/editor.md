@@ -20,7 +20,10 @@ controls:
 
 - **Title** - text input in edit mode. On blur it is normalized to a hyphenated form: lowercase, with every run of
   non-alphanumeric characters (whitespace and punctuation alike) collapsed to a single `-` - the same rule the
-  AI-derived **Populate** titles use.
+  AI-derived **Populate** titles use. While you edit the title of an entry that other entries reference, a muted
+  **renaming breaks N links** hint appears beside it: because `relatesTo` references resolve by exact title, renaming
+  this entry leaves those references pointing at a title no entry has unless you update them too. (The hint steps aside
+  for the duplicate-title warning when the edited title collides with another entry.)
 - **Approve button** - the card's top-right one-click action. It reads **Approve** when unapproved, green
   **Approved** when approved against the current content, and yellow **Reapprove** when the content changed since
   approval (hover for the hash-mismatch details). Clicking **Reapprove** re-signs against the current text; removing
