@@ -105,6 +105,12 @@ Filter button and an "X of Y shown" count both indicate when a filter is active,
 all four at once. This narrows the open file's list; to jump to a matching entry across all files, use the Search
 panel instead.
 
+The Search panel (the magnifier in the navigation rail) searches every included file's entries by title, content,
+notes, and labels, listing each match with the term emphasized in its snippet. Choosing a result opens the entry's
+file, scrolls to and briefly rings the entry, reveals it (un-clamping long content and opening its extra fields so a
+match in the notes is visible), and marks the matched term in its title, content, or notes so it stands out where you
+land.
+
 ## Raw tab
 
 The Raw tab shows the XML for the file, regenerated from the Structured form, as a read-only preview. A **Copy** button
