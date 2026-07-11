@@ -199,6 +199,10 @@ const SpecsEditor = function (
         const frame = requestAnimationFrame(function () {
             setHighlightId(highlightMatchId);
             document.getElementById(`spec-${highlightMatchId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Open the target's extra fields so a match in the notes (or another collapsed field) is actually visible,
+            // not hidden behind the disclosure - the counterpart to the card un-clamping its content on the same jump.
+            // It persists (unlike the 2s ring) so the reader can study the entry; Collapse all or the chevron re-hides.
+            setExpandedIds(function (previous) { return new Set(previous).add(highlightMatchId); });
         });
         const timer = setTimeout(function () {
             setHighlightId(null);
