@@ -381,10 +381,13 @@ const SpecsEditor = function (
     };
 
     const addSpec = function () {
-        const spec = emptySpec();
+        // Seed the new entry with the file's own type family (specs.xml -> spec, tasks.xml -> task, ...), matching the
+        // "Create with AI" dialog - rather than always a spec, which would drop a stray spec into a tasks/ideas file.
+        // The type is editable afterward (the card's Type row), so this is just the sensible default.
+        const spec = emptySpec(defaultEntryType);
         onChange([...specs, spec]);
         setEditingIds(function (previous) {
-            return new Set(previous).add(spec.id); // a brand-new spec opens directly in edit mode
+            return new Set(previous).add(spec.id); // a brand-new entry opens directly in edit mode
         });
         focusSpecContent(spec.id);
     };
