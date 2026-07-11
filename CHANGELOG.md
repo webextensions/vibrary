@@ -22,6 +22,8 @@ All notable changes to this project are documented here. The format loosely foll
   (un-clamping its content and opening its extra fields) so the match is visible where you land.
 - A **Referenced by** section on each entry - the reverse of "Relates to" - listing the entries folder-wide that point
   at it, each a chip that opens the referencing entry. It tracks unsaved edits to the open file live.
+- Deleting a file now warns in the confirmation when entries in other files reference the ones being removed (e.g.
+  "2 references from other files will break"), so an irreversible delete no longer silently strands cross-file links.
 
 ### Changed
 

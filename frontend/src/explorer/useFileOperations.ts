@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { type Backlinks, createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, getFilesSummary, renameFile, type TitleIndexEntry } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
+import { countBreakingReferences } from './breakingReferences.ts';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
 import { promptDialog } from '../shared/promptDialog.ts';
 
@@ -168,12 +169,23 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
     // The explorer "More" menu's Delete action. Folders have no on-disk entity (they are derived from file paths), so
     // deleting one removes every file beneath it; a file deletes just itself. Warn before the irreversible delete, then
     // remove the files, close any open tabs for them, and refresh the list and title pool.
+    // A suffix for the delete confirmation warning that N cross-file relatesTo references will break, or '' when none
+    // would. Reads the last-saved summary + backlinks map (the same data the editor's broken-reference surfacing uses),
+    // so it is exact for saved state - the common case when deleting a file - and silent when there is nothing to warn.
+    const breakingReferenceWarning = useCallback(function (paths: string[]): string {
+        const count = countBreakingReferences(paths, fileSummaries, backlinks);
+        if (count === 0) {
+            return '';
+        }
+        return ` ${count} reference${count === 1 ? '' : 's'} from other files will break.`;
+    }, [fileSummaries, backlinks]);
+
     const handleDelete = useCallback(async function (node: TreeNode) {
         const paths = collectFilePaths(node);
         const target = node.kind === 'folder' ?
             `folder "${node.path}" and its ${paths.length} file${paths.length === 1 ? '' : 's'}` :
             `"${node.path}"`;
-        const confirmed = await confirmDialog(`Delete ${target}? This cannot be undone.`, 'Delete');
+        const confirmed = await confirmDialog(`Delete ${target}? This cannot be undone.${breakingReferenceWarning(paths)}`, 'Delete');
         if (!confirmed) {
             return;
         }
@@ -194,7 +206,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
             // Refresh even after a failure: files deleted before the error are really gone.
             await refreshListing();
         }
-    }, [closeTab, refreshListing]);
+    }, [breakingReferenceWarning, closeTab, refreshListing]);
 
     // The Explorer's bulk-select footer Delete button: same warn-then-delete-then-refresh shape as handleDelete above,
     // but over an arbitrary multi-file selection instead of one node's subtree. Resolves whether the user confirmed, so
@@ -203,7 +215,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
         if (paths.length === 0) {
             return false;
         }
-        const confirmed = await confirmDialog(`Delete ${paths.length} file${paths.length === 1 ? '' : 's'}? This cannot be undone.`, 'Delete');
+        const confirmed = await confirmDialog(`Delete ${paths.length} file${paths.length === 1 ? '' : 's'}? This cannot be undone.${breakingReferenceWarning(paths)}`, 'Delete');
         if (!confirmed) {
             return false;
         }
@@ -223,7 +235,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
             await refreshListing();
         }
         return true;
-    }, [closeTab, refreshListing]);
+    }, [breakingReferenceWarning, closeTab, refreshListing]);
 
     // The explorer "More" menu's Rename action. A file renames (or moves - the new name may point into another folder)
     // just itself; a folder renames every file beneath it, since folders have no on-disk entity of their own. Open tabs
