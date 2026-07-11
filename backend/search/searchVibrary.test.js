@@ -92,3 +92,16 @@ test('a match far into a long line is windowed so the snippet still contains the
     assert.ok(snippet.startsWith('...'), 'a clipped start is marked with an ellipsis');
     assert.ok(!snippet.endsWith('...'), 'the window reaches the line end, so no trailing ellipsis');
 });
+
+test('a deeply-indented line whose visible text fits is returned whole, not windowed', async function () {
+    const directory = mkdtempSync(path.join(tmpdir(), 'vibrary-search-indent-'));
+    writeFileSync(path.join(directory, '.vibraryinclude'), 'specs*.xml\n');
+    // The match sits on a heavily-indented interior line: raw length exceeds the cap, but its trimmed text ("findme")
+    // is short, so the snippet should be that text with no ellipsis - not a window over the blank indentation.
+    const indentedLine = `${' '.repeat(210)}findme`;
+    writeFileSync(path.join(directory, 'specs.xml'), `<root><entries><entry type="spec"><title>t</title><content>intro\n${indentedLine}</content></entry></entries></root>`);
+
+    const { results } = await searchVibrary(directory, 'findme');
+    const snippet = results[0]?.matches[0]?.snippet;
+    assert.equal(snippet, 'findme');
+});

@@ -33,13 +33,17 @@ const buildSnippet = function (text, needle) {
     const lineStart = text.lastIndexOf('\n', at) + 1;
     const lineEndRaw = text.indexOf('\n', at);
     const lineEnd = lineEndRaw === -1 ? text.length : lineEndRaw;
-    const line = text.slice(lineStart, lineEnd);
+    const rawLine = text.slice(lineStart, lineEnd);
+    const line = rawLine.trim();
+    // Decide on the TRIMMED length: a deeply-indented line whose visible text fits should be returned whole, not
+    // windowed (which would emit a spurious leading "..." over dropped blank space).
     if (line.length <= MAX_SNIPPET_LENGTH) {
-        return line.trim();
+        return line;
     }
     // Window the long line so the match is visible: start a little before it, take one snippet's worth, and pull the
-    // start back if that ran past the line end so the window stays full.
-    const matchInLine = at - lineStart;
+    // start back if that ran past the line end so the window stays full. The offset is relative to the left-trimmed
+    // line, so leading whitespace does not shift the window off the match.
+    const matchInLine = at - lineStart - (rawLine.length - rawLine.trimStart().length);
     const end = Math.min(line.length, Math.max(0, matchInLine - SNIPPET_CONTEXT_BEFORE) + MAX_SNIPPET_LENGTH);
     const start = Math.max(0, end - MAX_SNIPPET_LENGTH);
     return `${start > 0 ? '...' : ''}${line.slice(start, end).trim()}${end < line.length ? '...' : ''}`;
