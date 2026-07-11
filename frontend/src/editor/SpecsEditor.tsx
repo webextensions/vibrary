@@ -115,6 +115,17 @@ const CREATOR_FILTER_OPTIONS: Option[] = [
     { value: '', label: 'Unspecified' }
 ];
 
+// View-only orderings for the entry list. 'file' is the on-disk order (the default, and the only one in which the
+// manual up/down reorder makes sense - so reorder is disabled under any other). The rest are derived, non-destructive
+// sorts that never touch the saved order.
+type SortMode = 'file' | 'title' | 'updated' | 'approval';
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+    { value: 'file', label: 'File order' },
+    { value: 'title', label: 'Title (A-Z)' },
+    { value: 'updated', label: 'Recently updated' },
+    { value: 'approval', label: 'Approval status' }
+];
+
 const SpecsEditor = function (
     { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange }:
     SpecsEditorProperties
@@ -135,6 +146,9 @@ const SpecsEditor = function (
     const [expandedIds, setExpandedIds] = useState<Set<string>>(function () {
         return new Set();
     });
+    // The list ordering (view-only, never written to disk). Local editor state that resets on reload, like the
+    // expand/edit sets above.
+    const [sortMode, setSortMode] = useState<SortMode>('file');
 
     const { enqueue } = useActivityQueueActions();
 
@@ -417,6 +431,22 @@ const SpecsEditor = function (
         })
         .filter(function ({ spec }) {
             return editingIds.has(spec.id) || spec.id === highlightMatchId || isFilterMatch(spec);
+        });
+
+    // The order the cards render in. 'file' keeps the map order above (the on-disk order); the others are view-only
+    // re-orderings that leave each entry's original index untouched, so updateAt/removeAt and the selection still
+    // address the right spec. Array#sort is stable, so ties keep their file order. Recency falls back to `created` for
+    // an entry that was never updated.
+    const sortedShown = sortMode === 'file' ?
+        shown :
+        shown.toSorted(function (a, b) {
+            if (sortMode === 'title') {
+                return a.spec.title.localeCompare(b.spec.title);
+            }
+            if (sortMode === 'updated') {
+                return (b.spec.updated || b.spec.created).localeCompare(a.spec.updated || a.spec.created);
+            }
+            return STATE_ORDER.indexOf(approvalState(a.spec)) - STATE_ORDER.indexOf(approvalState(b.spec));
         });
 
     // Selected specs in document order, ignoring any stale ids whose spec was removed. The footer count, and the
@@ -771,7 +801,7 @@ const SpecsEditor = function (
                 {specs.length > 0 && shown.length === 0 &&
                 <p className={styles.placeholder}>No entries match the selected filters.</p>}
 
-                {shown.map(function ({ spec, index }) {
+                {sortedShown.map(function ({ spec, index }) {
                     return (
                         <SpecCard
                             key={spec.id}
@@ -805,7 +835,7 @@ const SpecsEditor = function (
                             onToggleExpand={function () {
                                 toggleExpand(spec.id);
                             }}
-                            reorderable={!hasActiveFilter}
+                            reorderable={!hasActiveFilter && sortMode === 'file'}
                             canMoveUp={index > 0}
                             canMoveDown={index < specs.length - 1}
                             onMoveUp={function () {
@@ -860,6 +890,21 @@ const SpecsEditor = function (
                 >
                     {allShownExpanded ? 'Collapse all' : 'Expand all'}
                 </button>
+                <label className={styles.sortControl}>
+                    <span>Sort</span>
+                    <select
+                        className={styles.sortSelect}
+                        aria-label="Sort entries"
+                        value={sortMode}
+                        onChange={function (changeEvent) {
+                            setSortMode(changeEvent.target.value as SortMode);
+                        }}
+                    >
+                        {SORT_OPTIONS.map(function (option) {
+                            return <option key={option.value} value={option.value}>{option.label}</option>;
+                        })}
+                    </select>
+                </label>
                 <div className={styles.actionsAnchor} ref={operationsReference}>
                     {operationsOpen &&
                     <div className={styles.actionsPopup}>

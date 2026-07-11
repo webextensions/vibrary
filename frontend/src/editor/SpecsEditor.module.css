@@ -16,10 +16,13 @@
 
 /* Fixed bar below the scrolling list: entry count and selection/Actions controls on the left, the "+" add button
    pushed to the right via margin-left: auto on .speed-dial. align-items: center keeps the left-side text/links
-   vertically centered against the taller "+" button. */
+   vertically centered against the taller "+" button. Wraps to more rows when the controls (count, selection links,
+   sort, Operations/Actions, "+") cannot fit one line, so a narrow (phone) viewport never scrolls sideways; the gap
+   doubles as the row gap. On a desktop width everything fits, so wrapping never engages there. */
 .footer {
     flex-shrink: 0;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
     padding: 12px 0 0;
@@ -81,6 +84,33 @@
     color: #8c959f;
     cursor: default;
     text-decoration: none;
+}
+
+/* The view-only sort control in the footer, sitting with the selection/expand text links. A native <select> so it gets
+   the platform picker (and a comfortable wheel on touch), kept compact to fit the footer row. */
+.sort-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #656d76;
+}
+
+.sort-select {
+    padding: 4px 6px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.sort-select:focus {
+    outline: none;
+    border-color: #2684ff;
+    box-shadow: 0 0 0 1px #2684ff;
 }
 
 .actions-anchor {

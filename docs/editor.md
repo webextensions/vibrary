@@ -54,16 +54,18 @@ open file's name family), how many, and optional custom instructions for the run
 many entries of the chosen type to the file. **Duplicate** on a card clones it (a fresh entry with the same content,
 notes, labels and relations, but its own id, timestamps and an unapproved state) as a starting point for a similar
 one. **Remove** on a card deletes that entry. The stacked up/down control at the start of a card's actions moves the
-entry one position in the file (disabled at the ends, and hidden while a filter is active since moving relative to
-hidden entries would be ambiguous).
+entry one position in the file (disabled at the ends, and hidden while a filter or a non-default sort is active, since
+moving relative to hidden or re-ordered entries would be ambiguous).
 
 ## Bulk selection
 
 Each card has a checkbox at its top-left; the footer below the list shows how many of the file's entries are ticked,
 with **Select all** / **Deselect all** links (Select all only ticks the entries currently shown under an active
 filter) and Escape clears the selection. The footer also shows a small approval progress meter (how many of the file's
-entries are currently approved) and an **Expand all** / **Collapse all** link that opens or closes the extra-fields
-section of every shown entry at once. Two buttons act on the ticked entries:
+entries are currently approved), an **Expand all** / **Collapse all** link that opens or closes the extra-fields
+section of every shown entry at once, and a **Sort** control that reorders the list view - by file order (the
+default, and the only one in which the up/down reorder is available), title, most-recently-updated, or approval
+status. The sort is view-only and never changes the saved file. Two buttons act on the ticked entries:
 
 - **Operations** - **Approve**, **Remove Approval**, **Add label** / **Remove label** (prompt for a label and add it
   to, or strip it from, every ticked entry), **Copy as Markdown** (copies the ticked entries as one Markdown document,
