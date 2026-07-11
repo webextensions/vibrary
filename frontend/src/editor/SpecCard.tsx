@@ -367,7 +367,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                             </>
                         ) :
                         (
-                            <span className={styles.specCardTitle}>{value.title || `(untitled ${value.type} #${index + 1})`}</span>
+                            <span className={styles.specCardTitle}>{value.title === '' ? `(untitled ${value.type} #${index + 1})` : renderText(value.title)}</span>
                         )}
                     {hasDuplicateTitle &&
                     <span
