@@ -7,7 +7,7 @@ import { ApiError, generateSpecs, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './explorer/LeftPanel.tsx';
 import { TabBar } from './tabs/TabBar.tsx';
-import { SpecsEditor, type Option } from './editor/SpecsEditor.tsx';
+import { SpecsEditor, type Option, type SortMode } from './editor/SpecsEditor.tsx';
 import { confirmDialog } from './shared/confirmDialog.ts';
 import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { titlesInOtherFiles } from './editor/crossFileTitles.ts';
@@ -64,6 +64,9 @@ const App = function () {
     const [labelFilter, setLabelFilter] = useState<Option[]>([]);
     const [creatorFilter, setCreatorFilter] = useState<Option[]>([]);
     const [textFilter, setTextFilter] = useState<string>('');
+    // The entry sort order, held here (like the filters) so it persists across tab switches - the per-tab editor
+    // remounts on switch, so a sort kept inside it would reset to file order every time.
+    const [sortMode, setSortMode] = useState<SortMode>('file');
     // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
     // necessary - the editor only acts when it matches the active tab.
@@ -754,6 +757,8 @@ const App = function () {
                                         onCreatorFilterChange={setCreatorFilter}
                                         textFilter={textFilter}
                                         onTextFilterChange={setTextFilter}
+                                        sortMode={sortMode}
+                                        onSortModeChange={setSortMode}
                                     />
                                 ) :
                                 (

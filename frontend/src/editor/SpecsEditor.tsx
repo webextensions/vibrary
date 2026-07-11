@@ -78,7 +78,11 @@ type SpecsEditorProperties = {
     // The free-text filter, owned by App like the four dropdowns so the toolbar Filter button's active-dot reflects it
     // too and it persists across tab switches with the rest.
     textFilter: string;
-    onTextFilterChange: (next: string) => void
+    onTextFilterChange: (next: string) => void;
+    // The entry sort order, owned by App like the filters above: a fresh editor mounts per tab (keyed by path), so a
+    // locally-held sort would reset to file order on every tab switch - lifting it keeps the chosen sort with the rest.
+    sortMode: SortMode;
+    onSortModeChange: (next: SortMode) => void
 };
 
 // Human-readable label per approval state, shown as the filter option text.
@@ -132,7 +136,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 ];
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -151,9 +155,6 @@ const SpecsEditor = function (
     const [expandedIds, setExpandedIds] = useState<Set<string>>(function () {
         return new Set();
     });
-    // The list ordering (view-only, never written to disk). Local editor state that resets on reload, like the
-    // expand/edit sets above.
-    const [sortMode, setSortMode] = useState<SortMode>('file');
 
     const { enqueue } = useActivityQueueActions();
 
@@ -1095,7 +1096,7 @@ const SpecsEditor = function (
                         aria-label="Sort entries"
                         value={sortMode}
                         onChange={function (changeEvent) {
-                            setSortMode(changeEvent.target.value as SortMode);
+                            onSortModeChange(changeEvent.target.value as SortMode);
                         }}
                     >
                         {SORT_OPTIONS.map(function (option) {
@@ -1253,4 +1254,4 @@ const SpecsEditor = function (
 };
 
 export { SpecsEditor };
-export type { Option };
+export type { Option, SortMode };
