@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
-import { useActivityQueueActions } from './activity/activityQueue.ts';
+import { useActivityQueueActions, useActivityQueueState } from './activity/activityQueue.ts';
 import { ApiError, generateSpecs, saveFile } from './api.ts';
 import { CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './explorer/LeftPanel.tsx';
@@ -67,6 +67,12 @@ const App = function () {
     const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab } =
         useOpenTabs();
     const { enqueue } = useActivityQueueActions();
+    // The queue is in-memory, so a reload aborts the in-flight run and drops everything still queued. Track whether any
+    // job is pending so the leave-page warning below covers active agent work, not just unsaved file edits.
+    const { jobs } = useActivityQueueState();
+    const hasPendingJobs = jobs.some(function (job) {
+        return job.status === 'running' || job.status === 'queued';
+    });
 
     // Open a file from the sidebar (or after creating one): focus its tab if already open, otherwise create one and
     // fetch its content, then close the mobile drawer (the desktop collapse is left untouched).
@@ -98,10 +104,12 @@ const App = function () {
         });
     const { countForFile, markCounted } = useFileCounts(fileSummaries, openTabsForCounts);
 
-    // Warn before the tab is closed or the page is navigated away while any open tab has unsaved edits. Setting
-    // returnValue is what makes the browser show its native "leave site?" confirmation, which lets the user cancel.
+    // Warn before the tab is closed or the page is navigated away while there is work to lose: any open tab with unsaved
+    // edits, OR any agent job still running or queued (the queue is in-memory, so a reload aborts the in-flight run and
+    // discards the rest). Setting returnValue is what makes the browser show its native "leave site?" confirmation,
+    // which lets the user cancel.
     useEffect(function () {
-        if (!anyDirty) {
+        if (!anyDirty && !hasPendingJobs) {
             return undefined;
         }
         const handleBeforeUnload = function (unloadEvent: BeforeUnloadEvent) {
@@ -112,7 +120,7 @@ const App = function () {
         return function () {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [anyDirty]);
+    }, [anyDirty, hasPendingJobs]);
 
     // Close tabs from the tab bar or the Open Editors list, confirming first when any of them has unsaved edits -
     // closing is how those edits get discarded, so it should never happen silently. Delete/rename close tabs via
