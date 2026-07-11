@@ -90,6 +90,49 @@
     font: inherit;
 }
 
+/* Compact stacked up/down reorder control at the start of the actions row: two short buttons sharing a rounded border,
+   each holding the shared chevron rotated to point up or down. */
+.reorder {
+    display: inline-flex;
+    flex-direction: column;
+    align-self: center;
+}
+
+.spec-card .reorder-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 15px;
+    padding: 0;
+    border: 1px solid #d0d7de;
+    background: #fff;
+    color: #656d76;
+    cursor: pointer;
+}
+
+.spec-card .reorder-up {
+    border-radius: 6px 6px 0 0;
+    border-bottom: 0;
+}
+
+.spec-card .reorder-down {
+    border-radius: 0 0 6px 6px;
+}
+
+.spec-card .reorder-button:disabled {
+    color: #c0c6cd;
+    cursor: default;
+}
+
+.spec-card .reorder-up svg {
+    transform: rotate(-90deg);
+}
+
+.spec-card .reorder-down svg {
+    transform: rotate(90deg);
+}
+
 .spec-card .remove {
     color: #cf222e;
 }

@@ -48,7 +48,14 @@ type SpecCardProperties = {
     // Whether this card's extra-fields section (notes/labels/relates-to/metadata/run) is open. Lifted to the editor so
     // a single "Expand all / Collapse all" control can drive every card at once.
     expanded: boolean;
-    onToggleExpand: () => void
+    onToggleExpand: () => void;
+    // Reorder controls. Disabled (hidden) while a filter is active, since moving relative to hidden entries is
+    // ambiguous; canMoveUp/canMoveDown gate the buttons at the list ends.
+    reorderable: boolean;
+    canMoveUp: boolean;
+    canMoveDown: boolean;
+    onMoveUp: () => void;
+    onMoveDown: () => void
 };
 
 const toOptions = function (values: string[]): Option[] {
@@ -132,7 +139,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplicateTitle = false, schemas, allTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
@@ -317,6 +324,15 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
                     </span>}
                 </div>
                 <div className={styles.specCardActions}>
+                    {reorderable &&
+                    <span className={styles.reorder}>
+                        <button type="button" className={cx(styles.reorderButton, styles.reorderUp)} aria-label="Move entry up" title="Move up" disabled={!canMoveUp} onClick={onMoveUp}>
+                            <ChevronIcon />
+                        </button>
+                        <button type="button" className={cx(styles.reorderButton, styles.reorderDown)} aria-label="Move entry down" title="Move down" disabled={!canMoveDown} onClick={onMoveDown}>
+                            <ChevronIcon />
+                        </button>
+                    </span>}
                     <button type="button" className={styles.remove} onClick={confirmRemove}>
                         <RemoveIcon /><span className={styles.actionText}>Remove</span>
                     </button>

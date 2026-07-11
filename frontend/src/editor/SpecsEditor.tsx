@@ -12,6 +12,7 @@ import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
+import { moveEntry } from './moveEntry.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
 
@@ -670,6 +671,15 @@ const SpecsEditor = function (
                             expanded={expandedIds.has(spec.id)}
                             onToggleExpand={function () {
                                 toggleExpand(spec.id);
+                            }}
+                            reorderable={!hasActiveFilter}
+                            canMoveUp={index > 0}
+                            canMoveDown={index < specs.length - 1}
+                            onMoveUp={function () {
+                                onChange(moveEntry(specs, index, -1));
+                            }}
+                            onMoveDown={function () {
+                                onChange(moveEntry(specs, index, 1));
                             }}
                         />
                     );
