@@ -252,7 +252,8 @@ const SpecCard = function ({ value, index, mode, highlighted = false, hasDuplica
         }
     };
 
-    // Confirm before deleting the whole spec - removal is destructive and not undoable.
+    // Confirm before deleting the whole spec - the confirm guards intent; the editor then offers a brief Undo toast for
+    // actual recovery.
     const confirmRemove = async function () {
         const confirmed = await confirmDialog(
             `Remove this ${value.type}?`,

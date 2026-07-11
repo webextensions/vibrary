@@ -310,9 +310,33 @@ const SpecsEditor = function (
     };
 
     const removeAt = function (index: number) {
+        const removed = specs[index];
         onChange(specs.filter(function (_spec, position) {
             return position !== index;
         }));
+        if (removed === undefined) {
+            return;
+        }
+        // The single-card counterpart of the bulk-delete Undo: the card's Remove button already confirms, but a confirm
+        // only guards intent - this gives an actual recovery path. reinsertEntries puts the entry back at its original
+        // position in the LIVE list, so an edit to another entry while the toast is up is preserved (see reinsertEntries).
+        toast.success(function ({ closeToast }) {
+            return (
+                <span className={styles.undoToast}>
+                    Removed 1 entry
+                    <button
+                        type="button"
+                        className={styles.undoButton}
+                        onClick={function () {
+                            onChange(reinsertEntries(specsReference.current, [{ index, spec: removed }]));
+                            closeToast();
+                        }}
+                    >
+                        Undo
+                    </button>
+                </span>
+            );
+        }, { autoClose: 8000 });
     };
 
     // Clone a source entry as a starting point for a similar one: same type/content/notes/labels/relatesTo, but a fresh
