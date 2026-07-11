@@ -4,7 +4,7 @@ Browse and edit vibrary files - `reviews`, `specs`, `tasks`, and `ideas` XML fil
 (`<family>.xml` / `<family>-*.xml`) in a folder - through a small local web UI. Entries can be created, edited,
 approved, searched, and related to each other; `spec` and `task` entries can additionally be handed to a headless
 [Claude Code](https://claude.com/claude-code) agent to apply or run against the folder's codebase. Agent runs execute
-with permission prompts disabled (see "Agent runs and permissions" in [docs/README.md](docs/README.md)), so only use
+with permission prompts disabled (see "Agent runs and permissions" in [docs/README.md](https://github.com/webextensions/vibrary/blob/main/docs/README.md)), so only use
 vibrary in folders, and on entries, that you trust.
 
 ## Install
@@ -28,10 +28,10 @@ re-exclude).
 
 ## Documentation
 
-- [docs/README.md](docs/README.md) - overview, running, and development setup (including reorder-insensitive git
+- [docs/README.md](https://github.com/webextensions/vibrary/blob/main/docs/README.md) - overview, running, and development setup (including reorder-insensitive git
   diffs for vibrary files)
-- [docs/editor.md](docs/editor.md) - the editor UI: the Structured and Raw tabs and how each field is edited
-- [docs/vibrary-file-format.md](docs/vibrary-file-format.md) - the XML schema and what each field means
+- [docs/editor.md](https://github.com/webextensions/vibrary/blob/main/docs/editor.md) - the editor UI: the Structured and Raw tabs and how each field is edited
+- [docs/vibrary-file-format.md](https://github.com/webextensions/vibrary/blob/main/docs/vibrary-file-format.md) - the XML schema and what each field means
 
 ## License
 
