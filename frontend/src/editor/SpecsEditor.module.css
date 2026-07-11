@@ -102,11 +102,13 @@
     cursor: default;
 }
 
-/* The Actions popup, anchored just above the button. Lists the selected entries and the "Apply changes" action. */
+/* The Operations / Actions popup, anchored just above the button. Right-aligned to the button (not left) so its 240px
+   width extends into the viewport rather than off the right edge - these buttons sit near the right of the footer,
+   which scrolls horizontally on a narrow (phone) screen. */
 .actions-popup {
     position: absolute;
     bottom: calc(100% + 8px);
-    left: 0;
+    right: 0;
     z-index: 6;
     display: flex;
     flex-direction: column;
