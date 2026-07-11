@@ -98,9 +98,14 @@ const createFilesRouter = function ({ cwd }) {
             const backlinks = Object.create(null);
             for (const file of parsed) {
                 for (const entry of file.references) {
-                    for (const target of entry.relatesTo) {
-                        if (knownTitles.has(target)) {
-                            (backlinks[target] ??= []).push({ file: file.name, title: entry.title });
+                    // Skip an untitled source: with no title it cannot be shown as a chip label nor navigated to, so it
+                    // would only render a blank, dead "Referenced by" entry. (Its relatesTo is still counted for the
+                    // broken-reference tally above - that is about the reference, not who makes it.)
+                    if (entry.title !== '') {
+                        for (const target of entry.relatesTo) {
+                            if (knownTitles.has(target)) {
+                                (backlinks[target] ??= []).push({ file: file.name, title: entry.title });
+                            }
                         }
                     }
                 }

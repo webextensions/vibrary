@@ -110,6 +110,27 @@ test('GET /files-summary builds a folder-wide reverse-reference (backlinks) map,
     }
 });
 
+test('GET /files-summary omits an untitled entry as a backlink source (no blank, un-navigable chip)', async function () {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'vibrary-untitled-src-'));
+    writeFileSync(path.join(cwd, '.vibraryinclude'), 'specs.xml\n');
+    // An untitled entry references 'target'; with no title it cannot be a shown or navigable backlink source.
+    writeFileSync(path.join(cwd, 'specs.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>target</title><content>x</content></entry>',
+        '  <entry type="spec"><title></title><content>y</content><relatesTo><ref>target</ref></relatesTo></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    const app = await startAppAsync(cwd);
+    try {
+        const { body } = await app.requestJsonAsync('/files-summary');
+        // 'target' is referenced only by the untitled entry, so it gets no backlink entry at all.
+        assert.equal(Object.hasOwn(body.output.backlinks, 'target'), false);
+    } finally {
+        app.server.close();
+        rmSync(cwd, { recursive: true, force: true });
+    }
+});
+
 test('GET /files-summary survives a title that collides with an Object.prototype key (e.g. "constructor")', async function () {
     const cwd = mkdtempSync(path.join(tmpdir(), 'vibrary-proto-title-'));
     writeFileSync(path.join(cwd, '.vibraryinclude'), 'specs.xml\n');

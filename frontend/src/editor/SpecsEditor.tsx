@@ -379,10 +379,14 @@ const SpecsEditor = function (
     const liveBacklinks = useMemo(function () {
         const map = new Map<string, { id: string; file: string; title: string }[]>();
         for (const spec of specs) {
-            for (const target of spec.relatesTo) {
-                const sources = map.get(target) ?? [];
-                sources.push({ id: spec.id, file: currentFilePath ?? '', title: spec.title });
-                map.set(target, sources);
+            // Skip an untitled source: it has no chip label and cannot be navigated to, so it would only render a blank,
+            // dead "Referenced by" entry (matches the backend map, which excludes untitled sources for the same reason).
+            if (spec.title !== '') {
+                for (const target of spec.relatesTo) {
+                    const sources = map.get(target) ?? [];
+                    sources.push({ id: spec.id, file: currentFilePath ?? '', title: spec.title });
+                    map.set(target, sources);
+                }
             }
         }
         return map;
