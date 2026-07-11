@@ -105,7 +105,7 @@ const App = function () {
     }, [openOrFocus]);
 
     const {
-        files, fileSummaries, hasVibraryInclude, titleIndex, loadError, clearLoadError, reportLoadError,
+        files, fileSummaries, backlinks, hasVibraryInclude, titleIndex, loadError, clearLoadError, reportLoadError,
         refreshing, listingLoaded, refreshListing,
         handleRefresh, handleAddFile, handleNewFile, handleCreateInclude,
         handleDelete, handleBulkDelete, handleRename, handleDuplicate
@@ -819,6 +819,8 @@ const App = function () {
                                         schemas={activeTab.schemas}
                                         allTitles={allTitles}
                                         crossFileTitles={crossFileTitles}
+                                        backlinks={backlinks}
+                                        currentFilePath={activeFilePath}
                                         highlightQuery={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.query : undefined}
                                         highlightMatchIndex={searchTarget !== null && searchTarget.path === activeTab.path ? searchTarget.matchIndex : 0}
                                         highlightExactTitle={searchTarget !== null && searchTarget.path === activeTab.path && searchTarget.exactTitle}

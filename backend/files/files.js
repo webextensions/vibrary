@@ -67,26 +67,42 @@ const createFilesRouter = function ({ cwd }) {
                         titles: entries.map(function (entry) { return entry.title; }).filter(function (title) { return title !== ''; }),
                         approved: countApprovedSpecs(entries),
                         total: entries.length,
-                        relatesTo: entries.flatMap(function (entry) { return entry.relatesTo; })
+                        // Per-entry source + targets, retained so the second pass can both count this file's dangling
+                        // references AND build the folder-wide reverse map (which entry references each title).
+                        references: entries.map(function (entry) { return { title: entry.title, relatesTo: entry.relatesTo }; })
                     });
                 } catch {
-                    parsed.push({ name, titles: [], approved: null, total: null, relatesTo: [] });
+                    parsed.push({ name, titles: [], approved: null, total: null, references: [] });
                 }
             }
             // A relatesTo reference resolves by exact title across every file, so the set of known titles is folder-wide.
             // Second pass: count each file's dangling references (targets absent from that set) so the sidebar can flag
             // files with broken links; a file that failed to parse reports null (its references are unknown).
             const knownTitles = new Set(parsed.flatMap(function (entry) { return entry.titles; }));
-            const summaries = parsed.map(function (entry) {
+            const summaries = parsed.map(function (file) {
+                const relatesTo = file.references.flatMap(function (entry) { return entry.relatesTo; });
                 return {
-                    name: entry.name,
-                    titles: entry.titles,
-                    approved: entry.approved,
-                    total: entry.total,
-                    brokenReferences: entry.approved === null ? null : entry.relatesTo.filter(function (reference) { return !knownTitles.has(reference); }).length
+                    name: file.name,
+                    titles: file.titles,
+                    approved: file.approved,
+                    total: file.total,
+                    brokenReferences: file.approved === null ? null : relatesTo.filter(function (reference) { return !knownTitles.has(reference); }).length
                 };
             });
-            return sendSuccessResponse(response, { files: summaries, hasVibraryInclude });
+            // Reverse-reference map: for each existing title, which entries (file + entry title) point AT it via
+            // relatesTo. Keyed only on real titles (a dangling target is nobody's viewable entry, so it is never looked
+            // up). References resolve by exact title folder-wide, matching how the editor renders the forward chips.
+            const backlinks = {};
+            for (const file of parsed) {
+                for (const entry of file.references) {
+                    for (const target of entry.relatesTo) {
+                        if (knownTitles.has(target)) {
+                            (backlinks[target] ??= []).push({ file: file.name, title: entry.title });
+                        }
+                    }
+                }
+            }
+            return sendSuccessResponse(response, { files: summaries, backlinks, hasVibraryInclude });
         } catch (error) {
             console.error('Failed to summarize vibrary files:', error);
             return sendErrorResponse(response, 500, 'Unable to summarize files');

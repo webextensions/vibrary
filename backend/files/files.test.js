@@ -84,6 +84,32 @@ test('GET /files-summary counts each file\'s dangling relatesTo references (fold
     }
 });
 
+test('GET /files-summary builds a folder-wide reverse-reference (backlinks) map, skipping dangling targets', async function () {
+    const cwd = mkdtempSync(path.join(tmpdir(), 'vibrary-backlinks-'));
+    writeFileSync(path.join(cwd, '.vibraryinclude'), 'specs*.xml\n');
+    // 'src' references 'real' (same file), 'other' (sibling file), and 'ghost' (nonexistent).
+    writeFileSync(path.join(cwd, 'specs.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>real</title><content>x</content></entry>',
+        '  <entry type="spec"><title>src</title><content>y</content><relatesTo><ref>real</ref><ref>other</ref><ref>ghost</ref></relatesTo></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    writeFileSync(path.join(cwd, 'specs-two.xml'), '<root><entries><entry type="spec"><title>other</title><content>z</content></entry></entries></root>');
+    const app = await startAppAsync(cwd);
+    try {
+        const { body } = await app.requestJsonAsync('/files-summary');
+        const backlinks = body.output.backlinks;
+        // 'real' and 'other' both exist and are referenced by 'src' in specs.xml.
+        assert.deepEqual(backlinks.real, [{ file: 'specs.xml', title: 'src' }]);
+        assert.deepEqual(backlinks.other, [{ file: 'specs.xml', title: 'src' }]);
+        // 'ghost' is not a real title, so it is nobody's viewable entry and never keyed.
+        assert.equal(Object.hasOwn(backlinks, 'ghost'), false);
+    } finally {
+        app.server.close();
+        rmSync(cwd, { recursive: true, force: true });
+    }
+});
+
 test('create -> save -> read -> rename -> delete round trip', async function () {
     const created = await sendJsonAsync('/files', { name: 'tasks-flow.xml' });
     assert.equal(created.status, 200);

@@ -20,6 +20,8 @@ All notable changes to this project are documented here. The format loosely foll
   lists, quotes - in review mode; off by default, and remembered across reloads.
 - The Search panel now marks the matched term in a jumped-to entry's title, content, and notes, and reveals the entry
   (un-clamping its content and opening its extra fields) so the match is visible where you land.
+- A **Referenced by** section on each entry - the reverse of "Relates to" - listing the entries folder-wide that point
+  at it, each a chip that opens the referencing entry. It tracks unsaved edits to the open file live.
 
 ### Changed
 

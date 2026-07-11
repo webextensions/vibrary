@@ -278,7 +278,11 @@ type TitleIndexEntry = { title: string; path: string };
 // a .vibraryinclude exists. Replaces the old pattern of re-downloading every file's full content client-side to
 // derive the title index and the sidebar badges. Null tallies mark a file the server could not read/parse.
 type FileSummary = { name: string; titles: string[]; approved: number | null; total: number | null; brokenReferences: number | null };
-type FilesSummary = { files: FileSummary[]; hasVibraryInclude: boolean };
+// One entry that references a given title, for the editor's "Referenced by" backlinks. Keyed by target title in the
+// Backlinks map; a title with no incoming references is simply absent from the map.
+type BacklinkSource = { file: string; title: string };
+type Backlinks = Record<string, BacklinkSource[]>;
+type FilesSummary = { files: FileSummary[]; backlinks: Backlinks; hasVibraryInclude: boolean };
 
 const getFilesSummary = function (): Promise<FilesSummary> {
     return request<FilesSummary>('/api/files-summary');
@@ -382,4 +386,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { ApiError, applySpec, applySpecs, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpec, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

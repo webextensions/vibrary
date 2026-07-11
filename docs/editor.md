@@ -46,6 +46,10 @@ controls:
   that drops the dead references in one click, so the problem is both visible and fixable without expanding the card.
   The file's row in the sidebar also carries an amber count of its broken references, so files with dead links stand
   out across the whole folder without opening each one.
+- **Referenced by** - the reverse of "Relates to": a read-only list of the entries (across every file in the folder)
+  whose `relatesTo` points at this one, each a chip that opens the referencing entry (its file named in the tooltip).
+  The row appears only when at least one entry references this one. It reflects the last saved state of other files and
+  this file's live edits, so adding or removing a relation updates both entries' views without a save.
 - **Created by** - a `Human` / `AI` radio pair; clicking the selected option again clears it back to unset.
 - **Approved** - reads `Yes` / `No` in review mode; in edit mode a Yes/No radio pair mirroring the Approve button:
   **Yes** stores a hash of the current content, so the approval can later be detected as stale (see the Approve

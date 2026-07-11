@@ -7,7 +7,7 @@ import CreatableSelect from 'react-select/creatable';
 import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
-import { populateTitle } from '../api.ts';
+import { type BacklinkSource, populateTitle } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
 import { danglingRelations } from './danglingRelations.ts';
@@ -49,6 +49,9 @@ type SpecCardProperties = {
     // The duplicate-title warning is computed from the in-memory entries, so the "Make unique" fix has to see them too
     // - checking only the saved allTitles would find no collision for two freshly-typed duplicates and silently no-op.
     takenTitles: string[];
+    // The entries that reference THIS one (via their relatesTo), for the read-only "Referenced by" section - the
+    // reverse of "Relates to". Folder-wide, already merged (live for this file, saved summary for others) by the editor.
+    referencedBy: BacklinkSource[];
     // Navigate to the entry a clicked "Relates to" chip points at (which may live in a different file).
     onOpenRelated: (title: string) => void;
     // Toggle a clicked label chip into/out of the active label filter.
@@ -165,7 +168,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, referencedBy, onOpenRelated, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
@@ -572,6 +575,27 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                                 isDangling={function (title) { return danglingReferences.has(title); }}
                             />}
                     </Row>
+
+                    {referencedBy.length > 0 &&
+                    <Row label="Referenced by">
+                        <span className={styles.chips}>
+                            {referencedBy.map(function (source) {
+                                return (
+                                    <button
+                                        key={`${source.file}::${source.title}`}
+                                        type="button"
+                                        className={cx(styles.chip, styles.chipLink)}
+                                        title={`Go to "${source.title}" in ${source.file}`}
+                                        onClick={function () {
+                                            onOpenRelated(source.title);
+                                        }}
+                                    >
+                                        {source.title}
+                                    </button>
+                                );
+                            })}
+                        </span>
+                    </Row>}
 
                     <Row label="Created by" inline>
                         {isEditing ?

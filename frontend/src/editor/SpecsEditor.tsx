@@ -8,7 +8,7 @@ import { useActivityQueueActions } from '../activity/activityQueue.ts';
 import { MenuPanel } from '../shared/MenuPanel.tsx';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
-import { applySpecs } from '../api.ts';
+import { applySpecs, type Backlinks, type BacklinkSource } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
 import { promptDialog } from '../shared/promptDialog.ts';
@@ -45,6 +45,11 @@ type SpecsEditorProperties = {
     // Titles used in OTHER files in the folder, so a card can flag a title that collides across files (not just
     // within this one) - relatesTo references resolve by exact title folder-wide.
     crossFileTitles: Set<string>;
+    // Folder-wide reverse-reference map (saved state) backing each card's "Referenced by" section; the editor folds
+    // this file's LIVE references over it so a just-added relation shows without a save.
+    backlinks: Backlinks;
+    // This file's path, to drop the open file's stale saved backlinks in favor of its live ones (see backlinksFor).
+    currentFilePath: string | null;
     // A Search query whose matching entry the editor scrolls to and briefly highlights. Set when this file was opened
     // from a Search result; undefined otherwise.
     highlightQuery?: string;
@@ -151,7 +156,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 ];
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
+    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, backlinks, currentFilePath, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -372,6 +377,46 @@ const SpecsEditor = function (
     const takenTitles = useMemo(function () {
         return [...allTitles, ...specs.map(function (spec) { return spec.title; })];
     }, [allTitles, specs]);
+
+    // This file's LIVE reverse-reference map (target title -> the entries here pointing at it), so a relation the user
+    // just added or removed shows in "Referenced by" immediately, without a save. Mirrors how crossFileTitles and the
+    // broken-references badge treat the open file as live while other files stay on the saved summary. The source id is
+    // kept so a card can drop itself (a self-reference is not a backlink) precisely, even under a duplicated title.
+    const liveBacklinks = useMemo(function () {
+        const map = new Map<string, { id: string; file: string; title: string }[]>();
+        for (const spec of specs) {
+            for (const target of spec.relatesTo) {
+                const sources = map.get(target) ?? [];
+                sources.push({ id: spec.id, file: currentFilePath ?? '', title: spec.title });
+                map.set(target, sources);
+            }
+        }
+        return map;
+    }, [specs, currentFilePath]);
+
+    // The entries that reference `spec`: this file's live references to it (minus itself) plus the saved summary's
+    // references from OTHER files. An untitled entry can be referenced by nobody (references resolve by title).
+    const backlinksFor = function (spec: Spec): BacklinkSource[] {
+        if (spec.title === '') {
+            return [];
+        }
+        const fromOtherFiles = (backlinks[spec.title] ?? []).filter(function (source) { return source.file !== currentFilePath; });
+        const fromThisFile = (liveBacklinks.get(spec.title) ?? [])
+            .filter(function (source) { return source.id !== spec.id; })
+            .map(function (source) { return { file: source.file, title: source.title }; });
+        // Collapse duplicates (a repeated relatesTo, or a title shared by two same-file entries) to one chip per
+        // file+title, which is also what makes the file+title a stable React key in the card.
+        const seen = new Set<string>();
+        const unique: BacklinkSource[] = [];
+        for (const source of [...fromOtherFiles, ...fromThisFile]) {
+            const key = `${source.file}::${source.title}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                unique.push(source);
+            }
+        }
+        return unique;
+    };
 
     // Clone a source entry as a starting point for a similar one: same type/content/notes/labels/relatesTo, but a fresh
     // id and timestamps, an unapproved state (a copy has not itself been signed off), and a "-copy" title made unique
@@ -1102,6 +1147,7 @@ const SpecsEditor = function (
                             schemas={schemas}
                             allTitles={allTitles}
                             takenTitles={takenTitles}
+                            referencedBy={backlinksFor(spec)}
                             onOpenRelated={onOpenRelated}
                             onLabelClick={handleLabelClick}
                             onChange={function (next) {

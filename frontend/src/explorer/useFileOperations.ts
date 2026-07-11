@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, getFilesSummary, renameFile, type TitleIndexEntry } from '../api.ts';
+import { type Backlinks, createFile, createVibraryInclude, deleteFile, duplicateFile, type FileSummary, getFilesSummary, renameFile, type TitleIndexEntry } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { collectFilePaths, type TreeNode } from './fileTree.ts';
 import { promptDialog } from '../shared/promptDialog.ts';
@@ -45,6 +45,9 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
     // The workspace summary the listing fetch returns: per-file titles and approved/total tallies, feeding both the
     // title index and useFileCounts without any per-file re-downloads.
     const [fileSummaries, setFileSummaries] = useState<FileSummary[]>([]);
+    // Folder-wide reverse-reference map (target title -> entries pointing at it), backing each card's "Referenced by"
+    // section. Saved-state, like fileSummaries; the editor merges the open file's live references over it.
+    const [backlinks, setBacklinks] = useState<Backlinks>({});
     // Whether a ".vibraryinclude" file exists at all, so the explorer's empty state can tell "nothing included yet
     // because no .vibraryinclude exists" apart from "a .vibraryinclude exists but its patterns match nothing".
     const [hasVibraryInclude, setHasVibraryInclude] = useState(true);
@@ -77,6 +80,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
             const summary = await getFilesSummary();
             setFiles(summary.files.map(function (file) { return file.name; }));
             setFileSummaries(summary.files);
+            setBacklinks(summary.backlinks);
             setHasVibraryInclude(summary.hasVibraryInclude);
             setTitleIndex(deriveTitleIndex(summary.files));
             return true;
@@ -297,6 +301,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
     return {
         files,
         fileSummaries,
+        backlinks,
         hasVibraryInclude,
         titleIndex,
         loadError,
