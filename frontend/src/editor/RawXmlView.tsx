@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup.js';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism/index.js';
+import { toast } from 'react-toastify';
+
+import { copyText } from '../shared/copyText.ts';
+import { CopyIcon } from '../shared/Icons.tsx';
 
 import styles from './RawXmlView.module.css';
 
@@ -58,12 +62,29 @@ const RawXmlView = function ({ xml }: { xml: string }) {
     // The <code> otherwise inherits the theme's own font; pull it back to the container's to match the rest of the UI.
     const codeTagProperties = { style: { fontFamily: 'inherit', fontSize: 'inherit' } };
 
+    // Copy the whole file's XML to the clipboard. copyText falls back to the legacy path on a plain-HTTP LAN origin
+    // (the phone case) where the async Clipboard API is unavailable.
+    const handleCopy = async function () {
+        const copied = await copyText(xml);
+        if (copied) {
+            toast.success('Copied XML');
+        } else {
+            toast.error('Could not copy to the clipboard');
+        }
+    };
+
     return (
         <div className={styles.rawPane}>
-            <label className={styles.wrapToggle}>
-                <input type="checkbox" checked={wrap} onChange={toggleWrap} />
-                Wrap
-            </label>
+            <div className={styles.rawHeader}>
+                <button type="button" className={styles.copyButton} title="Copy the XML to the clipboard" onClick={handleCopy}>
+                    <CopyIcon />
+                    Copy
+                </button>
+                <label className={styles.wrapToggle}>
+                    <input type="checkbox" checked={wrap} onChange={toggleWrap} />
+                    Wrap
+                </label>
+            </div>
             <SyntaxHighlighter
                 language="markup"
                 style={oneLight}

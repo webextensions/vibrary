@@ -7,8 +7,29 @@
     gap: 8px;
 }
 
+/* Header row above the code: right-aligned actions (Copy) and the Wrap toggle. */
+.raw-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.raw-pane .copy-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #656d76;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+}
+
 .raw-pane .wrap-toggle {
-    align-self: flex-end;
     display: inline-flex;
     align-items: center;
     gap: 6px;
