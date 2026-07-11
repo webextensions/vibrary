@@ -11,6 +11,52 @@ const CLAUDE_STREAM_FLAGS = ['--output-format', 'stream-json', '--verbose', '--i
 // cancel, and an aborted worker would keep editing files - exactly what the kill exists to stop.
 const KILL_ESCALATION_GRACE_MS = 5 * 1000;
 
+// Every live child, registered so a server shutdown can kill the whole fleet: the children are detached process-group
+// leaders (see runClaudeProcess), so they would survive this process's death and keep editing files with nobody
+// watching. Entries are removed by each run's own cleanup as it closes.
+const activeChildren = new Set();
+
+// Signal a child's whole process group (negative pid); fall back to the direct child if the group is already gone.
+const signalProcessGroup = function (child, signalName) {
+    try {
+        process.kill(-child.pid, signalName);
+    } catch {
+        child.kill(signalName);
+    }
+};
+
+// Kill every live run's process group and wait (bounded) for them to exit: SIGTERM first, then SIGKILL for whatever
+// is still alive after the same grace period a single-run kill uses. Called by the server's signal handlers so that
+// Ctrl+C cannot orphan detached agents mid-edit.
+const terminateActiveClaudeRunsAsync = async function () {
+    if (activeChildren.size === 0) {
+        return;
+    }
+    const children = [...activeChildren];
+    const allClosed = Promise.all(children.map(function (child) {
+        return new Promise(function (resolve) {
+            if (child.exitCode !== null || child.signalCode !== null) {
+                resolve(undefined);
+                return;
+            }
+            child.once('close', resolve);
+        });
+    }));
+    for (const child of children) {
+        signalProcessGroup(child, 'SIGTERM');
+    }
+    await Promise.race([
+        allClosed,
+        new Promise(function (resolve) {
+            setTimeout(resolve, KILL_ESCALATION_GRACE_MS).unref();
+        })
+    ]);
+    // Whatever survived the grace period gets the non-ignorable signal; already-closed children left the set via cleanup.
+    for (const child of activeChildren) {
+        signalProcessGroup(child, 'SIGKILL');
+    }
+};
+
 // Spawn "claude <args>" in `cwd` with the full lifecycle the callers rely on: clean-exit resolve, descriptive rejects
 // (missing CLI, non-zero exit, timeout, external abort), and a tree-kill on abort/timeout.
 //
@@ -27,29 +73,21 @@ const runClaudeProcess = function ({ cwd, args, timeoutMs, timeoutMessage, signa
         }
 
         const child = spawn('claude', args, { cwd, detached: true });
+        activeChildren.add(child);
 
         let stdout = '';
         let stderr = '';
         let wasAborted = false;
         let didTimeout = false;
 
-        // Signal the child's whole process group; fall back to the direct child if the group is already gone.
-        const killTree = function (signalName) {
-            try {
-                process.kill(-child.pid, signalName);
-            } catch {
-                child.kill(signalName);
-            }
-        };
-
         // SIGTERM first, then SIGKILL after the grace period unless 'close' fires and cleanup() disarms it - the
         // standard term-then-kill pattern (what child_process's own `timeout` option and process managers do).
         let escalationTimer = null;
         const requestKill = function () {
-            killTree('SIGTERM');
+            signalProcessGroup(child, 'SIGTERM');
             if (escalationTimer === null) {
                 escalationTimer = setTimeout(function () {
-                    killTree('SIGKILL');
+                    signalProcessGroup(child, 'SIGKILL');
                 }, KILL_ESCALATION_GRACE_MS);
             }
         };
@@ -68,6 +106,7 @@ const runClaudeProcess = function ({ cwd, args, timeoutMs, timeoutMessage, signa
         }
 
         const cleanup = function () {
+            activeChildren.delete(child);
             clearTimeout(timer);
             if (escalationTimer !== null) {
                 clearTimeout(escalationTimer);
@@ -177,4 +216,4 @@ const runStreamedAgentAsync = function ({ cwd, prompt, extraArguments = [], time
     });
 };
 
-export { runStreamedAgentAsync, spawnClaudeAsync };
+export { runStreamedAgentAsync, spawnClaudeAsync, terminateActiveClaudeRunsAsync };

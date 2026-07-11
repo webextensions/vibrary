@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { spawnClaudeAsync } from './spawnClaude.js';
+import { spawnClaudeAsync, terminateActiveClaudeRunsAsync } from './spawnClaude.js';
 
 // Exercise the real process lifecycle - clean-exit resolve, stderr-carrying reject, timeout kill, abort, missing
 // CLI - against a fake `claude` executable prepended to PATH. The fake keys its behavior off the prompt argument, so
@@ -71,6 +71,21 @@ test('rejects with the aborted message when aborted mid-run', async function () 
         controller.abort();
     }, 100);
     await pending;
+});
+
+test('terminateActiveClaudeRunsAsync kills every live run (the server shutdown path)', async function () {
+    const startedAt = Date.now();
+    // Two concurrent 30s sleepers stand in for in-flight agent runs; the registry is populated synchronously on spawn.
+    const pendingRuns = [1, 2].map(function () {
+        return assert.rejects(
+            spawnClaudeAsync({ ...baseOptions('please SLEEP'), timeoutMs: 30000 }),
+            { message: 'Claude exited with code null' }
+        );
+    });
+    await terminateActiveClaudeRunsAsync();
+    await Promise.all(pendingRuns);
+    // Killed via the shutdown path, not waited out; leave generous slack for slow CI.
+    assert.ok(Date.now() - startedAt < 10000, 'live runs were not killed by the shutdown path');
 });
 
 test('rejects with a clear message when the CLI is not on PATH', async function () {
