@@ -7,6 +7,14 @@ approved, searched, and related to each other; `spec` and `task` entries can add
 with permission prompts disabled (see "Agent runs and permissions" in [docs/README.md](https://github.com/webextensions/vibrary/blob/main/docs/README.md)), so only use
 vibrary in folders, and on entries, that you trust.
 
+## Prerequisites
+
+- Node.js >= 22.18
+- For the AI actions only (Apply spec, Run task, Create entries, chat): the
+  [Claude Code](https://claude.com/claude-code) CLI on your `PATH`, installed with
+  `npm install -g @anthropic-ai/claude-code`. Browsing, editing, searching, and the git panel all work without it;
+  only the agent actions shell out to `claude`, and they fail with "Claude CLI not found on PATH" if it is missing.
+
 ## Install
 
 ```bash

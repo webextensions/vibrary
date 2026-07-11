@@ -7,6 +7,14 @@ Vibrary is a small, globally-installable web app for browsing and editing vibrar
 - [vibrary-file-format.md](vibrary-file-format.md) - the XML schema for a vibrary file and what each field means.
 - [editor.md](editor.md) - the editor UI: the Structured and Raw tabs and how each field is edited.
 
+## Prerequisites
+
+- Node.js >= 22.18 (the package declares this as its `engines` floor; an older runtime is refused at startup).
+- The [Claude Code](https://claude.com/claude-code) CLI on your `PATH` (`claude`), used by the AI actions - install it
+  with `npm install -g @anthropic-ai/claude-code`. Everything else (browsing, editing, search, the git panel) works
+  without it; the agent actions shell out to `claude` and fail with "Claude CLI not found on PATH" when it is absent
+  (see [Agent runs and permissions](#agent-runs-and-permissions) below).
+
 ## Running
 
 ```bash
