@@ -45,4 +45,4 @@ const generateCommitMessageAsync = async function ({ cwd, diff, signal }) {
     return parseMessage(stdout);
 };
 
-export { generateCommitMessageAsync };
+export { generateCommitMessageAsync, parseMessage };
