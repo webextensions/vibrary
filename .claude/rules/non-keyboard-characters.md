@@ -31,9 +31,9 @@ The authoritative list is the `DETECTORS` table in
 ## Enforcement
 
 The check is part of `node --run all-is-well` (and therefore `node --run test`), which runs at the
-Husky `pre-commit` and `pre-push` hooks. It baselines per-file character counts in
-`.block-non-keyboard-characters.suppressions.json` (at the project root) and fails on any drift from
-that baseline.
+Husky `pre-commit` and `pre-push` hooks. It baselines per-file character counts in the `baseline`
+section of `.block-non-keyboard-characters.suppressions.json` (at the project root) and fails on any
+drift from that baseline.
 
 - `node --run block-non-keyboard-characters` - check (exit 1 on drift)
 - `node --run block-non-keyboard-characters:fix` - auto-replace the common chars in non-suppressed files
@@ -47,6 +47,22 @@ registered in [.claude/settings.json](../settings.json)) auto-runs the whole-rep
 of each turn, so stray characters in non-suppressed files are corrected automatically. Do not rely on
 it - write clean ASCII in the first place.
 
+## Exemptions - Skipping Files Entirely
+
+Files the tooling should not scan at all (generated or vendored content) live in the `exemptions`
+array of `.block-non-keyboard-characters.suppressions.json`; `--suppress` rewrites only `baseline`
+and preserves this section. Each entry is `{ "pattern", "reason", "skipInCensus" }`:
+
+- `pattern` is a plain glob anchored at the repo root (`dir/**` for a subtree, `**/name` for any
+  depth); a leading `!` re-includes. Entries are ORDER-SENSITIVE - the last matching entry wins - so
+  a single `!` entry re-includes a file at any depth under an excluded subtree (do not alphabetize).
+- `skipInCensus` (default `true`): set `false` to keep the file visible in the
+  `:detect-all` census while still exempting it from the guard (e.g. `CHANGELOG.md`).
+
+Two exemptions are hard-coded invariants and not configurable: the suppressions file itself and
+`characters.ts` (see
+[scripts/health-checks/checks/block-non-keyboard-characters/exempted-files.ts](../../scripts/health-checks/checks/block-non-keyboard-characters/exempted-files.ts)).
+
 ## Genuinely Intentional Uses
 
 Some content legitimately needs these characters: quoted prose, real command / log / transcript
@@ -54,6 +70,9 @@ output, test fixtures, or third-party text reproduced verbatim. In those cases:
 
 - Keep the character, then run `node --run block-non-keyboard-characters:suppress` to baseline the
   file. The `:fix` command skips files already in the baseline, so it will not clobber them.
+- For files whose content this repo does not author at all (generated / vendored), prefer an
+  `exemptions` entry (above) over a baseline: a baseline still fails on drift, an exemption skips
+  the file entirely.
 
-Do not reach for `:suppress` to dodge the check on ordinary code or docs - try the ASCII equivalent
-above first.
+Do not reach for `:suppress` or an exemption to dodge the check on ordinary code or docs - try the
+ASCII equivalent above first.

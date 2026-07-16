@@ -1,5 +1,14 @@
 {
-    "docs/template-project/README.md": {
-        "─": 18
-    }
+    "baseline": {
+        "docs/template-project/README.md": {
+            "─": 18
+        }
+    },
+    "exemptions": [
+        {
+            "pattern": "CHANGELOG.md",
+            "reason": "generated from git history by auto-changelog; its punctuation is out of guard scope",
+            "skipInCensus": false
+        }
+    ]
 }

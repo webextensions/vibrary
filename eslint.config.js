@@ -123,11 +123,12 @@ export default defineConfig([
             'import-newlines/enforce': ['error', { items: 1 }], // `items: 1` effectively means each on its own line
 
             // eslint-config-ironplate assumes Node.js >= 20; this repo's floor is higher (see
-            // "engines" in package.json), and some code relies on newer built-ins (eg:
-            // module.stripTypeScriptTypes in scripts/health-checks/checks/check-syntax.ts - listed in
-            // "ignores" because the rule flags it as experimental in every Node.js version).
+            // "engines" in package.json), and some code relies on newer built-ins listed in
+            // "ignores" because the rule flags them as experimental on the configured floor:
+            // module.stripTypeScriptTypes (scripts/health-checks/checks/check-syntax.ts) and
+            // path.matchesGlob (scripts/health-checks/checks/block-non-keyboard-characters/exempted-files.ts).
             'n/no-unsupported-features/es-syntax': ['error', { version: '>=24.2.0' }],
-            'n/no-unsupported-features/node-builtins': ['error', { version: '>=24.2.0', ignores: ['module.stripTypeScriptTypes'] }],
+            'n/no-unsupported-features/node-builtins': ['error', { version: '>=24.2.0', ignores: ['module.stripTypeScriptTypes', 'path.matchesGlob'] }],
 
             'simple-import-sort/exports': 'error',
             'simple-import-sort/imports': 'error',

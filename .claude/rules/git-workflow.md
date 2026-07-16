@@ -46,7 +46,9 @@ description: Git workflow, scripts, and project management conventions
 - Never commit `.env`, credentials, or secrets.
 - Never force-push unless explicitly asked.
 - Never stage or unstage changes (`git add`, `git restore --staged`, `git reset`, etc.); the developer handles the
-  index after manual review. (`git mv` is allowed for intentional renames/moves.)
+  index after manual review. (Two exceptions: `git mv` for intentional renames/moves, and `git add <named file>` to
+  stage individually resolved files when concluding a merge - bulk staging such as `git add -A` / `git add .` stays
+  denied.)
 
 ## Non-Obvious Decisions
 - Document hacks, workarounds, and non-obvious decisions in the `/because` directory

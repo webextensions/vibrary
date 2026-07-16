@@ -62,8 +62,9 @@ Details: [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md).
 ## Git and safety
 
 - A human owns git state: never stage, unstage, commit, push, force-push, skip hooks with
-  `--no-verify`, or run destructive `rm -rf` (`git mv` for intentional renames/moves is the one
-  index-touching exception - the human still reviews it before commit).
+  `--no-verify`, or run destructive `rm -rf` (two index-touching exceptions: `git mv` for
+  intentional renames/moves, and `git add` of named resolved files to conclude a merge - the human
+  still reviews before push).
 - Details and enforcement: [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md) and the
   deny list in [.claude/settings.json](.claude/settings.json).
 
@@ -72,3 +73,6 @@ Details: [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md).
 - Common content flows in by merging the `template` branch: `node --run template:merge-to-main`;
   fork-owned files (e.g. `package.json.ts` identity) are expected to conflict - keep your side.
   Full workflow: [docs/template-project/template-sync.md](docs/template-project/template-sync.md).
+- Inside this repo, base branches merge down into the higher-level template branches: the
+  `/cmd-merge-template-branches` command runs the cascade (commits locally, never pushes).
+  Details: [docs/template-project/template-sync.md](docs/template-project/template-sync.md).

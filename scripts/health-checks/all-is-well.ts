@@ -293,6 +293,7 @@ const CHECK_VITEST: HealthCheck = {
     // Directories holding COLOCATED tests (see .claude/rules/testing.md) must be listed here too.
     changeDependencies: [
         'test/',
+        'scripts/health-checks/checks/block-non-keyboard-characters/',
         'scripts/health-checks/helpers/eslint-rules/',
         'cli.js',
         'index.js',

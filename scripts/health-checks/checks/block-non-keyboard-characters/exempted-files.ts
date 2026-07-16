@@ -1,57 +1,92 @@
-// Single source of truth for the files the non-keyboard-character tooling skips - the file-level
+// Single source of truth for WHICH files the non-keyboard-character tooling skips - the file-level
 // counterpart to characters.ts (which is the source of truth for the character lists). Both the guard
-// (block-characters.ts) and the census (detect-all-characters.ts) import EXEMPTED_FILES so the two
-// scripts cannot drift on which files are exempt.
+// (block-characters.ts) and the census (detect-all-characters.ts) import their skip predicates from
+// here so the two scripts cannot drift.
 //
-// Each entry carries a `matches(relPath)` predicate - the guard and census ask each entry whether a
-// given repo-relative path is exempt rather than comparing against a fixed set of exact paths.
+// Exemptions come in two layers:
 //
-// Every entry also carries a scope flag:
-//   - The guard skips EVERY entry, for both its scan (check / --suppress) and its --fix.
-//   - The census skips only the entries flagged `appliesToCensus` (re-includable with --include-exempt);
-//     entries flagged false stay in the census so they remain visible in that diagnostic.
+//   - Hard-coded invariants (INVARIANT_EXEMPT_FILES): the suppressions file itself (its baseline keys
+//     embed the suppressed glyphs, so --fix must never rewrite it and --suppress must never record a
+//     self-entry) and characters.ts (intentionally holds the literal glyph for every detector). These
+//     are deliberately NOT configurable - removing them would corrupt the tooling's own data.
+//   - Config entries: the "exemptions" array in .block-non-keyboard-characters.suppressions.json
+//     (shape and validation in suppressions-file.ts).
 //
-// Paths are computed at load time (not hard-coded) so an entry survives a file move. This module lives
-// beside characters.ts, so the project root is four levels up - matching block-characters.ts.
+// Config matching semantics: entries are ORDERED and the LAST entry whose pattern matches a given
+// repo-relative POSIX file path decides; a leading "!" re-includes. Patterns are plain globs anchored
+// at the repo root (subtrees are written "dir/**", any-depth basenames "**/name"). Because files are
+// matched individually (never pruned per directory), a single "!" entry re-includes a file at any
+// depth under an excluded subtree - no gitignore-style per-parent-level unignoring.
+//
+// Census scope: the guard skips every exempt file; the census skips only the invariants and the
+// entries whose skipInCensus is not false, so entries with "skipInCensus": false stay visible in
+// that diagnostic (re-includable wholesale with --include-exempt).
 
 import path from 'node:path';
 
-interface ExemptedFile {
-    matches: (relPath: string) => boolean; // repo-relative POSIX path
-    pattern: string;                        // documentary: the path / subtree / glob the entry represents
-    reason: string;                         // why it is exempt (documentary)
-    appliesToCensus: boolean                // true: the census skips it too by default; false: the census still counts it
+import type { ExemptionEntry } from './suppressions-file.ts';
+import {
+    readSuppressionsFile,
+    suppressionsRelativePath
+} from './suppressions-file.ts';
+
+interface ExemptionVerdict {
+    exempt: boolean;        // the guard (scan / --fix / --suppress) skips the file
+    skipInCensus: boolean   // the census skips it too (false for "skipInCensus": false entries)
 }
 
 const __dirname = import.meta.dirname;
 const projectRoot = path.resolve(__dirname, '..', '..', '..', '..');
 
-const toRepoRelativePosix = function (absPath: string): string {
-    return path.relative(projectRoot, absPath).split(path.sep).join('/');
+// The non-configurable exemptions (see the header). Paths are computed at load time (not hard-coded
+// strings) so an entry survives a file move.
+const INVARIANT_EXEMPT_FILES: ReadonlySet<string> = new Set([
+    suppressionsRelativePath,
+    path.relative(projectRoot, path.join(__dirname, 'characters.ts')).split(path.sep).join('/')
+]);
+
+// Evaluate the ordered config entries for one repo-relative POSIX path: the LAST matching entry wins,
+// "!" entries re-include. Pure (entries in, verdict out) so tests can exercise it directly.
+const evaluateExemptions = function (entries: readonly ExemptionEntry[], relPath: string): ExemptionVerdict {
+    let winner: ExemptionEntry | null = null;
+    for (const entry of entries) {
+        const negated = entry.pattern.startsWith('!');
+        const glob = negated ? entry.pattern.slice(1) : entry.pattern;
+        if (path.matchesGlob(relPath, glob)) {
+            winner = negated ? null : entry;
+        }
+    }
+    if (winner === null) {
+        return { exempt: false, skipInCensus: false };
+    }
+    return { exempt: true, skipInCensus: winner.skipInCensus !== false };
 };
 
-// Exempt a single file by its exact repo-relative path.
-const exactFile = function (absPath: string, reason: string, appliesToCensus: boolean): ExemptedFile {
-    const rel = toRepoRelativePosix(absPath);
-    return { matches: (p) => p === rel, pattern: rel, reason, appliesToCensus };
+let configuredExemptions: readonly ExemptionEntry[] | null = null;
+
+// One verdict per path: the invariants first (structurally non-overridable by config), then the
+// ordered config entries. The config is read lazily on first use, so importing this module (e.g.
+// for the pure evaluateExemptions) never touches the suppressions file.
+const evaluateFile = function (relPath: string): ExemptionVerdict {
+    if (INVARIANT_EXEMPT_FILES.has(relPath)) {
+        return { exempt: true, skipInCensus: true };
+    }
+    configuredExemptions ??= readSuppressionsFile().exemptions;
+    return evaluateExemptions(configuredExemptions, relPath);
 };
 
-const EXEMPTED_FILES: readonly ExemptedFile[] = [
-    exactFile(
-        path.join(projectRoot, '.block-non-keyboard-characters.suppressions.json'),
-        'baseline keys embed the suppressed glyphs themselves; --fix must never rewrite them',
-        true
-    ),
-    exactFile(
-        path.join(__dirname, 'characters.ts'),
-        'shared character table; intentionally holds the literal glyph for every detector',
-        true
-    ),
-    exactFile(
-        path.join(projectRoot, 'CHANGELOG.md'),
-        'generated from git history by auto-changelog; its punctuation is out of guard scope',
-        false
-    )
-];
+// The guard skips every exempt file - for its scan (check / --suppress) and its --fix.
+const isExemptFromGuard = function (relPath: string): boolean {
+    return evaluateFile(relPath).exempt;
+};
 
-export { EXEMPTED_FILES };
+// The census skips the invariants and the entries whose skipInCensus is not false (see the header).
+const isExemptFromCensus = function (relPath: string): boolean {
+    return evaluateFile(relPath).skipInCensus;
+};
+
+export {
+    evaluateExemptions,
+    isExemptFromCensus,
+    isExemptFromGuard
+};

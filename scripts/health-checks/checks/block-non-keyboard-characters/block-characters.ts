@@ -6,15 +6,17 @@
 // ellipsis, plus heavy/ballot tick marks and the bullet. These characters survive review because they look like
 // normal punctuation but are not present on a US-layout keyboard.
 //
-// The script compares observed counts against a baseline in `.block-non-keyboard-characters.suppressions.json`
-// and fails if any file's per-character counts differ from the baseline. This lets pre-existing intentional uses
-// (docs, quoted prose, etc.) live in the codebase while still catching new drift.
+// The script compares observed counts against the "baseline" section of
+// `.block-non-keyboard-characters.suppressions.json` and fails if any file's per-character counts differ from it.
+// This lets pre-existing intentional uses (docs, quoted prose, etc.) live in the codebase while still catching
+// new drift. The same file's "exemptions" section lists files the tooling skips entirely (matching semantics in
+// exempted-files.ts, file shape in suppressions-file.ts).
 //
 // Usage:
 //     $ ./block-characters.ts                    # check, exit 1 on mismatch
 //     $ ./block-characters.ts --exit-with-code-0 # exit 0 even when non-keyboard characters are found
 //     $ ./block-characters.ts --fix              # rewrite safe replacements in-place
-//     $ ./block-characters.ts --suppress         # rewrite the suppressions file to current counts
+//     $ ./block-characters.ts --suppress         # rewrite the baseline section to current counts
 //     $ ./block-characters.ts --file <path>      # scope check/--fix to specific file(s) (repeatable);
 //                                                #   honors the same skips as the whole-repo scan
 //                                                #   (node_modules, outside-repo, gitignored). Cannot
@@ -30,25 +32,21 @@ import {
     readFileAsTextOrNull
 } from '../../../utils/repo-files.ts';
 import { DETECTORS } from './characters.ts';
-import { EXEMPTED_FILES } from './exempted-files.ts';
+import { isExemptFromGuard } from './exempted-files.ts';
+import type {
+    CountsByChar,
+    CountsByFile
+} from './suppressions-file.ts';
+import {
+    readSuppressionsFile,
+    suppressionsRelativePath,
+    writeBaseline
+} from './suppressions-file.ts';
 
 const __dirname = import.meta.dirname;
 const projectRoot = path.resolve(__dirname, '..', '..', '..', '..');
-// The suppressions baseline lives at the project root as a hidden dotfile.
-const suppressionsPath = path.join(projectRoot, '.block-non-keyboard-characters.suppressions.json');
-const suppressionsRelativePath = path.relative(projectRoot, suppressionsPath).split(path.sep).join('/');
-// The guard skips every exempted file - for both its scan (check / --suppress) and its --fix. The
-// entries and the reason each is exempt live in exempted-files.ts (the shared source of truth); each
-// entry carries a `matches(relPath)` predicate, so an exemption can be a single file, a directory
-// subtree, or a glob. Every other file - including this guard's own source - is scanned like any other
-// file. The suppressions baseline is exempt: its keys embed the suppressed glyphs, so scanning it would
-// force a self-entry and --fix would corrupt those keys.
-const isExemptFromGuard = function (file: string): boolean {
-    return EXEMPTED_FILES.some((entry) => entry.matches(file));
-};
-
-type CountsByChar = Record<string, number>;
-type CountsByFile = Record<string, CountsByChar>;
+// The guard skips every exempt file - for both its scan (check / --suppress) and its --fix; which
+// files those are (and why) lives in exempted-files.ts, the shared source of truth with the census.
 
 interface Violation {
     actual: number;
@@ -115,34 +113,6 @@ const collectAllCounts = function (files: string[]): CountsByFile {
     return all;
 };
 
-const readSuppressions = function (): CountsByFile {
-    try {
-        const content = fs.readFileSync(suppressionsPath, 'utf8');
-        return JSON.parse(content) as CountsByFile;
-    } catch (err) {
-        const code = (err as NodeJS.ErrnoException).code;
-        if (code === 'ENOENT') {
-            return {};
-        }
-        throw err;
-    }
-};
-
-const writeSuppressions = function (allCounts: CountsByFile) {
-    const sortedFiles = Object.keys(allCounts).toSorted();
-    const sorted: CountsByFile = {};
-    for (const file of sortedFiles) {
-        const counts = allCounts[file];
-        const sortedChars = Object.keys(counts).toSorted();
-        const inner: CountsByChar = {};
-        for (const ch of sortedChars) {
-            inner[ch] = counts[ch];
-        }
-        sorted[file] = inner;
-    }
-    fs.writeFileSync(suppressionsPath, JSON.stringify(sorted, null, 4) + '\n');
-};
-
 const compareCounts = function (actual: CountsByChar, expected: CountsByChar): Violation[] {
     const allChars = new Set([...Object.keys(actual), ...Object.keys(expected)]);
     const violations: Violation[] = [];
@@ -157,7 +127,7 @@ const compareCounts = function (actual: CountsByChar, expected: CountsByChar): V
 };
 
 const runCheck = function (files: string[], scopedFiles: string[] | null): number {
-    const suppressions = readSuppressions();
+    const { baseline } = readSuppressionsFile();
     const actualByFile = collectAllCounts(files);
 
     // In whole-repo mode, report on the union of files that have counts and files in the baseline.
@@ -167,12 +137,12 @@ const runCheck = function (files: string[], scopedFiles: string[] | null): numbe
     if (scopedFiles) {
         filesToReport = [...new Set(scopedFiles)].toSorted();
     } else {
-        filesToReport = [...new Set([...Object.keys(actualByFile), ...Object.keys(suppressions)])].toSorted();
+        filesToReport = [...new Set([...Object.keys(actualByFile), ...Object.keys(baseline)])].toSorted();
     }
     const offenders: { file: string; violations: Violation[] }[] = [];
     for (const file of filesToReport) {
         const actual = actualByFile[file] || {};
-        const expected = suppressions[file] || {};
+        const expected = baseline[file] || {};
         const violations = compareCounts(actual, expected);
         if (violations.length > 0) {
             offenders.push({ file, violations });
@@ -200,15 +170,15 @@ const runCheck = function (files: string[], scopedFiles: string[] | null): numbe
 };
 
 const runFix = function (files: string[], scopedFiles: string[] | null): number {
-    const suppressions = readSuppressions();
+    const { baseline } = readSuppressionsFile();
     let changedCount = 0;
     for (const file of files) {
         if (isExemptFromGuard(file)) {
             continue;
         }
-        // Skip files listed in the suppressions baseline - their non-keyboard chars are intentional
+        // Skip files listed in the baseline - their non-keyboard chars are intentional
         // (docs, quoted prose, fixtures, etc.) and were captured via --suppress on purpose.
-        if (Object.hasOwn(suppressions, file)) {
+        if (Object.hasOwn(baseline, file)) {
             continue;
         }
         const absPath = path.join(projectRoot, file);
@@ -258,7 +228,7 @@ const runFix = function (files: string[], scopedFiles: string[] | null): number 
 
 const runSuppress = function (files: string[]): number {
     const all = collectAllCounts(files);
-    writeSuppressions(all);
+    writeBaseline(all);
     const fileCount = Object.keys(all).length;
     logger.success(`Non-keyboard characters: wrote baseline for ${fileCount} file(s) to ${suppressionsRelativePath}`);
     return 0;

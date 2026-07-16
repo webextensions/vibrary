@@ -101,7 +101,16 @@
       "WebSearch"
     ],
     "deny": [
-      "Bash(git add*)",
+      "Bash(git add --all)",
+      "Bash(git add --all*)",
+      "Bash(git add --update)",
+      "Bash(git add --update*)",
+      "Bash(git add -A)",
+      "Bash(git add -A*)",
+      "Bash(git add -u)",
+      "Bash(git add -u*)",
+      "Bash(git add . *)",
+      "Bash(git add .)",
       "Bash(git push --force)",
       "Bash(git push --force*)",
       "Bash(git push -f)",

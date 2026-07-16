@@ -23,7 +23,8 @@ set -e
 # Regenerate CHANGELOG.md from git history (auto-changelog reads .auto-changelog). With
 # "package": true it labels the new section from package.json's version, even though npm has not
 # created the tag (or the version-bump commit) yet at this point in the lifecycle.
-# CHANGELOG.md is exempt from the non-keyboard-character guard (see exempted-files.ts), so any
+# CHANGELOG.md is exempt from the non-keyboard-character guard (via the "exemptions" section of
+# .block-non-keyboard-characters.suppressions.json), so any
 # commit-subject punctuation is reproduced verbatim here - no normalization step is needed.
 node --run changelog
 

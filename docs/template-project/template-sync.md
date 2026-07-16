@@ -21,3 +21,12 @@ Which conflicts get auto-resolved (and how to handle the rest) is documented in 
 header comments:
 [`merge-template-to-main.sh`](../../scripts/branching/merge-template-to-main.sh) and
 [`find-safe-template-merge-commit.sh`](../../scripts/branching/find-safe-template-merge-commit.sh).
+
+## Merging Base Branches Down Inside This Repository
+
+Within `template-javascript-project.git` itself, each base branch is regularly merged into the
+higher-level branches built on it, following the branching tree in [README.md](./README.md). The
+Claude Code command
+[`.claude/commands/cmd-merge-template-branches.md`](../../.claude/commands/cmd-merge-template-branches.md)
+runs that cascade (fetch, fast-forward update, merge, resolve conflicts, test, commit) and never
+pushes - reviewing and pushing the merged branches stays a human step.

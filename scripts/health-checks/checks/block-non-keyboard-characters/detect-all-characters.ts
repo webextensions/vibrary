@@ -12,14 +12,15 @@
 //     detected  - already handled by the guard's DETECTORS table (or one of its allowed replacements)
 //     candidate - non-ASCII and NOT yet handled (the rows worth reviewing)
 //
-// By default the census SKIPS characters.ts (the shared table that intentionally holds the literal glyph
-// for every detector). Counting it would surface every blocked character even when nothing else in the
-// repo uses it, so skipping it lets the report show which characters genuinely leaked into other files.
-// Pass --include-exempt to count characters.ts too (reproducing the unfiltered census).
+// By default the census SKIPS the census-exempt files (see exempted-files.ts): the invariants - e.g.
+// characters.ts, whose literal detector glyphs would surface every blocked character even when nothing
+// else in the repo uses it - plus the config exemptions whose skipInCensus is not false. Skipping them
+// lets the report show which characters genuinely leaked into other files. Pass --include-exempt to
+// count everything (reproducing the unfiltered census).
 //
 // Usage (from the project's root folder):
-//     $ ./scripts/health-checks/checks/block-non-keyboard-characters/detect-all-characters.ts                  # skips characters.ts
-//     $ ./scripts/health-checks/checks/block-non-keyboard-characters/detect-all-characters.ts --include-exempt # counts characters.ts too
+//     $ ./scripts/health-checks/checks/block-non-keyboard-characters/detect-all-characters.ts                  # skips the census-exempt files
+//     $ ./scripts/health-checks/checks/block-non-keyboard-characters/detect-all-characters.ts --include-exempt # counts everything
 //     $ node --run block-non-keyboard-characters:detect-all
 
 import path from 'node:path';
@@ -33,18 +34,9 @@ import {
     ALLOWED_CHARACTERS,
     DETECTORS
 } from './characters.ts';
-import { EXEMPTED_FILES } from './exempted-files.ts';
+import { isExemptFromCensus } from './exempted-files.ts';
 
 const projectRoot = path.resolve(import.meta.dirname, '..', '..', '..', '..');
-
-// Files the census skips by default (re-includable with --include-exempt): only the entries flagged
-// `appliesToCensus` in the shared exempted-files list, matched via each entry's `matches(relPath)`
-// predicate. That covers characters.ts (it holds the literal glyph for every detector, so counting it
-// would surface every blocked character even when nothing else uses it); CHANGELOG.md is exempt from
-// the guard but deliberately still counted here.
-const isExemptFromCensus = function (file: string): boolean {
-    return EXEMPTED_FILES.some((entry) => entry.appliesToCensus && entry.matches(file));
-};
 
 // The code points the guard already knows about: the DETECTORS glyphs plus the allowed heavy ticks
 // (ALLOWED_CHARACTERS) we replace TO. Derived from the shared tables in characters.ts so it cannot drift.
@@ -142,7 +134,7 @@ const main = function (includeExempt: boolean): void {
 
     for (const file of files) {
         if (!includeExempt && isExemptFromCensus(file)) {
-            continue; // skip the census-exempt entries by default (see isExemptFromCensus)
+            continue; // skip the census-exempt files by default (see exempted-files.ts)
         }
         const content = readFileAsTextOrNull(path.join(projectRoot, file));
         if (content === null) {

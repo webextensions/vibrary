@@ -243,7 +243,8 @@ const packageJson = {
 
         // Ref: .claude/rules/non-keyboard-characters.md
         // Non-keyboard character guard (em dash, curly quotes, ellipsis, tick marks, etc.). Counts are
-        // baselined per file in .block-non-keyboard-characters.suppressions.json (project root)
+        // baselined per file in the "baseline" section of .block-non-keyboard-characters.suppressions.json
+        // (project root); the same file's "exemptions" section lists files the tooling skips entirely
 
         // The plain form exits 1 on drift from that baseline
         "block-non-keyboard-characters":            "./scripts/health-checks/checks/block-non-keyboard-characters/block-characters.ts",
@@ -254,8 +255,8 @@ const packageJson = {
 
         // Read-only diagnostic: list every distinct character across the repo (with counts) so suspicious
         // chars that slip past the DETECTORS table can be spotted for manual review.
-        // Skips characters.ts by default (it intentionally holds every blocked glyph); pass --include-exempt
-        // to count it too.
+        // Skips the census-exempt files by default (e.g. characters.ts, which intentionally holds every
+        // blocked glyph); pass --include-exempt to count everything.
         "block-non-keyboard-characters:detect-all": "./scripts/health-checks/checks/block-non-keyboard-characters/detect-all-characters.ts",
 
         // Verifies file status expectations (e.g. read-only paths) declared in
