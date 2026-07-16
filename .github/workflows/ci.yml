@@ -21,11 +21,11 @@ jobs:
       fail-fast: false
       matrix:
         # ubuntu + macOS only: the health-check suite uses unix shell / shebang scripts that do not
-        # run on Windows. '24.2.0' is the package-cjson / tooling floor (what the housekeeping scripts
-        # and all-is-well.ts need - this matches the engines.node floor on this base template branch);
-        # '24' is the latest 24.x; 'current' is the latest Node release (a setup-node alias).
+        # run on Windows. '24.15.0' mirrors .nvmrc (the pinned dev/tooling Node - bump both
+        # together); '24' is the latest 24.x; 'current' is the latest Node release (a setup-node
+        # alias).
         os: [ubuntu-latest, macos-latest]
-        node-version: ['24.2.0', '24', 'current']
+        node-version: ['24.15.0', '24', 'current']
 
     steps:
       - name: Checkout
