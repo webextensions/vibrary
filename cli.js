@@ -5,7 +5,7 @@
 
 import { program } from 'commander';
 
-import { templateNpmPackage } from './index.js';
+import { templateJavascriptProject } from './index.js';
 import packageJson from './package.json' with { type: 'json' };
 
 const packageName = packageJson.name;
@@ -25,7 +25,7 @@ program
     .argument('[name]', 'name to greet', 'world')
     .option('-u, --uppercase', 'print the greeting in uppercase')
     .action((name, options) => {
-        let message = templateNpmPackage(name);
+        let message = templateJavascriptProject(name);
 
         if (options.uppercase) {
             message = message.toUpperCase();

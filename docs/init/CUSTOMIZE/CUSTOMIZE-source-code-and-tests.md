@@ -2,7 +2,7 @@
 
 Applies to: new project, and template branches that introduce a layout.
 
-The core logic lives in [`./lib/`](../../../lib/) - replace the `templateNpmPackage` stub in
+The core logic lives in [`./lib/`](../../../lib/) - replace the `templateJavascriptProject` stub in
 [`./lib/template.js`](../../../lib/template.js) with your package's real API.
 [`./index.js`](../../../index.js) is a thin wrapper that re-exports from `lib/`; widen its
 re-export as you add modules (consumers can also deep-import them via the `./lib/*` subpath in

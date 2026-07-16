@@ -16,7 +16,7 @@ to the shared homes that keep receiving template updates.
 `template-npm-package-for-exports-cli` - the directly-forkable template branch for npm packages
 with ESM exports and a CLI (no TUI - the `-cli-tui` child adds that; no React - see
 `template-npm-package-for-react`). On top of the `template-npm-package-for-exports` library
-layout (core logic in `lib/` - stub: `lib/template.js`, exporting `templateNpmPackage`, named
+layout (core logic in `lib/` - stub: `lib/template.js`, exporting `templateJavascriptProject`, named
 exports only - re-exported by the thin `index.js` entry, `./lib/*` deep imports in the `exports`
 map, a colocated `lib/template.test.js` kept out of the tarball by the `"!**/*.test.*"` negation
 in `files`, and `test/index.test.js` for the public entry) it adds the CLI layer: `cli.js` (a

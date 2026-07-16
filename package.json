@@ -63,17 +63,17 @@
     ],
     "homepage": "https://github.com/webextensions/template-javascript-project#readme",
     "keywords": [
-        "template",
         "boilerplate",
-        "starter",
+        "cli",
         "javascript",
         "npm",
         "package",
-        "cli"
+        "starter",
+        "template"
     ],
     "license": "MIT",
     "main": "index.js",
-    "name": "@webextensions/template-npm-package-for-exports-cli",
+    "name": "@webextensions/template-javascript-project",
     "publishConfig": {
         "access": "public"
     },

@@ -16,28 +16,28 @@ package's real API. For the fork/setup workflow, see
 
 ## Usage
 
-As a library (replace `templateNpmPackage` with your package's real API):
+As a library (replace `templateJavascriptProject` with your package's real API):
 
 ```js
-import { templateNpmPackage } from '@webextensions/template-npm-package-for-exports-cli';
+import { templateJavascriptProject } from '@webextensions/template-javascript-project';
 
-templateNpmPackage();      // "Hello, world!"
-templateNpmPackage('Ada'); // "Hello, Ada!"
+templateJavascriptProject();      // "Hello, world!"
+templateJavascriptProject('Ada'); // "Hello, Ada!"
 ```
 
 Individual `lib/` modules can also be deep-imported via the `./lib/*` subpath in `exports`:
 
 ```js
-import { templateNpmPackage } from '@webextensions/template-npm-package-for-exports-cli/lib/template.js';
+import { templateJavascriptProject } from '@webextensions/template-javascript-project/lib/template.js';
 ```
 
 As a CLI (the `bin` entry maps the command to [cli.js](./cli.js)):
 
 ```sh
-npx @webextensions/template-npm-package-for-exports-cli        # Hello, world!
-npx @webextensions/template-npm-package-for-exports-cli Ada    # Hello, Ada!
-npx @webextensions/template-npm-package-for-exports-cli Ada -u # HELLO, ADA!
-npx @webextensions/template-npm-package-for-exports-cli --help
+npx @webextensions/template-javascript-project        # Hello, world!
+npx @webextensions/template-javascript-project Ada    # Hello, Ada!
+npx @webextensions/template-javascript-project Ada -u # HELLO, ADA!
+npx @webextensions/template-javascript-project --help
 ```
 
 > The reusable logic lives in [lib/](./lib/) (see [lib/template.js](./lib/template.js));

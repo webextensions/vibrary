@@ -3,7 +3,7 @@
 Applies to: both flows - a new layer branch only updates the intro to describe the layer (title
 and badges stay); a new project does all of the below.
 
-- Change the title from `template-javascript-project` to your project name.
+- Change the title from the template branch name to your project name.
 - Update the badge URLs at the top (the `webextensions/template-javascript-project` owner/repo) to
   match your repository.
 - Replace the template-specific intro and links with your project's own documentation. Keep (or

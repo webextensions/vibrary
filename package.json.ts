@@ -39,7 +39,7 @@ try {
 }
 
 const packageJson = {
-    "name": "@webextensions/template-npm-package-for-exports-cli",
+    "name": "@webextensions/template-javascript-project",
     version, // Owned by npm (see header); derived from package.json / package-version.json, never hard-coded
     "description": "A template for creating npm packages (ESM exports + CLI) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
     "author": "webextensions.org",
@@ -67,13 +67,13 @@ const packageJson = {
     },
 
     "keywords": [
-        "template",
         "boilerplate",
-        "starter",
+        "cli",
         "javascript",
         "npm",
         "package",
-        "cli"
+        "starter",
+        "template"
     ],
 
     // Consumer-facing runtime floor: this branch publishes a manifest, so "engines.node" is what

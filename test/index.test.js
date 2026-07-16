@@ -8,14 +8,14 @@ import {
     it
 } from 'vitest';
 
-import { templateNpmPackage } from '../index.js';
+import { templateJavascriptProject } from '../index.js';
 
-describe('templateNpmPackage', function () {
+describe('templateJavascriptProject', function () {
     it('should default to greeting the world', function () {
-        expect(templateNpmPackage()).toBe('Hello, world!');
+        expect(templateJavascriptProject()).toBe('Hello, world!');
     });
 
     it('should greet the provided name', function () {
-        expect(templateNpmPackage('Ada')).toBe('Hello, Ada!');
+        expect(templateJavascriptProject('Ada')).toBe('Hello, Ada!');
     });
 });
