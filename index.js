@@ -1,15 +1,8 @@
-// Library entry point - the package's public API ("main" / "exports" in package.json.ts point
-// here).
+// Library entry point - the package's public API.
 //
-// This abstract branch ships only a placeholder export, so the publishable manifest resolves and
-// publint / Vitest / "npm pack" have a real entry point to verify. Template branches / forks
-// replace the fill-in block below wholesale with their own entry point (see
-// docs/init/CUSTOMIZE/CUSTOMIZE-source-code-and-tests.md).
+// This file is intentionally thin: the core logic lives in lib/ (see lib/template.js) and is simply
+// re-exported here so consumers get it via `import { templateNpmPackage } from 'your-package-name';`.
+// Widen the re-export as you add lib/ modules; consumers can also deep-import them via the
+// "./lib/*" subpath in package.json.ts's "exports".
 
-/* Begin: package specific exports */
-
-export const abstractNpmPackage = function () {
-    return 'abstract-npm-package base template';
-};
-
-/* End: package specific exports */
+export { templateNpmPackage } from './lib/template.js';

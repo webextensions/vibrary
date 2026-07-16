@@ -39,9 +39,9 @@ try {
 }
 
 const packageJson = {
-    "name": "@webextensions/template-javascript-project",
+    "name": "@webextensions/template-npm-package-for-exports",
     version, // Owned by npm (see header); derived from package.json / package-version.json, never hard-coded
-    "description": "Abstract base template for npm packages - publishable manifest, publint, shared tooling, health checks, and a template-sync git branching workflow",
+    "description": "A template for creating npm packages (ESM exports) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
     "author": "webextensions.org",
     "license": "MIT",
 
@@ -88,22 +88,25 @@ const packageJson = {
 
     "type": "module",
 
-    // Deliberately minimal publish fields for this abstract branch: no "bin" (the CLI child branch
-    // adds it), no "./lib/*" subpath export (the exports child branch adds it), and no "types" /
-    // "module" / "sideEffects" (plain single-entry ESM package; add those only when a child
-    // actually ships types / dual builds / tree-shaking hints).
+    // Publish fields for an ESM-exports library: no "bin" (the -for-exports-cli child branch adds
+    // it), and no "types" / "module" / "sideEffects" (plain ESM package; add those only when a
+    // fork actually ships types / dual builds / tree-shaking hints).
     "main": "index.js", // Library entry point (for tooling without "exports" support)
     "exports": {
         ".": "./index.js",
+        "./lib/*": "./lib/*", // Lets consumers deep-import lib modules (e.g. ".../lib/template.js")
         "./package.json": "./package.json"
     },
 
-    // Allowlist of files to publish (default-deny). npm always also includes package.json, README
-    // and LICENSE; CHANGELOG.md is listed explicitly because npm does NOT auto-include it.
-    // .npmignore is kept as a redundant denylist; this allowlist is the primary control over the
-    // tarball contents.
+    // Allowlist of files to publish (default-deny). "lib/" ships the core logic (index.js is a
+    // thin wrapper that re-exports from it); the "!**/*.test.*" negation keeps the colocated
+    // tests (any depth, any test extension) out of the tarball. npm always also includes package.json, README and LICENSE;
+    // CHANGELOG.md is listed explicitly because npm does NOT auto-include it. .npmignore is kept
+    // as a redundant denylist; this allowlist is the primary control over the tarball contents.
     "files": [
         "index.js",
+        "lib/",
+        "!**/*.test.*",
         "CHANGELOG.md"
     ],
 

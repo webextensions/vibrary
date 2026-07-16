@@ -4,7 +4,7 @@
         "url": "https://github.com/webextensions/template-javascript-project/issues"
     },
     "dependencies": {},
-    "description": "Abstract base template for npm packages - publishable manifest, publint, shared tooling, health checks, and a template-sync git branching workflow",
+    "description": "A template for creating npm packages (ESM exports) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@eslint/markdown": "^8.0.3",
@@ -46,10 +46,13 @@
     },
     "exports": {
         ".": "./index.js",
+        "./lib/*": "./lib/*",
         "./package.json": "./package.json"
     },
     "files": [
         "index.js",
+        "lib/",
+        "!**/*.test.*",
         "CHANGELOG.md"
     ],
     "homepage": "https://github.com/webextensions/template-javascript-project#readme",
@@ -63,7 +66,7 @@
     ],
     "license": "MIT",
     "main": "index.js",
-    "name": "@webextensions/template-javascript-project",
+    "name": "@webextensions/template-npm-package-for-exports",
     "publishConfig": {
         "access": "public"
     },

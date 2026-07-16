@@ -256,6 +256,7 @@ const CHECK_PUBLINT: HealthCheck = {
     changeDependencies: [
         '.npmignore',
         'index.js',
+        'lib/',
         'package.json'
     ],
     cmd: 'node',
@@ -293,6 +294,7 @@ const CHECK_VITEST: HealthCheck = {
         'test/',
         'scripts/health-checks/helpers/eslint-rules/',
         'index.js',
+        'lib/',
         'vitest.config.js',
         'package.json',
         'package-lock.json'

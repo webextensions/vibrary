@@ -15,6 +15,9 @@ AGENTS.md
 CLAUDE.md
 
 # Project / repo tooling that consumers do not need
+# (*.test.* backs up the "!**/*.test.*" negation in the "files" allowlist - colocated tests
+# live inside the shipped lib/ directory)
+*.test.*
 .auto-changelog
 .block-non-keyboard-characters.suppressions.json
 .editorconfig

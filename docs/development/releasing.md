@@ -33,4 +33,6 @@ npm publish
   npm pack --dry-run
   ```
 
-  Expected on this branch: `package.json`, `README.md`, `LICENSE`, `CHANGELOG.md`, `index.js`.
+  Expected on this branch: `package.json`, `README.md`, `LICENSE`, `CHANGELOG.md`, `index.js`,
+  `lib/template.js` (and NOT the colocated `lib/template.test.js` - the `"!**/*.test.*"`
+  negation in `files` keeps it out).

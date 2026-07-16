@@ -1,17 +1,39 @@
-# template-javascript-project
+# template-npm-package-for-exports
 
 [![CI](https://github.com/webextensions/template-javascript-project/actions/workflows/ci.yml/badge.svg)](https://github.com/webextensions/template-javascript-project/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-This is the **`abstract-npm-package`** branch - the shared base for the npm-package templates in
-this repository's family of JavaScript project templates maintained as git branches. On top of the
-`abstract-javascript-project` baseline (ESM, ESLint, Vitest, EditorConfig, `package.json` generated
-from `package.json.ts`, a health-check suite wired into git hooks, and a template-sync merge
-workflow) it adds the npm publishing baseline: a publishable manifest (`main` / `exports` /
-`files` / `publishConfig`), a `publint` health check, a `prepublishOnly` test gate, and a
-placeholder entry point (`index.js`) that the template branches (for example
-`template-npm-package-for-exports`) replace with real source. Fork projects from a
-`template-npm-package-*` branch, not from this abstract branch.
+This is the **`template-npm-package-for-exports`** branch - a directly-forkable template for
+creating npm packages with ESM exports, from this repository's family of JavaScript project
+templates maintained as git branches. On top of the `abstract-npm-package` publishing baseline
+(publishable manifest generated from `package.json.ts`, `publint` health check, `prepublishOnly`
+test gate, `.npmignore` backstop, plus the shared ESLint/Vitest/health-check/template-sync
+tooling) it ships a working library layout: core logic in [lib/](./lib/) re-exported by the thin
+[index.js](./index.js) entry, `./lib/*` deep imports, and matching tests. Replace the stub with
+your package's real API. For the fork/setup workflow, see
+[docs/template-project/README.md](./docs/template-project/README.md).
+
+## Usage
+
+As a library (replace `templateNpmPackage` with your package's real API):
+
+```js
+import { templateNpmPackage } from '@webextensions/template-npm-package-for-exports';
+
+templateNpmPackage();      // "Hello, world!"
+templateNpmPackage('Ada'); // "Hello, Ada!"
+```
+
+Individual `lib/` modules can also be deep-imported via the `./lib/*` subpath in `exports`:
+
+```js
+import { templateNpmPackage } from '@webextensions/template-npm-package-for-exports/lib/template.js';
+```
+
+> The reusable logic lives in [lib/](./lib/) (see [lib/template.js](./lib/template.js));
+> `index.js` is a thin public-API entry that just re-exports it. The colocated
+> [lib/template.test.js](./lib/template.test.js) stays out of the published tarball via the
+> `"!**/*.test.*"` negation in the `files` allowlist.
 
 ## Where to look
 

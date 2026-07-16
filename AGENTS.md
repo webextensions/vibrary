@@ -13,15 +13,15 @@ to the shared homes that keep receiving template updates.
 
 ## Project overview
 
-`abstract-npm-package` - the shared base branch for the npm-package template branches
-(`template-npm-package-for-exports`, `-for-exports-cli`, `-for-exports-cli-tui`,
-`template-npm-package-for-react`). It layers the npm publishing baseline on top of
-`abstract-javascript-project`: a publishable manifest (`main` / `exports` / `files` /
-`publishConfig` in `package.json.ts`), a `publint` health check, a `prepublishOnly` test gate, an
-`.npmignore` backstop, and a placeholder entry point (`index.js` + `test/index.test.js`) that the
-template branches replace wholesale. Fork projects from a `template-npm-package-*` branch, not
-from this abstract branch. Vision, branching tree, and the fork/merge model:
-[docs/template-project/README.md](docs/template-project/README.md).
+`template-npm-package-for-exports` - the directly-forkable template branch for npm packages with
+ESM exports (no CLI - the `-for-exports-cli` child adds that; no React - see
+`template-npm-package-for-react`). On top of the `abstract-npm-package` publishing baseline it
+ships a working library layout: core logic in `lib/` (stub: `lib/template.js`, exporting
+`templateNpmPackage` - named exports only, no default export) re-exported by the thin `index.js`
+entry, `./lib/*` deep imports in the `exports` map, a colocated `lib/template.test.js` (kept out
+of the tarball by the `"!**/*.test.*"` negation in `files`) and `test/index.test.js` for the
+public entry. Forks replace the stub + tests with their real API. Vision, branching tree, and the
+fork/merge model: [docs/template-project/README.md](docs/template-project/README.md).
 
 ## Commands
 

@@ -1,5 +1,5 @@
-// Tests the placeholder entry point (index.js). Like index.js itself, template branches / forks
-// replace this file wholesale with tests for their real public API (conventions:
+// Tests the public entry point (index.js, the thin re-export over lib/). The unit itself is
+// covered by the colocated lib/template.test.js. Replace alongside the stub (conventions:
 // .claude/rules/testing.md).
 
 import {
@@ -8,10 +8,14 @@ import {
     it
 } from 'vitest';
 
-import { abstractNpmPackage } from '../index.js';
+import { templateNpmPackage } from '../index.js';
 
-describe('abstractNpmPackage', function () {
-    it('should expose the placeholder named export', function () {
-        expect(abstractNpmPackage()).toBe('abstract-npm-package base template');
+describe('templateNpmPackage', function () {
+    it('should default to greeting the world', function () {
+        expect(templateNpmPackage()).toBe('Hello, world!');
+    });
+
+    it('should greet the provided name', function () {
+        expect(templateNpmPackage('Ada')).toBe('Hello, Ada!');
     });
 });
