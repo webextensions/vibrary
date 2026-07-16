@@ -255,6 +255,7 @@ const CHECK_PUBLINT: HealthCheck = {
     // changes (publint validates what "npm pack" would include, which .npmignore also affects).
     changeDependencies: [
         '.npmignore',
+        'cli.js',
         'index.js',
         'lib/',
         'package.json'
@@ -293,6 +294,7 @@ const CHECK_VITEST: HealthCheck = {
     changeDependencies: [
         'test/',
         'scripts/health-checks/helpers/eslint-rules/',
+        'cli.js',
         'index.js',
         'lib/',
         'vitest.config.js',

@@ -13,15 +13,17 @@ to the shared homes that keep receiving template updates.
 
 ## Project overview
 
-`template-npm-package-for-exports` - the directly-forkable template branch for npm packages with
-ESM exports (no CLI - the `-for-exports-cli` child adds that; no React - see
-`template-npm-package-for-react`). On top of the `abstract-npm-package` publishing baseline it
-ships a working library layout: core logic in `lib/` (stub: `lib/template.js`, exporting
-`templateNpmPackage` - named exports only, no default export) re-exported by the thin `index.js`
-entry, `./lib/*` deep imports in the `exports` map, a colocated `lib/template.test.js` (kept out
-of the tarball by the `"!**/*.test.*"` negation in `files`) and `test/index.test.js` for the
-public entry. Forks replace the stub + tests with their real API. Vision, branching tree, and the
-fork/merge model: [docs/template-project/README.md](docs/template-project/README.md).
+`template-npm-package-for-exports-cli` - the directly-forkable template branch for npm packages
+with ESM exports and a CLI (no TUI - the `-cli-tui` child adds that; no React - see
+`template-npm-package-for-react`). On top of the `template-npm-package-for-exports` library
+layout (core logic in `lib/` - stub: `lib/template.js`, exporting `templateNpmPackage`, named
+exports only - re-exported by the thin `index.js` entry, `./lib/*` deep imports in the `exports`
+map, a colocated `lib/template.test.js` kept out of the tarball by the `"!**/*.test.*"` negation
+in `files`, and `test/index.test.js` for the public entry) it adds the CLI layer: `cli.js` (a
+thin `commander` wrapper that only parses arguments and delegates to `index.js`), the `bin` entry
+mapping the command to it, and `test/cli.test.js` exercising the spawned CLI. Forks replace the
+stub + tests with their real API. Vision, branching tree, and the fork/merge model:
+[docs/template-project/README.md](docs/template-project/README.md).
 
 ## Commands
 

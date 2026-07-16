@@ -11,13 +11,16 @@ dependencies/scripts its layer introduces).
 - `homepage`, `repository.url`, `bugs.url` - point to your new repository.
 - `author` / `license` - adjust if different from the defaults.
 - Publish fields - this branch ships a publishable manifest: `publishConfig` (`"access": "public"`
-  for scoped packages), `main` / `exports` (the `index.js` entry plus `./lib/*` deep imports), and
-  the `files` allowlist (`index.js`, `lib/` with a `"!**/*.test.*"` negation keeping the
-  colocated tests out of the tarball, and `CHANGELOG.md` - listed explicitly because npm does not
-  auto-include it; [.npmignore](../../../.npmignore) is only a redundant denylist behind it). A
-  new layer branch extends them for its layer (e.g. `bin` for a CLI); a new project points them at
-  its real entry points and updates `files` to what it ships. If your project is NOT published to
-  npm, add `"private": true` and optionally drop these fields plus the `publint` script/check.
+  for scoped packages), `main` / `exports` (the `index.js` entry plus `./lib/*` deep imports),
+  `bin` (this branch's CLI layer - rename the key to your command name; it maps to
+  [cli.js](../../../cli.js)), and the `files` allowlist (`index.js`, `cli.js`, `lib/` with a
+  `"!**/*.test.*"` negation keeping the colocated tests out of the tarball, and `CHANGELOG.md` -
+  listed explicitly because npm does not auto-include it;
+  [.npmignore](../../../.npmignore) is only a redundant denylist behind it). A new project points
+  them at its real entry points and updates `files` to what it ships; if your package has no CLI,
+  drop `bin`, `cli.js` (from `files` and the repo) and the `commander` dependency. If your project
+  is NOT published to npm, add `"private": true` and optionally drop these fields plus the
+  `publint` script/check.
 - `engines.node` - consumer-facing now that the manifest is publishable; this branch keeps it at
   the repo's dev/tooling floor (the comment above `engines` in `package.json.ts` explains the
   consumer-floor-vs-tooling-floor split; CI exercises a matrix of Node versions per

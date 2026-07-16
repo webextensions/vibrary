@@ -39,9 +39,9 @@ try {
 }
 
 const packageJson = {
-    "name": "@webextensions/template-npm-package-for-exports",
+    "name": "@webextensions/template-npm-package-for-exports-cli",
     version, // Owned by npm (see header); derived from package.json / package-version.json, never hard-coded
-    "description": "A template for creating npm packages (ESM exports) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
+    "description": "A template for creating npm packages (ESM exports + CLI) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
     "author": "webextensions.org",
     "license": "MIT",
 
@@ -72,7 +72,8 @@ const packageJson = {
         "starter",
         "javascript",
         "npm",
-        "package"
+        "package",
+        "cli"
     ],
 
     // Consumer-facing runtime floor: this branch publishes a manifest, so "engines.node" is what
@@ -88,29 +89,36 @@ const packageJson = {
 
     "type": "module",
 
-    // Publish fields for an ESM-exports library: no "bin" (the -for-exports-cli child branch adds
-    // it), and no "types" / "module" / "sideEffects" (plain ESM package; add those only when a
-    // fork actually ships types / dual builds / tree-shaking hints).
+    // Publish fields for an ESM-exports library with a CLI: "bin" maps the command name to
+    // cli.js (this branch's layer on top of -for-exports), and no "types" / "module" /
+    // "sideEffects" (plain ESM package; add those only when a fork actually ships types / dual
+    // builds / tree-shaking hints).
     "main": "index.js", // Library entry point (for tooling without "exports" support)
     "exports": {
         ".": "./index.js",
         "./lib/*": "./lib/*", // Lets consumers deep-import lib modules (e.g. ".../lib/template.js")
         "./package.json": "./package.json"
     },
+    "bin": {
+        "template-npm-package-for-exports-cli": "./cli.js" // CLI entry point (rename the key to your command name)
+    },
 
-    // Allowlist of files to publish (default-deny). "lib/" ships the core logic (index.js is a
-    // thin wrapper that re-exports from it); the "!**/*.test.*" negation keeps the colocated
-    // tests (any depth, any test extension) out of the tarball. npm always also includes package.json, README and LICENSE;
-    // CHANGELOG.md is listed explicitly because npm does NOT auto-include it. .npmignore is kept
+    // Allowlist of files to publish (default-deny). "lib/" ships the core logic ("index.js" /
+    // "cli.js" are the entry points - thin wrappers over it); the "!**/*.test.*" negation keeps
+    // the colocated tests (any depth, any test extension) out of the tarball. npm always also includes package.json, README and LICENSE;
+    // CHANGELOG.md is listed explicitly because npm does NOT auto-include it. If your package has
+    // no CLI, drop "cli.js" here too. .npmignore is kept
     // as a redundant denylist; this allowlist is the primary control over the tarball contents.
     "files": [
         "index.js",
+        "cli.js",
         "lib/",
         "!**/*.test.*",
         "CHANGELOG.md"
     ],
 
     "dependencies": {
+        "commander": "^15.0.0" // CLI argument parsing (see cli.js); remove if your package has no CLI
 
         /* Begin: package specific "dependencies" */
 
@@ -163,6 +171,9 @@ const packageJson = {
         // Installs the Git hooks in .husky/ on "npm install". "|| true" keeps installs working in
         // environments where husky is unavailable (e.g. CI with --omit=dev).
         "prepare": "husky || true",
+
+        // Runs the CLI (cli.js)
+        "start": "node cli.js",
 
         "eslint": "eslint .",
         "eslint:fix": "eslint . --fix",
