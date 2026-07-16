@@ -21,12 +21,12 @@ dependencies/scripts its layer introduces).
   drop `bin`, `cli.js` (from `files` and the repo) and the `commander` dependency. If your project
   is NOT published to npm, add `"private": true` and optionally drop these fields plus the
   `publint` script/check.
-- `engines.node` - consumer-facing now that the manifest is publishable; this branch keeps it at
-  the repo's dev/tooling floor (the comment above `engines` in `package.json.ts` explains the
-  consumer-floor-vs-tooling-floor split; CI exercises a matrix of Node versions per
-  [.github/workflows/ci.yml](../../../.github/workflows/ci.yml)). Publishing projects usually
-  lower it to their real consumer floor - but lowering it does not lower the tooling floor: you
-  still develop and run the checks on the base floor.
+- `engines.node` - the advertised Node floor (consumer-facing when the manifest is published); the
+  inline note on the value line in `package.json.ts` states this branch's derivation (here
+  `commander@^15`'s technical minimum: `>=22.12.0`, for its `require(esm)` usage). Set it to your
+  project's own floor - but note that changing it does not change the dev/tooling floor: you still
+  develop and run the checks on the pinned Node in [.nvmrc](../../../.nvmrc) (CI matrix per
+  [.github/workflows/ci.yml](../../../.github/workflows/ci.yml)).
 - `dependencies` - add your project's runtime dependencies inside the marked block.
 
 Then regenerate the manifest:

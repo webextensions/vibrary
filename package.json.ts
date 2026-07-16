@@ -76,15 +76,13 @@ const packageJson = {
         "template"
     ],
 
-    // Consumer-facing runtime floor: this branch publishes a manifest, so "engines.node" is what
-    // npm shows/enforces for CONSUMERS of the package. On this abstract branch it stays at the
-    // repo's own dev/tooling floor (>=24.2.0 - what package-cjson and the health-check scripts
-    // need; see .nvmrc and .github/workflows/ci.yml). Publishing template branches / forks usually
-    // LOWER it to their real consumer floor - but lowering it does not lower the tooling floor:
-    // development and the checks still run on the dev floor. See
-    // docs/init/CUSTOMIZE/CUSTOMIZE-package-json.md.
+    // Node floor advertised via "engines.node" (what npm shows/enforces for consumers when the
+    // manifest is published). Each branch sets its own value - see the inline note on the value
+    // line. The dev/tooling floor is separate and unaffected by this value: developing and
+    // running the checks needs the pinned Node in .nvmrc (see also .github/workflows/ci.yml and
+    // docs/init/CUSTOMIZE/CUSTOMIZE-package-json.md).
     "engines": {
-        "node": ">=24.2.0"
+        "node": ">=22.12.0" // commander@^15 needs >=22.12.0 (require(esm)); also a maintained LTS line
     },
 
     "type": "module",
