@@ -41,15 +41,21 @@ try {
 const packageJson = {
     "name": "@webextensions/template-javascript-project",
     version, // Owned by npm (see header); derived from package.json / package-version.json, never hard-coded
-    "description": "Abstract base template for JavaScript projects - shared tooling, health checks, and a template-sync git branching workflow",
+    "description": "Abstract base template for npm packages - publishable manifest, publint, shared tooling, health checks, and a template-sync git branching workflow",
     "author": "webextensions.org",
     "license": "MIT",
 
-    // This base template branch is never published to npm; template branches / forks that publish
-    // remove this flag (and add their own publish fields - "main"/"exports"/"bin"/"files" etc.).
-    // The "npm version" version/tag lifecycle (see the scripts below) stays wired regardless, so
-    // every template branch / fork inherits the same release flow.
-    "private": true,
+    // This branch carries the publishable-manifest baseline for the npm-package template family:
+    // no "private" flag, plus the publish fields ("publishConfig" here; "main" / "exports" /
+    // "files" below). Non-published forks add "private": true back (see
+    // docs/init/CUSTOMIZE/CUSTOMIZE-package-json.md). The "npm version" version/tag lifecycle
+    // (see the scripts below) stays wired regardless.
+    //
+    // "access": "public" ensures scoped packages (e.g. "@webextensions/...") publish publicly.
+    // Harmless for unscoped packages.
+    "publishConfig": {
+        "access": "public"
+    },
 
     "homepage": "https://github.com/webextensions/template-javascript-project#readme",
     "repository": {
@@ -64,19 +70,42 @@ const packageJson = {
         "template",
         "boilerplate",
         "starter",
-        "javascript"
+        "javascript",
+        "npm",
+        "package"
     ],
 
-    // Dev/tooling floor: nothing is published from this base template branch, so there is no
-    // consumer-facing runtime floor here. >=24.2.0 is what the repo's own tooling needs (package-cjson
-    // and the health-check scripts; see .nvmrc and .github/workflows/ci.yml). Template branches / forks
-    // that publish set their own (usually lower) consumer floor here - see
+    // Consumer-facing runtime floor: this branch publishes a manifest, so "engines.node" is what
+    // npm shows/enforces for CONSUMERS of the package. On this abstract branch it stays at the
+    // repo's own dev/tooling floor (>=24.2.0 - what package-cjson and the health-check scripts
+    // need; see .nvmrc and .github/workflows/ci.yml). Publishing template branches / forks usually
+    // LOWER it to their real consumer floor - but lowering it does not lower the tooling floor:
+    // development and the checks still run on the dev floor. See
     // docs/init/CUSTOMIZE/CUSTOMIZE-package-json.md.
     "engines": {
         "node": ">=24.2.0"
     },
 
     "type": "module",
+
+    // Deliberately minimal publish fields for this abstract branch: no "bin" (the CLI child branch
+    // adds it), no "./lib/*" subpath export (the exports child branch adds it), and no "types" /
+    // "module" / "sideEffects" (plain single-entry ESM package; add those only when a child
+    // actually ships types / dual builds / tree-shaking hints).
+    "main": "index.js", // Library entry point (for tooling without "exports" support)
+    "exports": {
+        ".": "./index.js",
+        "./package.json": "./package.json"
+    },
+
+    // Allowlist of files to publish (default-deny). npm always also includes package.json, README
+    // and LICENSE; CHANGELOG.md is listed explicitly because npm does NOT auto-include it.
+    // .npmignore is kept as a redundant denylist; this allowlist is the primary control over the
+    // tarball contents.
+    "files": [
+        "index.js",
+        "CHANGELOG.md"
+    ],
 
     "dependencies": {
 
@@ -116,6 +145,7 @@ const packageJson = {
         "lockfile-lint": "^5.0.0", // Validates package-lock.json (registry hosts + HTTPS)
         "node-notifier": "^10.0.1", // Desktop notification when a health check fails
         "package-cjson": "^3.0.0", // Generates package.json from package.json.ts (see scripts "housekeeping:*")
+        "publint": "^0.3.21", // Lints the package for publish-time correctness (main/exports/files resolution); wired as the "publint" health check
         "semver": "^7.8.5", // Semantic-version comparison used by the node-version and npm-install health checks
         "shell-quote": "^1.10.0", // Shell-safe quoting of some commands
         "typescript": "~6.0.3", // Powers the tsc type check (test:types); optional ironplate peer for its TypeScript configs
@@ -168,11 +198,11 @@ const packageJson = {
 
         // Runs the full check suite via the all-is-well orchestrator (concurrently by default)
         "test": "node --run all-is-well",
-        // Change-aware run for fast local iterations: skips Vitest, npm-ci-dry, lockfile-lint,
+        // Change-aware run for fast local iterations: skips Vitest, publint, npm-ci-dry, lockfile-lint,
         // npm-audit-signatures, and claude-settings-sort when none of each check's staged paths changed
         // (see changeDependencies in all-is-well.ts). npm-audit-signatures is also disabled on local runs by
         // all-is-well.config.ts, so locally it is skipped regardless. The match is over STAGED paths
-        // (git diff --cached), so with an unstaged working tree all five are skipped - "git add" your
+        // (git diff --cached), so with an unstaged working tree all six are skipped - "git add" your
         // changes first. Not wired into any git hook - the hooks run the full "test".
         "test:optimize-for-change": "node --run all-is-well -- --optimize-for-change",
         "test:compare-package-json-with-source": "package-cjson --mode compare",
@@ -185,6 +215,10 @@ const packageJson = {
         // Full static type check of the .ts tooling and the shipped .js (config in tsconfig.json). Complements
         // "syntaxlint" (fast parse-only) and ESLint (syntactic, non-type-aware).
         "test:types": "tsc --pretty",
+
+        // Lints the package for publish-time correctness (main/exports/files resolution); also run
+        // as the "publint" check in all-is-well
+        "publint": "publint",
 
         // Reports unused files / exports / dependencies
         "knip": "knip",
@@ -222,6 +256,10 @@ const packageJson = {
         // .claude/hooks/Stop/claude-settings-sort.sh.
         "claude-settings-sort":     "./scripts/health-checks/checks/claude-settings-sort.ts",
         "claude-settings-sort:fix": "./scripts/health-checks/checks/claude-settings-sort.ts --fix",
+
+        // Runs only on "npm publish" (not on "npm pack" or "npm install"). Catches publishes that
+        // skip "npm version" and its preversion hook.
+        "prepublishOnly": "node --run test",
 
         // "npm version <patch|minor|major>" lifecycle. package.json.ts is the source of truth, so the
         // "version" step propagates the new version back into it and regenerates package.json.

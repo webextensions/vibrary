@@ -3,12 +3,15 @@
 [![CI](https://github.com/webextensions/template-javascript-project/actions/workflows/ci.yml/badge.svg)](https://github.com/webextensions/template-javascript-project/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-This is the **`abstract-javascript-project`** branch - the root base of a small family of
-ready-to-use JavaScript project templates maintained as git branches in this repository. It carries
-the shared baseline every template builds on (ESM, ESLint, Vitest, EditorConfig, `package.json`
-generated from `package.json.ts`, a health-check suite wired into git hooks, and a template-sync
-merge workflow) but ships no runnable source code of its own - the template branches (for example
-`template-npm-package-for-exports`) add that.
+This is the **`abstract-npm-package`** branch - the shared base for the npm-package templates in
+this repository's family of JavaScript project templates maintained as git branches. On top of the
+`abstract-javascript-project` baseline (ESM, ESLint, Vitest, EditorConfig, `package.json` generated
+from `package.json.ts`, a health-check suite wired into git hooks, and a template-sync merge
+workflow) it adds the npm publishing baseline: a publishable manifest (`main` / `exports` /
+`files` / `publishConfig`), a `publint` health check, a `prepublishOnly` test gate, and a
+placeholder entry point (`index.js`) that the template branches (for example
+`template-npm-package-for-exports`) replace with real source. Fork projects from a
+`template-npm-package-*` branch, not from this abstract branch.
 
 ## Where to look
 

@@ -10,14 +10,20 @@ dependencies/scripts its layer introduces).
 - `keywords` - to match your project.
 - `homepage`, `repository.url`, `bugs.url` - point to your new repository.
 - `author` / `license` - adjust if different from the defaults.
-- `private` - the base template sets `"private": true` because nothing is published from it. Keep it
-  for non-published projects; remove it (and add your publish fields - `main` / `exports` / `bin` /
-  `files` / `publishConfig` as needed) if your project publishes to npm.
-- `engines.node` - the base template sets the dev/tooling floor (the comment above `engines` in
-  `package.json.ts` explains it; CI exercises a matrix of Node versions per
-  [.github/workflows/ci.yml](../../../.github/workflows/ci.yml)). If your project publishes a
-  package, set this to your consumer-facing runtime floor instead - but note that lowering it does
-  not lower the tooling floor: you still develop and run the checks on the base floor.
+- Publish fields - this branch ships a publishable manifest: `publishConfig` (`"access": "public"`
+  for scoped packages), `main` / `exports` (pointing at the placeholder `index.js`), and the
+  `files` allowlist (`CHANGELOG.md` is listed explicitly because npm does not auto-include it;
+  [.npmignore](../../../.npmignore) is only a redundant denylist behind it). A new layer branch
+  extends them for its layer (e.g. `bin` for a CLI, a `./lib/*` subpath export); a new project
+  points them at its real entry points and updates `files` to what it ships. If your project is
+  NOT published to npm, add `"private": true` and optionally drop these fields plus the `publint`
+  script/check.
+- `engines.node` - consumer-facing now that the manifest is publishable; this branch keeps it at
+  the repo's dev/tooling floor (the comment above `engines` in `package.json.ts` explains the
+  consumer-floor-vs-tooling-floor split; CI exercises a matrix of Node versions per
+  [.github/workflows/ci.yml](../../../.github/workflows/ci.yml)). Publishing projects usually
+  lower it to their real consumer floor - but lowering it does not lower the tooling floor: you
+  still develop and run the checks on the base floor.
 - `dependencies` - add your project's runtime dependencies inside the marked block.
 
 Then regenerate the manifest:

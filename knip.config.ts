@@ -7,8 +7,8 @@ const config: KnipConfig = {
     // comment above). Populate these only when a fork needs to add entry points, ignore files/exports,
     // or mark a dependency as intentionally unused.
     entry: [
-        // package-cjson loads package.json.ts to generate package.json (knip has no plugin for it, and
-        // with no "main"/"exports"/"bin" on this base template branch nothing else anchors the file).
+        // package-cjson loads package.json.ts to generate package.json (knip has no plugin for it,
+        // and nothing imports the file - "main"/"exports" anchor index.js, not this source file).
         'package.json.ts',
         // Never imported by anything (users copy it to the git-ignored all-is-well.config.local.ts).
         // Registering it as an entry keeps knip from flagging the file, the base config it imports

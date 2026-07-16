@@ -12,8 +12,8 @@ sources of truth rather than copies of them - follow a pointer to the file that 
   script is documented by the comment above it.
 - [development/health-checks.md](./development/health-checks.md) - the check suite behind
   `node --run test`: orchestrator, flags, configuration, and the git hooks that run it.
-- [development/releasing.md](./development/releasing.md) - the `npm version` release flow and
-  changelog generation.
+- [development/releasing.md](./development/releasing.md) - the `npm version` release flow,
+  changelog generation, and publishing to npm.
 - [recipes/](./recipes/) - step-by-step how-tos for occasional multi-step tasks.
 - [setup/](./setup/) - one-time setup guides.
 - [specs/](./specs/) - pre-implementation design docs for non-trivial changes.

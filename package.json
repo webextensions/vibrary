@@ -4,7 +4,7 @@
         "url": "https://github.com/webextensions/template-javascript-project/issues"
     },
     "dependencies": {},
-    "description": "Abstract base template for JavaScript projects - shared tooling, health checks, and a template-sync git branching workflow",
+    "description": "Abstract base template for npm packages - publishable manifest, publint, shared tooling, health checks, and a template-sync git branching workflow",
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@eslint/markdown": "^8.0.3",
@@ -34,6 +34,7 @@
         "lockfile-lint": "^5.0.0",
         "node-notifier": "^10.0.1",
         "package-cjson": "^3.0.0",
+        "publint": "^0.3.21",
         "semver": "^7.8.5",
         "shell-quote": "^1.10.0",
         "typescript": "~6.0.3",
@@ -43,16 +44,29 @@
     "engines": {
         "node": ">=24.2.0"
     },
+    "exports": {
+        ".": "./index.js",
+        "./package.json": "./package.json"
+    },
+    "files": [
+        "index.js",
+        "CHANGELOG.md"
+    ],
     "homepage": "https://github.com/webextensions/template-javascript-project#readme",
     "keywords": [
         "template",
         "boilerplate",
         "starter",
-        "javascript"
+        "javascript",
+        "npm",
+        "package"
     ],
     "license": "MIT",
+    "main": "index.js",
     "name": "@webextensions/template-javascript-project",
-    "private": true,
+    "publishConfig": {
+        "access": "public"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/webextensions/template-javascript-project.git"
@@ -83,7 +97,9 @@
         "postversion": "git push --follow-tags",
         "preinstall": "./scripts/npm-run-scripts/preinstall.sh",
         "prepare": "husky || true",
+        "prepublishOnly": "node --run test",
         "preversion": "node --run test",
+        "publint": "publint",
         "status-of-files": "./scripts/health-checks/checks/check-status-of-files.ts --return-exit-code",
         "status-of-files:ensure": "./scripts/health-checks/checks/ensure-status-of-files.ts",
         "syntaxlint": "./scripts/health-checks/checks/check-syntax.ts",

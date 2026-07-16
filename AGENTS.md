@@ -13,10 +13,14 @@ to the shared homes that keep receiving template updates.
 
 ## Project overview
 
-`abstract-javascript-project` - the root base branch of a family of JavaScript project templates
-maintained as git branches; it carries the shared tooling baseline and ships no runnable source
-code of its own - template branches / forks define their own layout. Vision, branching tree, and
-the fork/merge model:
+`abstract-npm-package` - the shared base branch for the npm-package template branches
+(`template-npm-package-for-exports`, `-for-exports-cli`, `-for-exports-cli-tui`,
+`template-npm-package-for-react`). It layers the npm publishing baseline on top of
+`abstract-javascript-project`: a publishable manifest (`main` / `exports` / `files` /
+`publishConfig` in `package.json.ts`), a `publint` health check, a `prepublishOnly` test gate, an
+`.npmignore` backstop, and a placeholder entry point (`index.js` + `test/index.test.js`) that the
+template branches replace wholesale. Fork projects from a `template-npm-package-*` branch, not
+from this abstract branch. Vision, branching tree, and the fork/merge model:
 [docs/template-project/README.md](docs/template-project/README.md).
 
 ## Commands

@@ -246,6 +246,23 @@ const CHECK_PKG_VERSION_SYNC: HealthCheck = {
     errorMsg: 'package-version.json is out of sync with package.json.ts (run "node --run housekeeping:generate-package-json")'
 };
 
+// Lints the generated package.json and the files it points at for publish-time correctness
+// (main/exports/files resolution) - publint. This branch ships a publishable manifest, so the
+// check applies unconditionally (no private-flag guard). Reuses the "publint" npm script.
+const CHECK_PUBLINT: HealthCheck = {
+    name: 'publint',
+    // "--optimize-for-change" runs this only when the manifest or the published/ignored file set
+    // changes (publint validates what "npm pack" would include, which .npmignore also affects).
+    changeDependencies: [
+        '.npmignore',
+        'index.js',
+        'package.json'
+    ],
+    cmd: 'node',
+    args: ['--run', 'publint'],
+    errorMsg: 'publint found package-publishing issues (main/exports/files). Run "node --run publint" for details.'
+};
+
 // Fast parse-check (via module.stripTypeScriptTypes) of every repo JS/TS file discovered by
 // `git ls-files --cached --others --exclude-standard`, run before ESLint/Vitest so parse errors surface
 // here rather than as confusing downstream failures.
@@ -275,6 +292,7 @@ const CHECK_VITEST: HealthCheck = {
     changeDependencies: [
         'test/',
         'scripts/health-checks/helpers/eslint-rules/',
+        'index.js',
         'vitest.config.js',
         'package.json',
         'package-lock.json'
@@ -300,6 +318,7 @@ const healthChecks: HealthCheck[] = [
     CHECK_PKG_JSON_SYNC,
     CHECK_LOCKFILE_LINT,
     CHECK_GIT_CONFLICT_MARKERS,
+    CHECK_PUBLINT,
     CHECK_ESLINT_STAGED,
     CHECK_ESLINT_MARKDOWN,
     CHECK_KNIP,
