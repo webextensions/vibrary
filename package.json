@@ -1,7 +1,7 @@
 {
     "author": "webextensions.org",
     "bin": {
-        "template-npm-package-for-exports-cli": "./cli.js"
+        "template-javascript-project": "./cli.js"
     },
     "bugs": {
         "url": "https://github.com/webextensions/template-javascript-project/issues"

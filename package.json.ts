@@ -100,7 +100,7 @@ const packageJson = {
         "./package.json": "./package.json"
     },
     "bin": {
-        "template-npm-package-for-exports-cli": "./cli.js" // CLI entry point (rename the key to your command name)
+        "template-javascript-project": "./cli.js" // CLI entry point (rename the key to your command name)
     },
 
     // Allowlist of files to publish (default-deny). "lib/" ships the core logic ("index.js" /
