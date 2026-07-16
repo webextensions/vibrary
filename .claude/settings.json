@@ -1,0 +1,119 @@
+{
+  "disabledMcpjsonServers": [
+    "deepwiki"
+  ],
+  "enabledMcpjsonServers": [
+    "context7",
+    "mdn"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/PostToolUse/regenerate-package-json-after-source-edit.sh\"",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/PreToolUse/block-direct-package-json-edit.sh\"",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/Stop/fix-non-keyboard-characters.sh\"",
+            "type": "command"
+          },
+          {
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/Stop/fix-lint-on-changed-files.sh\"",
+            "type": "command"
+          },
+          {
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/Stop/check-types-when-typescript-changed.sh\"",
+            "type": "command"
+          },
+          {
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/Stop/claude-settings-sort.sh\"",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(bash -n *)",
+      "Bash(command -v node)",
+      "Bash(echo *)",
+      "Bash(git --no-pager diff --staged)",
+      "Bash(git mv *)",
+      "Bash(git show *)",
+      "Bash(git status *)",
+      "Bash(ls *)",
+      "Bash(node --help)",
+      "Bash(node --run block-non-keyboard-characters*)",
+      "Bash(node --run eslint:fix)",
+      "Bash(node --run eslint:with-cache)",
+      "Bash(node --run eslint)",
+      "Bash(node --run housekeeping:generate-package-json)",
+      "Bash(node --run knip)",
+      "Bash(node --run syntaxlint)",
+      "Bash(node --run test:compare-package-json-with-source)",
+      "Bash(node --run test:compare-package-version-with-source)",
+      "Bash(node --run test:lockfile)",
+      "Bash(node --run test:optimize-for-change)",
+      "Bash(node --run test:types)",
+      "Bash(node --run test)",
+      "Bash(node --run vitest)",
+      "Bash(node cli.js --help)",
+      "Bash(npm ci)",
+      "Bash(npm info *)",
+      "Bash(npm install)",
+      "Bash(npm pack *)",
+      "Bash(npm test *)",
+      "Bash(npm view *)",
+      "mcp__codegraph__codegraph_callees",
+      "mcp__codegraph__codegraph_callers",
+      "mcp__codegraph__codegraph_explore",
+      "mcp__codegraph__codegraph_files",
+      "mcp__codegraph__codegraph_impact",
+      "mcp__codegraph__codegraph_node",
+      "mcp__codegraph__codegraph_search",
+      "mcp__codegraph__codegraph_status",
+      "mcp__plugin_context7_context7__query-docs",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:docs.npmjs.com)",
+      "WebFetch(domain:socket.dev)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(git add*)",
+      "Bash(git push --force)",
+      "Bash(git push --force*)",
+      "Bash(git push -f)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f *)",
+      "Bash(git push * -f)",
+      "Bash(git reset*)",
+      "Bash(git restore --staged*)",
+      "Bash(git rm *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}

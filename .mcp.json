@@ -1,0 +1,27 @@
+{
+    "mcpServers": {
+        "context7": {
+            "args": [
+                "-y",
+                "@upstash/context7-mcp"
+            ],
+            "command": "npx"
+        },
+        "deepwiki": {
+            "type": "http",
+            "url": "https://mcp.deepwiki.com/mcp"
+        },
+        "mdn": {
+            "type": "http",
+            "url": "https://mcp.mdn.mozilla.net/"
+        },
+        "codegraph": {
+            "args": [
+                "serve",
+                "--mcp"
+            ],
+            "command": "codegraph",
+            "type": "stdio"
+        }
+    }
+}

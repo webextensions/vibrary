@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")" # Change directory to the folder containing this file
+cd ../               # Change directory to project's root folder
+
+# Print due recurring-task reminders from revisit.json. "|| true" keeps commits clean if the dev-only
+# dependency is absent (e.g. a "--omit=dev" install); git ignores the post-commit exit status anyway.
+./node_modules/.bin/revisit || true

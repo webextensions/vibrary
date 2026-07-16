@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")" # Change directory to the folder containing this file
+cd ../               # Change directory to project's root folder
+
+# Informational, NON-blocking post-merge check. git ignores a post-merge hook's exit status, so this
+# can never abort or roll back the merge - it only surfaces breakage early. It fires ONLY after a
+# conflict-free "git merge" / "git pull" that updates the working tree; it does NOT fire when a merge
+# stops on conflicts and is concluded with "git commit" (e.g. the auto-resolve path in
+# scripts/branching/merge-template-to-main.sh - that commit is covered by the pre-commit hook instead).
+# "git pull --rebase" rewinds via rebase and fires post-rewrite, not this hook.
+#
+# Runs the full suite (same as pre-commit / pre-push) because a merge stages nothing, so the
+# change-aware "test:optimize-for-change" would skip almost everything. The real gate is pre-push:
+# this hook only gives faster feedback. On failure husky prints "post-merge script failed (code N)";
+# fix the breakage in a SEPARATE commit before pushing.
+echo "post-merge: running the full suite for info (the merge is already committed; pre-push is the gate)"
+node --run test

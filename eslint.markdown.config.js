@@ -1,0 +1,40 @@
+// ESLint config for markdown files ONLY, used via "--config" by the "eslint:markdown" script (see
+// package.json.ts) - the main eslint.config.js stays scoped to code files. Validates that relative
+// links/images resolve to existing files or directories (the custom rule in
+// scripts/health-checks/helpers/eslint-rules/markdown-relative-links.js). No code-block processor is enabled, so
+// embedded snippets inside the docs are not linted.
+// @ts-check
+
+import markdown from '@eslint/markdown';
+import {
+    defineConfig,
+    globalIgnores
+} from 'eslint/config';
+
+import { markdownRelativeLinks } from './scripts/health-checks/helpers/eslint-rules/markdown-relative-links.js';
+
+// eslint-disable-next-line import-x/no-default-export
+export default defineConfig([
+    globalIgnores([
+        'node_modules/',
+        'coverage/',
+        '.cache/'
+    ]),
+
+    {
+        files: ['**/*.md'],
+        plugins: {
+            markdown,
+            local: {
+                rules: {
+                    'markdown-relative-links': markdownRelativeLinks
+                }
+            }
+        },
+        // GFM rather than commonmark: the docs use GitHub-flavored constructs (tables etc.).
+        language: 'markdown/gfm',
+        rules: {
+            'local/markdown-relative-links': 'error'
+        }
+    }
+]);

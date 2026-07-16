@@ -1,0 +1,50 @@
+{
+    // Auto-regenerate package.json whenever package.json.ts (the source of truth) is saved, so the
+    // two never drift. Each block targets a different "run on save" extension; install whichever
+    // matches your VSCode / VSCode-based IDE (see .vscode/extensions.json).
+
+    // File Nesting
+    // Ref: https://github.com/antfu/vscode-file-nesting-config#update-manually
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+        "*.css": "${capture}.css.map",
+        "*.js": "${capture}.js.map",
+        ".env": ".env.*",
+        ".gitignore": ".cursorignore, .stylelintignore",
+        ".nvmrc": ".auto-changelog, .block-non-keyboard-characters.suppressions.json, .live-css.config.cjs, .npmrc, babel.config.cjs, copy-files-from-to.cjson, eslint.config.cjs, eslint.config.js, eslint.markdown.config.js, knip.config.ts, revisit.json, stylelint.config.js, vitest.config.ts",
+        "package.json.ts": "package-lock.json, package-version.json, package.json",
+        "README.md": "LICENSE",
+        "settings.json": "settings.example.json, settings.local.example.json, settings.local.json",
+        "tsconfig.json": "tsconfig.tsbuildinfo"
+    },
+
+    // Keep noisy generated files out of search results (.gitignore'd paths are already excluded
+    // because "search.useIgnoreFiles" defaults to true; package-lock.json is tracked, so it needs
+    // an explicit rule).
+    "search.exclude": {
+        "package-lock.json": true
+    },
+
+    // VS Code: extension "wk-j.save-and-run" (https://github.com/wk-j/vscode-save-and-run)
+    "saveAndRun": {
+        "commands": [
+            {
+                "match": "package\\.json\\.ts$",
+                "cmd": "./scripts/housekeeping/generate-package-json.sh",
+                "useShortcut": false,
+                "silent": true
+            }
+        ]
+    },
+
+    // Cursor: extension "achilleshr.runonsave" (https://open-vsx.org/extension/achilleshr/RunOnSave)
+    "achilleshr.runonsave": {
+        "commands": [
+            {
+                "match": "package\\.json\\.ts$",
+                "cmd": "./scripts/housekeeping/generate-package-json.sh"
+            }
+        ]
+    }
+}

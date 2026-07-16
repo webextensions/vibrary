@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")" # Change directory to the folder containing this file
+cd ../               # Change directory to project's root folder
+
+# Full pre-commit suite: sync/environment checks, parse/types/lint/tests, dependency checks,
+# and guards (the healthChecks array in scripts/health-checks/all-is-well.ts is the source of truth).
+# Run the full suite rather than the change-aware variant ("node --run test:optimize-for-change",
+# which is kept for fast manual dev iterations).
+node --run test

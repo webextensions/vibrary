@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push: # All branches (this repo hosts the whole template-branch family)
+  pull_request:
+
+# Least privilege: the default GITHUB_TOKEN only needs read access for these jobs.
+permissions:
+  contents: read
+
+# Cancel superseded runs for the same ref (e.g. rapid pushes / PR updates).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu + macOS only: the health-check suite uses unix shell / shebang scripts that do not
+        # run on Windows. '24.2.0' is the package-cjson / tooling floor (what the housekeeping scripts
+        # and all-is-well.ts need - this matches the engines.node floor on this base template branch);
+        # '24' is the latest 24.x; 'current' is the latest Node release (a setup-node alias).
+        os: [ubuntu-latest, macos-latest]
+        node-version: ['24.2.0', '24', 'current']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: node --run test
+
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit for known vulnerabilities (non-blocking)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Lint the lockfile (registry hosts + HTTPS)
+        run: node --run test:lockfile
