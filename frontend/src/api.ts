@@ -79,6 +79,7 @@ const streamClaude = async function (url: string, body: unknown, options: Stream
     const decoder = new TextDecoder();
     let buffer = '';
     let resultText = '';
+    let wasExitSeen = false;
 
     const handleLine = function (line: string) {
         const trimmed = line.trim();
@@ -92,6 +93,7 @@ const streamClaude = async function (url: string, body: unknown, options: Stream
             return; // Ignore a malformed line rather than failing the whole run.
         }
         if (event.type === '_exit') {
+            wasExitSeen = true;
             const exit = event as { error: string | null };
             if (exit.error !== null) {
                 throw new Error(exit.error);
@@ -120,6 +122,12 @@ const streamClaude = async function (url: string, body: unknown, options: Stream
             }
         }
         handleLine(buffer);
+        // The backend terminates every real outcome (success, error, timeout) with an _exit line. A stream that ends
+        // cleanly without one means the connection died mid-run (backend restart, crash, dropped proxy upstream) -
+        // report that as a failure instead of settling the job as a success with an empty result.
+        if (!wasExitSeen) {
+            throw new Error('The connection to the server was lost while the agent was running');
+        }
     } catch (error) {
         try {
             await reader.cancel();
