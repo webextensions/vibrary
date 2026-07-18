@@ -31,6 +31,17 @@ const hashFileContent = function (content) {
     return createHash('sha1').update(content).digest('hex');
 };
 
+// Per-file summary cache for /files-summary, keyed by resolved path and validated by (mtimeMs, size). The frontend
+// refetches the summary after EVERY save/delete/rename/move/generate, and in the common case exactly one file changed
+// since the last call - yet the endpoint re-parsed everything, and measurement showed the synchronous XML work
+// dominates (~94% of ~90 ms on a 100-file folder; the reads are ~6%, which is why concurrent reads were rejected).
+// Every call still stats every file (microseconds), so external edits are picked up immediately - the same visible
+// freshness as before, matching the include-file's no-restart philosophy. The mtime+size pair is the standard cheap
+// validator; a same-mtime same-size rewrite (sub-timestamp-resolution) is the accepted residual risk build tools take.
+// Failures are never cached, and keys for files gone from the listing are pruned per call so the map never outgrows
+// the folder.
+const summaryCache = new Map();
+
 const createFilesRouter = function ({ cwd }) {
     const router = Router();
 
@@ -53,16 +64,26 @@ const createFilesRouter = function ({ cwd }) {
         try {
             const [files, hasVibraryInclude] = await Promise.all([listVibraryFiles(cwd), vibraryIncludeExistsAsync(cwd)]);
             // First pass: parse each file's entries once, collecting its titles/tallies and the relatesTo references it
-            // makes. A file that cannot be read or parsed reports null tallies (its badge renders as errored).
+            // makes - through the mtime/size-validated summaryCache, so a refresh after one save re-parses ONE file
+            // and stats the rest. A file that cannot be read or parsed reports null tallies (its badge renders as
+            // errored), uncached so the next call retries it.
             const parsed = [];
+            const liveTargets = new Set();
             for (const name of files) {
                 const target = resolveWithinCwd(cwd, name);
                 if (target === null) {
                     continue;
                 }
+                liveTargets.add(target);
                 try {
+                    const fileStat = await stat(target);
+                    const cached = summaryCache.get(target);
+                    if (cached !== undefined && cached.mtimeMs === fileStat.mtimeMs && cached.size === fileStat.size) {
+                        parsed.push(cached.summary);
+                        continue;
+                    }
                     const entries = parseVibraryXml(await readFile(target, 'utf8'));
-                    parsed.push({
+                    const summary = {
                         name,
                         titles: entries.map(function (entry) { return entry.title; }).filter(function (title) { return title !== ''; }),
                         approved: countApprovedSpecs(entries),
@@ -70,9 +91,18 @@ const createFilesRouter = function ({ cwd }) {
                         // Per-entry source + targets, retained so the second pass can both count this file's dangling
                         // references AND build the folder-wide reverse map (which entry references each title).
                         references: entries.map(function (entry) { return { title: entry.title, relatesTo: entry.relatesTo }; })
-                    });
+                    };
+                    summaryCache.set(target, { mtimeMs: fileStat.mtimeMs, size: fileStat.size, summary });
+                    parsed.push(summary);
                 } catch {
+                    summaryCache.delete(target);
                     parsed.push({ name, titles: [], approved: null, total: null, references: [] });
+                }
+            }
+            // Prune cache entries for files no longer in the listing (deleted, renamed, or excluded).
+            for (const target of summaryCache.keys()) {
+                if (!liveTargets.has(target)) {
+                    summaryCache.delete(target);
                 }
             }
             // A relatesTo reference resolves by exact title across every file, so the set of known titles is folder-wide.

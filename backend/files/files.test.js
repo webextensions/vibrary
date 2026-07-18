@@ -61,6 +61,27 @@ test('GET /files-summary tallies parseable files and marks a malformed one with 
     assert.deepEqual(byName.get('specs-broken.xml'), { name: 'specs-broken.xml', titles: [], approved: null, total: null, brokenReferences: null });
 });
 
+test('GET /files-summary reflects an on-disk change on the very next call (the mtime cache never goes stale)', async function () {
+    // Warm the per-file summary cache, edit a file behind it (mtime/size change), and require the next call to
+    // re-parse: the cache is a performance detail with the same visible freshness as no cache at all.
+    await requestJsonAsync('/files-summary');
+    writeFileSync(path.join(cwd, 'specs-freshness.xml'), '<root><entries><entry type="spec"><title>fresh-one</title><content>A</content></entry></entries></root>');
+    const first = await requestJsonAsync('/files-summary');
+    const before = first.body.output.files.find(function (file) { return file.name === 'specs-freshness.xml'; });
+    assert.equal(before.total, 1);
+
+    writeFileSync(path.join(cwd, 'specs-freshness.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>fresh-one</title><content>A</content></entry>',
+        '  <entry type="spec"><title>fresh-two</title><content>B</content></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    const second = await requestJsonAsync('/files-summary');
+    const after = second.body.output.files.find(function (file) { return file.name === 'specs-freshness.xml'; });
+    assert.equal(after.total, 2);
+    assert.deepEqual(after.titles, ['fresh-one', 'fresh-two']);
+});
+
 test('GET /files-summary counts each file\'s dangling relatesTo references (folder-wide)', async function () {
     const brokenCwd = mkdtempSync(path.join(tmpdir(), 'vibrary-broken-refs-'));
     writeFileSync(path.join(brokenCwd, '.vibraryinclude'), 'specs*.xml\n');
