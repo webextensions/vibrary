@@ -74,5 +74,7 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
   devDependencies, breaks the installed package while everything still works from the repo - this has happened.
   Frontend-only libraries belong in devDependencies (vite prebuilds them into `dist/`); anything the backend or the
   shipped core resolves at runtime belongs in dependencies.
-- After touching `files` or dependency placement, smoke-test the tarball: `npm pack`, install it with `--omit=dev`
-  into a scratch folder, start the packed server against a folder with a `.vibraryinclude`, and hit `/api/files`.
+- After touching `files` or dependency placement, run `node --run smoke-test`
+  (`scripts/smoke-test-package.js` - packs the tarball, installs it with `--omit=dev` outside the repo, starts the
+  packed server, and hits the endpoints that exercise the runtime import graph). It also runs at the end of `prepack`
+  and in CI.

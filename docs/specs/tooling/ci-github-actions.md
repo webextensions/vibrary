@@ -1,8 +1,9 @@
 # CI: GitHub Actions checks workflow
 
 [.github/workflows/checks.yml](../../.github/workflows/checks.yml) runs the project's four documented checks - `node
---run lint`, `node --run typecheck`, `node --run test`, `node --run build` - on every push to `main` and on every pull
-request.
+--run lint`, `node --run typecheck`, `node --run test`, `node --run build` - plus the packaged-tarball smoke test
+(`node --run smoke-test`, see [packaged-tarball-smoke-test.md](packaged-tarball-smoke-test.md)) on every push to
+`main` and on every pull request.
 
 ## Why
 
