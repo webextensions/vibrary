@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { discardMatches, getFilesSummary, getRankings, type RankingsPayload, recordManualMatch } from '../api.ts';
+import { useActivityQueueActions } from '../activity/activityQueue.ts';
+import { discardMatches, getFilesSummary, getRankings, type RankingsPayload, recordManualMatch, runCompetitions } from '../api.ts';
 import { announce } from '../shared/announcer.ts';
-import { RefreshIcon } from '../shared/Icons.tsx';
+import { AiIcon, RefreshIcon } from '../shared/Icons.tsx';
 import { CompareMode } from './CompareMode.tsx';
 import { MatchHistory } from './MatchHistory.tsx';
+import { RunCompetitionsDialog } from './RunCompetitionsDialog.tsx';
 
 import styles from './RankingsPanel.module.css';
 
@@ -44,6 +46,8 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
     const [comparing, setComparing] = useState(false);
     const [suggestionIndex, setSuggestionIndex] = useState(0);
     const [voting, setVoting] = useState(false);
+    const [runDialogOpen, setRunDialogOpen] = useState(false);
+    const { enqueue } = useActivityQueueActions();
 
     const load = useCallback(async function () {
         try {
@@ -120,6 +124,30 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
         }
     }, []);
 
+    // Queue an AI competitions run through the activity system - one job holding the single agent slot for the whole
+    // batch, abortable and inspectable like every other agent action. The dialog closes as soon as the job is
+    // enqueued; when the job settles (either way) the panel reloads so the new AI verdicts appear.
+    const handleRunCompetitions = function (count: number, instructions: string) {
+        const promptParts = [`Run ${count} AI-judged competition${count === 1 ? '' : 's'} over the ranked entries.`];
+        if (instructions !== '') {
+            promptParts.push('', 'Judging guidance:', instructions);
+        }
+        const promise = enqueue({
+            kind: 'competitions',
+            label: `${count} AI matchup${count === 1 ? '' : 's'}`,
+            prompt: promptParts.join('\n'),
+            run: function (signal, onEvent) {
+                return runCompetitions({ count, instructions }, { signal, onEvent });
+            }
+        });
+        setRunDialogOpen(false);
+        void promise.catch(function () {
+            // The failure is already recorded on the job's row in the Activity monitor.
+        }).finally(function () {
+            void load();
+        });
+    };
+
     const hasMatches = payload !== null && payload.matches.length > 0;
     const suggestions = payload === null ? [] : payload.suggestedPairings;
     const currentPairing = suggestions.length === 0 ? null : suggestions[suggestionIndex % suggestions.length];
@@ -140,6 +168,18 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
                     >
                         Compare
                     </button>}
+                    {payload !== null && payload.standings.length >= 2 &&
+                    <button
+                        type="button"
+                        className={styles.iconButton}
+                        aria-label="Run AI competitions"
+                        title="Run AI competitions"
+                        onClick={function () {
+                            setRunDialogOpen(true);
+                        }}
+                    >
+                        <AiIcon />
+                    </button>}
                     <button
                         type="button"
                         className={styles.iconButton}
@@ -153,6 +193,8 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
                     </button>
                 </div>
             </div>
+
+            {runDialogOpen && <RunCompetitionsDialog onClose={function () { setRunDialogOpen(false); }} onRun={handleRunCompetitions} />}
 
             {comparing && payload !== null &&
             <CompareMode

@@ -14,7 +14,11 @@ All notable changes to this project are documented here. The format loosely foll
   live. A collapsible **Match history** lists every recorded result newest-first (with the judge, time, and any
   rationale), flags results whose entries were renamed or removed, and discards one result, the checked selection, or
   the whole log - each confirmed, with the standings recomputed exactly because ratings are always replayed from the
-  kept records in `vibrary-rankings.json` at the folder root. AI-judged competitions build on this.
+  kept records in `vibrary-rankings.json` at the folder root. **Run AI competitions** queues a batch of AI-judged
+  matchups through the activity monitor (count and optional judging guidance chosen in a dialog): the AI weighs each
+  least-compared pair and records its verdict with a rationale, streamed live into the job's transcript with each
+  pairing's exact judge prompt inspectable - and every AI verdict can be overridden by discarding it or outvoting it
+  with your own comparisons.
 - Undo for the editor's destructive actions: single-card Remove and the bulk Delete, Change type, Find & replace, and
   Remove broken references operations each show a brief Undo toast that restores exactly what changed, leaving any
   edit made in the meantime untouched.

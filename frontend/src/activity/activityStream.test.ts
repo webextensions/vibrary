@@ -127,3 +127,16 @@ test('removeItem drops by id and returns the same reference when the id is absen
     assert.deepEqual(removed.items, []);
     assert.equal(removeItem(seeded, 'no-such-id'), seeded);
 });
+
+test('competition events fold into a prompt bubble per pairing and a verdict text item', function () {
+    const state = reduceAll([
+        { type: 'competition_start', index: 1, count: 2, firstTitle: 'idea-a', secondTitle: 'idea-b', prompt: 'judge these two' },
+        { type: 'competition_result', index: 1, count: 2, match: { winnerTitle: 'idea-b', rationale: 'more leverage' } },
+        // A duplicate delivery of either line must not add a second item.
+        { type: 'competition_start', index: 1, count: 2, firstTitle: 'idea-a', secondTitle: 'idea-b', prompt: 'judge these two' }
+    ]);
+    assert.deepEqual(state.items, [
+        { kind: 'user', id: 'competition:1', text: 'Match 1/2: idea-a vs idea-b', fullText: 'judge these two' },
+        { kind: 'text', id: 'competition-result:1', text: 'Winner: idea-b\n\nmore leverage' }
+    ]);
+});

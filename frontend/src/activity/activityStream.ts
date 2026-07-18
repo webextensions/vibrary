@@ -27,6 +27,8 @@ type ClaudeStreamEvent =
 { type: 'result'; subtype?: string; is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number; session_id?: string } |
 { type: 'stream_event'; event: StreamSubEvent } |
 { type: 'user_prompt'; text?: string } |
+{ type: 'competition_start'; index?: number; count?: number; firstTitle?: string; secondTitle?: string; prompt?: string } |
+{ type: 'competition_result'; index?: number; count?: number; match?: { firstTitle?: string; secondTitle?: string; winnerTitle?: string; rationale?: string } } |
 { type: '_exit'; code: number; error: string | null } |
 { type: string; [key: string]: unknown };
 
@@ -274,6 +276,31 @@ const reduceTranscript = function (state: TranscriptState, event: ClaudeStreamEv
                 return position === index ? { ...item, fullText: text } : item;
             });
             return { ...state, items };
+        }
+        // The rankings' competitions run is a batch of buffered judge calls, so it emits no per-token stream; these
+        // two synthetic lines are its whole progress story. The start line renders as a user bubble because it IS the
+        // prompt sent for that pairing (its full text inspectable exactly like the initial prompt's Full view), and
+        // the result line as plain text carrying the verdict and its rationale.
+        case 'competition_start': {
+            const start = event as { index?: number; count?: number; firstTitle?: string; secondTitle?: string; prompt?: string };
+            const id = `competition:${start.index ?? state.items.length}`;
+            if (state.items.some(function (item) { return item.id === id; })) {
+                return state;
+            }
+            const text = `Match ${start.index}/${start.count}: ${start.firstTitle} vs ${start.secondTitle}`;
+            const fullText = typeof start.prompt === 'string' && start.prompt !== '' ? start.prompt : undefined;
+            return { ...state, items: [...state.items, { kind: 'user', id, text, fullText }] };
+        }
+        case 'competition_result': {
+            const settled = event as { index?: number; match?: { winnerTitle?: string; rationale?: string } };
+            const id = `competition-result:${settled.index ?? state.items.length}`;
+            if (state.items.some(function (item) { return item.id === id; })) {
+                return state;
+            }
+            const winner = settled.match?.winnerTitle ?? '';
+            const rationale = settled.match?.rationale ?? '';
+            const text = rationale === '' ? `Winner: ${winner}` : `Winner: ${winner}\n\n${rationale}`;
+            return { ...state, items: [...state.items, { kind: 'text', id, text }] };
         }
         default: {
             return state;

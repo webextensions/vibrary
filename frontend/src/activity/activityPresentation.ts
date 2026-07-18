@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { type JobKind, type JobStatus } from './activityQueue.ts';
-import { AiIcon, ListIcon, SpecIcon, TaskIcon } from '../shared/Icons.tsx';
+import { AiIcon, ListIcon, SpecIcon, TaskIcon, TrophyIcon } from '../shared/Icons.tsx';
 
 // The activity system's shared presentation vocabulary, in one place so the monitor list, the detail tab, and the
 // start toasts can never drift apart (STATUS_LABEL and formatDuration used to be duplicated per component - invisible
@@ -12,7 +12,8 @@ const KIND_META: Record<JobKind, { label: string; Icon: () => ReactNode }> = {
     'run-task': { label: 'Run task', Icon: TaskIcon },
     'apply-spec': { label: 'Apply spec', Icon: SpecIcon },
     'apply-batch': { label: 'Apply batch', Icon: ListIcon },
-    'generate': { label: 'Generate', Icon: AiIcon }
+    'generate': { label: 'Generate', Icon: AiIcon },
+    'competitions': { label: 'Competitions', Icon: TrophyIcon }
 };
 
 // Statuses for a job that has finished running, in one place so row logic and queue-wide checks agree.

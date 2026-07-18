@@ -6,7 +6,7 @@ import { type ClaudeStreamEvent, type TranscriptItem } from './activityStream.ts
 // kept separate so each file exports only one kind of thing (hooks/context here, a component there) and React Fast
 // Refresh stays happy.
 
-type JobKind = 'run-task' | 'apply-spec' | 'apply-batch' | 'generate';
+type JobKind = 'run-task' | 'apply-spec' | 'apply-batch' | 'generate' | 'competitions';
 type JobStatus = 'queued' | 'running' | 'success' | 'error' | 'aborted';
 
 // The entry a job ran on, so the activity view can navigate back to it. Recording the FILE as well as the title is

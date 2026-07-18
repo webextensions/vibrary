@@ -427,4 +427,11 @@ const discardMatches = function (ids: string[], types: EntryType[] = []): Promis
     return requestJson<RankingsPayload & { removed: number }>('/api/rankings/matches', 'DELETE', { ids, types: typesToParameter(types) });
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, recordManualMatch, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+// Runs the backend's AI competition judge over `count` least-met pairings as one streamed job, recording each
+// verdict as an AI match; per-pairing progress arrives through `options.onEvent` as competition_start (carrying that
+// pairing's exact judge prompt) and competition_result (carrying the recorded match) events.
+const runCompetitions = function (body: { count: number; instructions: string }, options: StreamOptions): Promise<string> {
+    return streamClaude('/api/rankings/competitions', body, options);
+};
+
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

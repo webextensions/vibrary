@@ -274,7 +274,9 @@ const SourceControlPanel = function () {
     const { jobs } = useActivityQueueState();
     const seenFinishedReference = useRef<Set<string> | null>(null);
     useEffect(function () {
-        const fileTouching = new Set(['apply-spec', 'run-task', 'apply-batch', 'generate']);
+        // Competitions count as file-touching because each verdict writes vibrary-rankings.json, which the user may
+        // well track in git.
+        const fileTouching = new Set(['apply-spec', 'run-task', 'apply-batch', 'generate', 'competitions']);
         const finishedStatuses = new Set(['success', 'error', 'aborted']);
         const finishedIds = jobs
             .filter(function (job) {

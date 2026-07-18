@@ -18,7 +18,8 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
     'run-task': true,
     'apply-spec': true,
     'apply-batch': true,
-    'generate': true
+    'generate': true,
+    'competitions': true
 };
 
 const isRecord = function (value: unknown): value is Record<string, unknown> {
