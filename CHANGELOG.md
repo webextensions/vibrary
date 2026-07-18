@@ -11,8 +11,10 @@ All notable changes to this project are documented here. The format loosely foll
   head-to-head results: a standings table (rating, wins-losses, games) whose rows jump to their entries in the
   editor, and a **Compare** mode that presents two entries at a time (the least-compared pair first) - click a
   card's Wins button or use the arrow keys to record your verdict, Skip to see another pair - updating the standings
-  live. Results live in a `vibrary-rankings.json` at the folder root; standings are replayed from the kept records,
-  so discarding results recomputes exactly. The match history and AI-judged competitions build on this.
+  live. A collapsible **Match history** lists every recorded result newest-first (with the judge, time, and any
+  rationale), flags results whose entries were renamed or removed, and discards one result, the checked selection, or
+  the whole log - each confirmed, with the standings recomputed exactly because ratings are always replayed from the
+  kept records in `vibrary-rankings.json` at the folder root. AI-judged competitions build on this.
 - Undo for the editor's destructive actions: single-card Remove and the bulk Delete, Change type, Find & replace, and
   Remove broken references operations each show a brief Undo toast that restores exactly what changed, leaving any
   edit made in the meantime untouched.

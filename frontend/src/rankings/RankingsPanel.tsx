@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getFilesSummary, getRankings, type RankingsPayload, recordManualMatch } from '../api.ts';
+import { discardMatches, getFilesSummary, getRankings, type RankingsPayload, recordManualMatch } from '../api.ts';
 import { announce } from '../shared/announcer.ts';
 import { RefreshIcon } from '../shared/Icons.tsx';
 import { CompareMode } from './CompareMode.tsx';
+import { MatchHistory } from './MatchHistory.tsx';
 
 import styles from './RankingsPanel.module.css';
 
@@ -98,6 +99,22 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
             announce(`Recorded: ${winnerTitle} over ${loser}`);
         } catch (voteError) {
             setError(voteError instanceof Error ? voteError.message : 'Failed to record the result');
+        } finally {
+            setVoting(false);
+        }
+    }, []);
+
+    // Discard is already confirmed by MatchHistory; this adopts the server's recomputed payload, exactly like a vote.
+    const handleDiscard = useCallback(async function (ids: string[]) {
+        setVoting(true);
+        try {
+            const result = await discardMatches(ids);
+            setPayload(result);
+            setSuggestionIndex(0);
+            setError(null);
+            announce(`Discarded ${result.removed} result${result.removed === 1 ? '' : 's'}`);
+        } catch (discardError) {
+            setError(discardError instanceof Error ? discardError.message : 'Failed to discard results');
         } finally {
             setVoting(false);
         }
@@ -212,6 +229,13 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
                         );
                     })}
                 </ol>
+                <MatchHistory
+                    matches={payload.matches}
+                    busy={voting}
+                    onDiscard={function (ids) {
+                        void handleDiscard(ids);
+                    }}
+                />
             </>}
 
             {loading && payload === null && <p className={styles.hint}>Loading...</p>}

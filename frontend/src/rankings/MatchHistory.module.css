@@ -1,0 +1,141 @@
+.count-badge {
+    padding: 0 6px;
+    border-radius: 8px;
+    background: #eaeef2;
+    color: #57606a;
+    font-size: 11px;
+}
+
+.empty-state {
+    margin: 0;
+    color: #656d76;
+    font-size: 12px;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.history-row {
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f2f4;
+}
+
+.row-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.row-checkbox {
+    flex: none;
+    margin-top: 2px;
+}
+
+.row-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.verdict {
+    color: #1f2328;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.row-meta {
+    color: #8c959f;
+    font-size: 11px;
+}
+
+.judge-ai,
+.judge-human {
+    padding: 0 5px;
+    border-radius: 8px;
+    font-size: 10px;
+}
+
+.judge-ai {
+    background: #ddf4ff;
+    color: #0969da;
+}
+
+.judge-human {
+    background: #dafbe1;
+    color: #1a7f37;
+}
+
+/* Amber, matching the broken-reference styling elsewhere: the record points at a title no entry has. */
+.orphan-flag {
+    color: #9a6700;
+    font-size: 11px;
+}
+
+.rationale-toggle {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #0969da;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.rationale {
+    margin: 0;
+    color: #57606a;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.discard-button {
+    display: inline-flex;
+    flex: none;
+    padding: 2px;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    color: #57606a;
+    cursor: pointer;
+}
+
+.discard-button:hover {
+    background: #ffebe9;
+    color: #cf222e;
+}
+
+.discard-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.footer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 6px;
+}
+
+.footer-button {
+    padding: 2px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #cf222e;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.footer-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
