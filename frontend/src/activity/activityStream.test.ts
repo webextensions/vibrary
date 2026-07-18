@@ -29,6 +29,26 @@ test('text deltas build one item that the consolidated assistant message reconci
     assert.deepEqual(state.items[0], { kind: 'text', id: 'm1:0', text: 'Hello there' });
 });
 
+test('a delta targeting a non-last item still lands via the fallback scan', function () {
+    const state = reduceAll([
+        messageStart('m1'),
+        { type: 'stream_event', event: { type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'first' } } },
+        { type: 'stream_event', event: { type: 'content_block_start', index: 1, content_block: { type: 'text', text: 'second' } } },
+        // Out-of-order delivery: the delta addresses block 0 while block 1 is the last item.
+        { type: 'stream_event', event: { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '!' } } }
+    ]);
+    assert.deepEqual(state.items.map(function (item) { return (item as { text: string }).text; }), ['first!', 'second']);
+});
+
+test('a delta matching no item returns the SAME state, so subscribers are not notified for a no-op', function () {
+    const before = reduceAll([
+        messageStart('m1'),
+        { type: 'stream_event', event: { type: 'content_block_start', index: 0, content_block: { type: 'text', text: 'hi' } } }
+    ]);
+    const after = reduceTranscript(before, { type: 'stream_event', event: { type: 'content_block_delta', index: 5, delta: { type: 'text_delta', text: 'lost' } } });
+    assert.equal(after, before);
+});
+
 test('thinking blocks stream into their own item and reconcile from the consolidated message', function () {
     const streaming = reduceAll([
         messageStart('m1'),
