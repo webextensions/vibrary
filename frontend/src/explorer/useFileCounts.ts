@@ -87,4 +87,6 @@ const useFileCounts = function (summaries: FileSummary[], openTabs: OpenTab[]) {
     return { countForFile, markCounted };
 };
 
-export { type FileCount, useFileCounts };
+// countLiveBrokenReferences is exported for its node test: it is pure (no React API), so node --test imports this
+// module fine despite the hooks around it.
+export { countLiveBrokenReferences, type FileCount, useFileCounts };
