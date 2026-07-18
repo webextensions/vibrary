@@ -1,10 +1,7 @@
-import { Buffer } from 'node:buffer';
-
 import { Router } from 'express';
 
 import { MAX_GENERATE_COUNT } from '../../shared/apiLimits.js';
 import { ENTRY_TYPES } from '../../shared/vibraryXmlCore.js';
-import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { isValidVibraryName, isVibraryNameIncluded } from './vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { applySpecsAsync } from './runClaudeApplyBatch.js';
@@ -13,6 +10,7 @@ import { generateSpecsAsync } from './runClaudeGenerate.js';
 import { runChatAsync } from './runClaudeChat.js';
 import { runTaskAsync } from './runClaudeRunTask.js';
 import { sendErrorResponse } from '../shared/sendResponse.js';
+import { MAX_PROMPT_BYTES, PROMPT_TOO_LARGE_MESSAGE, promptBytes, streamClaudeRoute } from '../shared/streamClaudeRoute.js';
 
 // A claude session id, as captured from the CLI's own stream-json init event (a UUID). Enforced before the value
 // lands on the agent's argv as --resume's value: the process already runs with permission prompts disabled, and a
@@ -26,76 +24,8 @@ const SESSION_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 // around 128 KiB) or the model's context; normal batches are far smaller.
 const MAX_APPLY_BATCH_COUNT = 50;
 
-// The assembled prompt is handed to claude as a SINGLE argv argument, and the OS caps one argument's byte length
-// (Linux's MAX_ARG_STRLEN is 128 KiB). Oversized user text would otherwise fail the spawn with an opaque E2BIG only
-// after a "run" appeared to start; the routes reject it up front with a clear 413 instead. Measured in UTF-8 bytes
-// (the OS limit is bytes, not characters) and kept well under 128 KiB to leave room for the fixed prompt template
-// wrapping the user's text.
-const MAX_PROMPT_BYTES = 96 * 1024;
-
-// Total UTF-8 byte size of the user-supplied text that will land in the prompt; non-string parts count as zero, so
-// callers can pass raw body fields before their own type coercion.
-const promptBytes = function (...parts) {
-    return parts.reduce(function (total, part) {
-        return total + (typeof part === 'string' ? Buffer.byteLength(part, 'utf8') : 0);
-    }, 0);
-};
-
-const PROMPT_TOO_LARGE_MESSAGE = `Content is too large to send to the agent (limit ${MAX_PROMPT_BYTES / 1024} KB)`;
-
 const createAgentsRouter = function ({ cwd }) {
     const router = Router();
-
-    // The frontend's activity queue runs agent jobs strictly one at a time, but a frontend-only invariant is not a
-    // safety boundary: a second browser tab, a retried request, or a direct API caller could otherwise run concurrent
-    // agents editing the same working tree (and racing each other's git operations). One in-process flag is enough -
-    // the server serves exactly one folder. The buffered read-only helpers (/title, /git/generate-message) stay
-    // unguarded on purpose: the UI runs them alongside a queued job by design.
-    let isAgentRunActive = false;
-
-    // Stream a "claude -p" run to the client as newline-delimited JSON (claude's own stream-json lines, one per write),
-    // followed by a terminal {"type":"_exit",...} line carrying the process outcome. `runner({ signal, onLine })` runs
-    // the agent. Cache-Control: no-transform makes the compression middleware pass the body through unbuffered so lines
-    // reach the browser as they arrive. On an abort the client is already gone, so we just stop writing. Every route
-    // funnels through here AFTER its validation, so only requests that actually start a run contend for the one slot.
-    const streamClaudeRoute = async function (request, response, runner) {
-        if (isAgentRunActive) {
-            return sendErrorResponse(response, 409, 'Another agent run is already in progress');
-        }
-        isAgentRunActive = true;
-        // Everything after the flag is set lives inside this try so the finally ALWAYS releases the slot. The header
-        // prologue (flushHeaders on a socket that just went away) can throw, and if that escaped before the try the
-        // flag would stay stuck true and answer every future run 409 forever - a permanent denial of the app's core
-        // feature until a restart.
-        try {
-            const controller = abortOnDisconnect(request, response);
-            response.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
-            response.setHeader('Cache-Control', 'no-transform');
-            response.flushHeaders();
-            const writeLine = function (line) {
-                if (response.writableEnded) {
-                    return;
-                }
-                response.write(`${line}\n`);
-                // Flush so each line reaches the browser immediately rather than sitting in the compression
-                // middleware's buffer (no-transform disables gzip, but the wrapper still needs the explicit flush).
-                response.flush?.();
-            };
-            try {
-                await runner({ signal: controller.signal, onLine: writeLine });
-                writeLine(JSON.stringify({ type: '_exit', code: 0, error: null }));
-            } catch (error) {
-                if (!controller.signal.aborted) {
-                    writeLine(JSON.stringify({ type: '_exit', code: 1, error: error.message }));
-                }
-            }
-        } finally {
-            isAgentRunActive = false;
-            if (!response.writableEnded) {
-                response.end();
-            }
-        }
-    };
 
     // Run a headless "claude -p" agent that reads the codebase and existing entries, then appends new ones to the file.
     router.post('/files/:name/generate', async function (request, response) {

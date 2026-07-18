@@ -2,20 +2,24 @@ import { readFile } from 'node:fs/promises';
 
 import { Router } from 'express';
 
+import { MAX_COMPETITION_COUNT } from '../../shared/apiLimits.js';
 import { ENTRY_TYPES, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { listVibraryFiles } from '../files/vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
+import { MAX_PROMPT_BYTES, PROMPT_TOO_LARGE_MESSAGE, promptBytes, streamClaudeRoute } from '../shared/streamClaudeRoute.js';
 import { replayMatches, selectLeastMetPairings } from './eloRankings.js';
 import { addMatchesAsync, createMatch, readRankingsAsync, removeMatchesAsync } from './rankingsStore.js';
+import { buildCompetitionPrompt, judgeCompetitionAsync } from './runClaudeCompetition.js';
 
 // How many head-to-head suggestions the payload carries for the compare UI. A small buffer (not just one) lets the
 // client advance through a few pairs without a round trip after each vote; it re-fetches long before running out.
 const SUGGESTED_PAIRING_COUNT = 8;
 
-// Every entry title in the folder mapped to its type, first occurrence winning - the same folder-wide,
-// first-in-listing-order resolution rule relatesTo references use, so the rankings agree with the editor about which
-// entry a duplicated title means. Unreadable files are skipped exactly as the listing badges skip them.
+// Every entry title in the folder mapped to { type, content, notes }, first occurrence winning - the same
+// folder-wide, first-in-listing-order resolution rule relatesTo references use, so the rankings agree with the
+// editor about which entry a duplicated title means. Content and notes ride along for the competition judge's
+// prompt. Unreadable files are skipped exactly as the listing badges skip them.
 const collectFolderTitlesAsync = async function (cwd) {
     const names = await listVibraryFiles(cwd);
     const titles = new Map();
@@ -28,7 +32,7 @@ const collectFolderTitlesAsync = async function (cwd) {
             const entries = parseVibraryXml(await readFile(target, 'utf8'));
             for (const entry of entries) {
                 if (entry.title !== '' && !titles.has(entry.title)) {
-                    titles.set(entry.title, entry.type);
+                    titles.set(entry.title, { type: entry.type, content: entry.content, notes: entry.notes });
                 }
             }
         } catch {
@@ -56,8 +60,8 @@ const parseTypesParameter = function (parameter) {
 const buildRankingsPayloadAsync = async function (cwd, types) {
     const [{ matches }, titlesByName] = await Promise.all([readRankingsAsync(cwd), collectFolderTitlesAsync(cwd)]);
     const scoped = new Set();
-    for (const [title, type] of titlesByName) {
-        if (types.includes(type)) {
+    for (const [title, entry] of titlesByName) {
+        if (types.includes(entry.type)) {
             scoped.add(title);
         }
     }
@@ -127,6 +131,73 @@ const createRankingsRouter = function ({ cwd }) {
             // neither contender") describes the request, not the file on disk.
             return sendErrorResponse(response, 400, error.message);
         }
+    });
+
+    // Run AI-judged competitions: `count` least-met pairings, each judged by its own buffered claude run inside ONE
+    // streamed job (so the whole batch occupies the single agent slot exactly once and the activity queue treats it
+    // as one unit of work). Every settled pairing is recorded to the log IMMEDIATELY - an abort or a mid-batch judge
+    // failure keeps the verdicts already earned - and streamed to the client as a competition_result line, with each
+    // pairing's exact judge prompt on its competition_start line (every agent run's prompt stays inspectable, the
+    // Activity monitor's standing promise).
+    router.post('/rankings/competitions', async function (request, response) {
+        const { count, instructions, types: bodyTypes } = request.body || {};
+        const types = parseTypesParameter(bodyTypes);
+        if (types === null) {
+            return sendErrorResponse(response, 400, 'Unknown entry type in "types"');
+        }
+        if (!Number.isSafeInteger(count) || count < 1 || count > MAX_COMPETITION_COUNT) {
+            return sendErrorResponse(response, 400, `Expected an integer "count" between 1 and ${MAX_COMPETITION_COUNT}`);
+        }
+        if (promptBytes(instructions) > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
+        }
+        const guidance = typeof instructions === 'string' ? instructions : '';
+
+        let matches;
+        try {
+            ({ matches } = await readRankingsAsync(cwd));
+        } catch (error) {
+            return sendStoreError(response, error);
+        }
+        const titlesByName = await collectFolderTitlesAsync(cwd);
+        const scoped = new Map();
+        const scopedTitles = [];
+        for (const [title, entry] of titlesByName) {
+            if (!types.includes(entry.type)) {
+                continue;
+            }
+            scoped.set(title, entry);
+            scopedTitles.push(title);
+        }
+        if (scoped.size < 2) {
+            return sendErrorResponse(response, 400, 'Need at least two entries in scope to run competitions');
+        }
+        // Pairing counts consider only the matches that currently replay (both contenders in scope), the same set
+        // the standings use - orphaned history must not make a live pair look already-covered.
+        const played = matches.filter(function (match) {
+            return scoped.has(match.firstTitle) && scoped.has(match.secondTitle);
+        });
+
+        return streamClaudeRoute(request, response, async function ({ signal, onLine }) {
+            for (let index = 0; index < count; index += 1) {
+                const [firstTitle, secondTitle] = selectLeastMetPairings(scopedTitles, played, 1)[0];
+                const first = { title: firstTitle, ...scoped.get(firstTitle) };
+                const second = { title: secondTitle, ...scoped.get(secondTitle) };
+                onLine(JSON.stringify({
+                    type: 'competition_start',
+                    index: index + 1,
+                    count,
+                    firstTitle,
+                    secondTitle,
+                    prompt: buildCompetitionPrompt({ first, second, instructions: guidance })
+                }));
+                const verdict = await judgeCompetitionAsync({ cwd, first, second, instructions: guidance, signal });
+                const record = createMatch({ firstTitle, secondTitle, winnerTitle: verdict.winner, judge: 'AI', rationale: verdict.rationale });
+                await addMatchesAsync(cwd, [record]);
+                played.push(record);
+                onLine(JSON.stringify({ type: 'competition_result', index: index + 1, count, match: record }));
+            }
+        });
     });
 
     // Discards match results by id - one, several, or the whole log - and answers with the recomputed picture, so

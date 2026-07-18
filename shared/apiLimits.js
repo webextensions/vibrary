@@ -8,8 +8,13 @@
 // dialog's number-input max and the /generate route's 400.
 const MAX_GENERATE_COUNT = 50;
 
+// Upper bound on AI-judged pairings in one competitions run. Each pairing is its own claude invocation, so this caps
+// how long one queued job can hold the single agent slot. Drives the run dialog's number-input max and the
+// /rankings/competitions route's 400.
+const MAX_COMPETITION_COUNT = 20;
+
 // Floor on search-query length: a one-character query is too broad to be useful and scans every included file for
 // nothing. The SearchPanel skips the round trip below it; the search route answers empty for the same reason.
 const MIN_QUERY_LENGTH = 2;
 
-export { MAX_GENERATE_COUNT, MIN_QUERY_LENGTH };
+export { MAX_COMPETITION_COUNT, MAX_GENERATE_COUNT, MIN_QUERY_LENGTH };
