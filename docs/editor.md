@@ -126,7 +126,9 @@ panel instead.
 
 The Search panel (the magnifier in the navigation rail) searches every included file's entries by title, content,
 notes, and labels - optionally narrowed to specific files via the "Narrow to files" selector - listing each match
-with the term emphasized in its snippet. Choosing a result opens the entry's
+with the term emphasized in its snippet. Matching is case-insensitive substring by default; the **Match case** and
+**Whole word** toggles tighten it for identifier-shaped queries (whole-word treats hyphens as boundaries, so
+"auth" still finds the hyphenated title "auth-token"). Choosing a result opens the entry's
 file, scrolls to and briefly rings the entry, reveals it (un-clamping long content and opening its extra fields so a
 match in the notes is visible), and marks the matched term in its title, content, or notes so it stands out where you
 land.

@@ -15,7 +15,8 @@ const createSearchRouter = function ({ cwd }) {
 
     // Full-text search across the included vibrary files (the same set the Explorer lists). An empty query returns an
     // empty result set rather than an error, so the panel can clear its results without special-casing. An optional
-    // comma-separated "files" param narrows the search to just those file names.
+    // comma-separated "files" param narrows the search to just those file names; "matchCase=1" / "wholeWord=1" tighten
+    // the matching (anything else, including absence, keeps the default case-insensitive substring scan).
     router.get('/search', async function (request, response) {
         const query = (typeof request.query.q === 'string' ? request.query.q : '').slice(0, MAX_QUERY_LENGTH);
         const filesParameter = request.query.files;
@@ -24,8 +25,10 @@ const createSearchRouter = function ({ cwd }) {
                 return name !== '';
             }) :
             []).slice(0, MAX_FILES);
+        const isCaseSensitive = request.query.matchCase === '1';
+        const isWholeWord = request.query.wholeWord === '1';
         try {
-            return sendSuccessResponse(response, await searchVibrary(cwd, query, { files }));
+            return sendSuccessResponse(response, await searchVibrary(cwd, query, { files, matchCase: isCaseSensitive, wholeWord: isWholeWord }));
         } catch (error) {
             console.error('Search failed:', error);
             return sendErrorResponse(response, 500, 'Search failed');

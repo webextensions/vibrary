@@ -37,6 +37,12 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
     const [fileOptions, setFileOptions] = useState<Option[]>([]);
     const [fileFilter, setFileFilter] = useState<Option[]>([]);
 
+    // Precision toggles, per query rather than persisted: they tighten the backend's matching (Find & replace already
+    // honors case; Search should not be the weaker engine). Both off reproduces the default case-insensitive
+    // substring scan.
+    const [matchCase, setMatchCase] = useState(false);
+    const [wholeWord, setWholeWord] = useState(false);
+
     // Focus the query box when the Search view opens (the panel mounts only while its rail view is active), so
     // switching to Search is immediately typeable - the sidebar-search convention. Skipped on mobile, where an
     // autofocus would pop the on-screen keyboard over the freshly opened drawer.
@@ -124,7 +130,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             try {
                 const output = await searchFiles(trimmed, fileFilter.map(function (option) {
                     return option.value;
-                }));
+                }), { matchCase, wholeWord });
                 if (isCancelled) {
                     return;
                 }
@@ -146,7 +152,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             isCancelled = true;
             clearTimeout(timer);
         };
-    }, [query, fileFilter, retryNonce]);
+    }, [query, fileFilter, matchCase, wholeWord, retryNonce]);
 
     const totalMatches = results.reduce(function (sum, file) {
         return sum + file.matches.length;
@@ -167,6 +173,29 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                         setQuery(changeEvent.target.value);
                     }}
                 />
+            </div>
+
+            <div className={styles.precisionRow}>
+                <label className={styles.precisionToggle}>
+                    <input
+                        type="checkbox"
+                        checked={matchCase}
+                        onChange={function (changeEvent) {
+                            setMatchCase(changeEvent.target.checked);
+                        }}
+                    />
+                    Match case
+                </label>
+                <label className={styles.precisionToggle}>
+                    <input
+                        type="checkbox"
+                        checked={wholeWord}
+                        onChange={function (changeEvent) {
+                            setWholeWord(changeEvent.target.checked);
+                        }}
+                    />
+                    Whole word
+                </label>
             </div>
 
             {fileOptions.length > 0 &&

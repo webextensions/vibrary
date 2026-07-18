@@ -105,3 +105,52 @@ test('a deeply-indented line whose visible text fits is returned whole, not wind
     const snippet = results[0]?.matches[0]?.snippet;
     assert.equal(snippet, 'findme');
 });
+
+test('matchCase distinguishes identifiers the default fold conflates', async function () {
+    const directory = mkdtempSync(path.join(tmpdir(), 'vibrary-search-case-'));
+    writeFileSync(path.join(directory, '.vibraryinclude'), 'specs*.xml\n');
+    writeFileSync(path.join(directory, 'specs.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>upper</title><content>the API surface</content></entry>',
+        '  <entry type="spec"><title>lower</title><content>an api client</content><labels><label>API</label></labels></entry>',
+        '</entries></root>'
+    ].join('\n'));
+
+    // Default: both entries match (the no-regression behavior).
+    const folded = await searchVibrary(directory, 'API');
+    assert.deepEqual(folded.results[0].matches.map(function (match) { return match.entryIndex; }), [0, 1]);
+
+    // Case-sensitive: entry 0 matches in content; entry 1's content is lowercase, but its LABEL carries the exact
+    // casing - labels honor the flag too.
+    const exact = await searchVibrary(directory, 'API', { matchCase: true });
+    assert.deepEqual(exact.results[0].matches.map(function (match) { return match.entryIndex; }), [0, 1]);
+    assert.equal(exact.results[0].matches[1].field, 'labels');
+
+    // Case-sensitive lowercase query no longer matches the uppercase occurrence.
+    const lower = await searchVibrary(directory, 'api', { matchCase: true });
+    assert.deepEqual(lower.results[0].matches.map(function (match) { return match.entryIndex; }), [1]);
+    assert.equal(lower.results[0].matches[0].field, 'content');
+});
+
+test('wholeWord excludes containing words but keeps hyphenated-title neighbors', async function () {
+    const directory = mkdtempSync(path.join(tmpdir(), 'vibrary-search-word-'));
+    writeFileSync(path.join(directory, '.vibraryinclude'), 'specs*.xml\n');
+    writeFileSync(path.join(directory, 'specs.xml'), [
+        '<root><entries>',
+        // "api" only inside another word: excluded under wholeWord.
+        '  <entry type="spec"><title>capillary-notes</title><content>capillary action</content></entry>',
+        // A later standalone occurrence after a containing word: the scan must keep looking past "capillary".
+        '  <entry type="spec"><title>mixed</title><content>capillary first, then the api itself</content></entry>',
+        // Hyphen neighbors are word boundaries, so whole-word "auth" matches the normalized title "auth-token".
+        '  <entry type="spec"><title>auth-token</title><content>token refresh rules</content></entry>',
+        '</entries></root>'
+    ].join('\n'));
+
+    const api = await searchVibrary(directory, 'api', { wholeWord: true });
+    assert.deepEqual(api.results[0].matches.map(function (match) { return match.entryIndex; }), [1]);
+    assert.ok(api.results[0].matches[0].snippet.includes('the api itself'));
+
+    const auth = await searchVibrary(directory, 'auth', { wholeWord: true });
+    assert.deepEqual(auth.results[0].matches.map(function (match) { return match.entryIndex; }), [2]);
+    assert.equal(auth.results[0].matches[0].field, 'title');
+});

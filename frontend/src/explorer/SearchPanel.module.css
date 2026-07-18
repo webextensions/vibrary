@@ -30,6 +30,22 @@
     outline: none;
 }
 
+/* The precision toggles under the query box: one row, wrapping on narrow panels. */
+.precision-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+}
+
+.precision-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #656d76;
+    cursor: pointer;
+    font-size: 13px;
+}
+
 .message {
     margin: 0;
     color: #656d76;

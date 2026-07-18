@@ -157,7 +157,6 @@ const getVersion = async function (): Promise<string> {
     const output = await request<{ version: string }>('/api/version');
     return output.version;
 };
-
 // The file's content plus its opaque version token (fileHash), which saveFile echoes back so the server can detect
 // that the file changed on disk after this read.
 const getFile = async function (name: string): Promise<{ content: string; fileHash: string }> {
@@ -319,9 +318,11 @@ type SearchResult = { results: SearchFileResult[]; truncated: boolean };
 // Full-text search across the included vibrary files (the same set the Explorer lists). The backend caps the result
 // set and flags `truncated` when it does. An optional `files` list narrows the search to just those file names; an
 // empty/omitted list searches everywhere.
-const searchFiles = function (query: string, files: string[] = []): Promise<SearchResult> {
+const searchFiles = function (query: string, files: string[] = [], precision: { matchCase?: boolean; wholeWord?: boolean } = {}): Promise<SearchResult> {
     const filesParameter = files.length > 0 ? `&files=${encodeURIComponent(files.join(','))}` : '';
-    return request<SearchResult>(`/api/search?q=${encodeURIComponent(query)}${filesParameter}`);
+    // The flags are sent only when set, so the default request stays byte-identical to the pre-precision one.
+    const precisionParameter = `${precision.matchCase ? '&matchCase=1' : ''}${precision.wholeWord ? '&wholeWord=1' : ''}`;
+    return request<SearchResult>(`/api/search?q=${encodeURIComponent(query)}${filesParameter}${precisionParameter}`);
 };
 
 // Current branch and changed files. Rejects with "Not a git repository" when the served folder is not a git repo.

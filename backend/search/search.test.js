@@ -54,6 +54,20 @@ test('the comma-separated files parameter narrows the search scope', async funct
     assert.deepEqual(body.output.results.map(function (result) { return result.path; }), ['specs.xml']);
 });
 
+test('the matchCase and wholeWord flags are parsed and forwarded', async function () {
+    // "Needle" matches by default (the case fold), and stops matching once matchCase=1 reaches searchVibrary.
+    const folded = await requestJsonAsync('/search?q=Needle');
+    assert.ok(folded.body.output.results.length >= 1);
+    const exact = await requestJsonAsync('/search?q=Needle&matchCase=1');
+    assert.deepEqual(exact.body.output, { results: [], truncated: false });
+
+    // "needl" matches as a substring, and stops matching once wholeWord=1 reaches searchVibrary.
+    const substring = await requestJsonAsync('/search?q=needl');
+    assert.ok(substring.body.output.results.length >= 1);
+    const whole = await requestJsonAsync('/search?q=needl&wholeWord=1');
+    assert.deepEqual(whole.body.output, { results: [], truncated: false });
+});
+
 test('an over-long query is clamped rather than driving an unbounded scan', async function () {
     // "needle" plus 5000 padding chars: the route clamps to 200 chars, so the effective needle no longer matches
     // (the padding truncates past "needle...") - the point is it answers cleanly, not that it matches.

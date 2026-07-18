@@ -19,12 +19,36 @@ const SEARCH_FIELDS = ['title', 'content', 'notes'];
 // just inside the window rather than at its very edge.
 const SNIPPET_CONTEXT_BEFORE = 30;
 
+// Word characters for the whole-word rule: letters, digits and underscore - the class editors use. A hyphen is NOT a
+// word character, so whole-word "auth" still matches the hyphenated titles the normalizeTitle rule produces
+// ("auth-token").
+const WORD_CHARACTER = /[A-Za-z0-9_]/;
+
+// The index of the first occurrence of `needle` in `text` honoring the precision flags, or -1. The needle arrives
+// already lowercased when matchCase is off (searchVibrary normalizes it once, not per field); only the haystack is
+// folded here. Whole-word requires a non-word character (or the string edge) on both sides of the occurrence, and
+// keeps scanning past occurrences that fail it - "api" must find the standalone word even when "capillary" comes
+// first in the text.
+const findMatchIndex = function (text, needle, { matchCase, wholeWord }) {
+    const haystack = matchCase ? text : text.toLowerCase();
+    let at = haystack.indexOf(needle);
+    while (at !== -1) {
+        const isBoundedBefore = at === 0 || !WORD_CHARACTER.test(haystack[at - 1]);
+        const isBoundedAfter = at + needle.length >= haystack.length || !WORD_CHARACTER.test(haystack[at + needle.length]);
+        if (!wholeWord || (isBoundedBefore && isBoundedAfter)) {
+            return at;
+        }
+        at = haystack.indexOf(needle, at + 1);
+    }
+    return -1;
+};
+
 // The trimmed, length-capped snippet around the needle's first occurrence in `text`, or null when it does not occur.
 // A line that fits within the cap is returned whole; a longer one is windowed AROUND the match (with "..." marking a
 // clipped end) rather than sliced from the line start - otherwise a match far into a long line would be cut off and the
 // snippet would not even contain the term the user searched for.
-const buildSnippet = function (text, needle) {
-    const at = text.toLowerCase().indexOf(needle);
+const buildSnippet = function (text, needle, precision) {
+    const at = findMatchIndex(text, needle, precision);
     if (at === -1) {
         return null;
     }
@@ -50,9 +74,9 @@ const buildSnippet = function (text, needle) {
 // The first field of `entry` containing the needle, with its snippet - or null for a non-matching entry. The three
 // text fields are checked first (in snippet-preference order); labels are checked last, so a term that also appears in
 // the title/content/notes still surfaces the richer text snippet, and a labels-only match is caught rather than missed.
-const matchEntry = function (entry, needle) {
+const matchEntry = function (entry, needle, precision) {
     for (const field of SEARCH_FIELDS) {
-        const snippet = buildSnippet(entry[field], needle);
+        const snippet = buildSnippet(entry[field], needle, precision);
         if (snippet !== null) {
             return { field, snippet };
         }
@@ -60,7 +84,7 @@ const matchEntry = function (entry, needle) {
     // Labels are an array, not a line of text, so they cannot go through buildSnippet; match any label containing the
     // needle and surface the matching labels (comma-joined, capped) as the snippet.
     const matchingLabels = entry.labels.filter(function (label) {
-        return label.toLowerCase().includes(needle);
+        return findMatchIndex(label, needle, precision) !== -1;
     });
     if (matchingLabels.length > 0) {
         return { field: 'labels', snippet: matchingLabels.join(', ').slice(0, MAX_SNIPPET_LENGTH) };
@@ -70,10 +94,10 @@ const matchEntry = function (entry, needle) {
 
 // Collect up to `limit` entry matches within one file's parsed entries. Kept as its own function so the scan's
 // early break is not a break inside a nested loop.
-const collectMatchesInFile = function (entries, needle, limit) {
+const collectMatchesInFile = function (entries, needle, limit, precision) {
     const matches = [];
     for (const [entryIndex, entry] of entries.entries()) {
-        const match = matchEntry(entry, needle);
+        const match = matchEntry(entry, needle, precision);
         if (match === null) {
             continue;
         }
@@ -85,19 +109,24 @@ const collectMatchesInFile = function (entries, needle, limit) {
     return { matches, hitLimit: false };
 };
 
-// Case-insensitive ENTRY search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary
-// files), so Search and Explorer always agree on scope. A match is an entry whose title/content/notes/labels contain
+// ENTRY search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary files), so Search and
+// Explorer always agree on scope. A match is an entry whose title/content/notes/labels contain
 // the query - one match per entry, however many times the query occurs - and carries the entry's index within its file,
 // so a clicked result addresses the editor's parsed entries directly (both sides parse the same file). Searching the
 // parsed fields rather than the raw XML also keeps markup out of the results: a query like "task" no longer floods
 // the panel with <entry type="task"> lines. A file that cannot be read OR parsed is skipped (its entries are not
 // addressable); `truncated` flags that a cap was hit so the UI can say results are incomplete. `options.files`, when
 // non-empty, narrows the scope to just those file names (an empty/absent list imposes no constraint - "search
-// everywhere" - matching how the editor's own status/type filters treat an empty selection).
+// everywhere" - matching how the editor's own status/type filters treat an empty selection). `options.matchCase` and
+// `options.wholeWord` tighten the matching (both default off, keeping the case-insensitive substring behavior) -
+// identifiers are exactly what people search a spec library for, and "api" finding "capillary" is real noise.
 const searchVibrary = async function (cwd, query, options = {}) {
+    const precision = { matchCase: options.matchCase === true, wholeWord: options.wholeWord === true };
     // The needle is the trimmed query: surrounding whitespace is meaningless here (the emptiness/floor checks already
-    // treat it that way), so a padded direct API call searches for the same thing the UI would send.
-    const needle = typeof query === 'string' ? query.trim().toLowerCase() : '';
+    // treat it that way), so a padded direct API call searches for the same thing the UI would send. It is lowercased
+    // ONCE here (not per field) unless the caller asked for case to matter.
+    const trimmed = typeof query === 'string' ? query.trim() : '';
+    const needle = precision.matchCase ? trimmed : trimmed.toLowerCase();
     if (needle.length < MIN_QUERY_LENGTH) {
         return { results: [], truncated: false };
     }
@@ -131,7 +160,7 @@ const searchVibrary = async function (cwd, query, options = {}) {
         }
         // Never collect more than this file's per-file cap, nor more than the overall budget still has room for.
         const limit = Math.min(MAX_MATCHES_PER_FILE, MAX_TOTAL_MATCHES - total);
-        const { matches, hitLimit } = collectMatchesInFile(entries, needle, limit);
+        const { matches, hitLimit } = collectMatchesInFile(entries, needle, limit, precision);
         if (hitLimit) {
             isTruncated = true;
         }
