@@ -12,10 +12,31 @@ const describeContender = function (label, entry) {
     return lines.join('\n');
 };
 
-// The judge's instruction: both entries in full, the user's optional judging guidance, and a demand for a bare JSON
-// verdict naming one of the two exact titles - strict enough that the stdout can be parsed mechanically, with the
-// rationale captured for the match history so an AI verdict is never an unexplained rating change.
-const buildCompetitionPrompt = function ({ first, second, instructions }) {
+// The non-negotiable tail of every judge prompt, custom template or not: the verdict-format demand is what makes the
+// stdout mechanically parseable, so a template can restyle the judging criteria but never opt out of the contract.
+const verdictDemand = function (first, second) {
+    return [
+        `The winner must be exactly "${first.title}" or "${second.title}".`,
+        'Respond with ONLY one JSON object on a single line - no code fences, no other text - shaped as:',
+        '{"winner": "<the winning entry\'s exact title>", "rationale": "<one short paragraph explaining the choice>"}'
+    ].join('\n');
+};
+
+// The judge's instruction: both entries in full, the user's optional judging guidance, and the verdict demand above -
+// with the rationale captured for the match history so an AI verdict is never an unexplained rating change. A
+// non-empty `template` (the competitionPrompt setting) replaces the built-in framing: its {{entryA}}, {{entryB}} and
+// {{instructions}} placeholders are substituted, and the verdict demand is still appended so a creative template
+// cannot break the parser.
+const buildCompetitionPrompt = function ({ first, second, instructions, template = '' }) {
+    if (template.trim() !== '') {
+        // Function-form replacements so entry text containing `$&`-style sequences lands verbatim instead of being
+        // interpreted as replacement patterns.
+        const body = template
+            .replaceAll('{{entryA}}', function () { return describeContender('Entry A', first); })
+            .replaceAll('{{entryB}}', function () { return describeContender('Entry B', second); })
+            .replaceAll('{{instructions}}', function () { return instructions; });
+        return `${body}\n\n${verdictDemand(first, second)}`;
+    }
     const sections = [
         'You are judging a head-to-head competition between two backlog entries to decide which one is more',
         'important to pursue first. Weigh user impact, urgency, effort, and how much other work depends on each.',
@@ -27,12 +48,7 @@ const buildCompetitionPrompt = function ({ first, second, instructions }) {
     if (instructions !== '') {
         sections.push('', 'Additional judging guidance from the user:', instructions);
     }
-    sections.push(
-        '',
-        `The winner must be exactly "${first.title}" or "${second.title}".`,
-        'Respond with ONLY one JSON object on a single line - no code fences, no other text - shaped as:',
-        '{"winner": "<the winning entry\'s exact title>", "rationale": "<one short paragraph explaining the choice>"}'
-    );
+    sections.push('', verdictDemand(first, second));
     return sections.join('\n');
 };
 
@@ -60,10 +76,10 @@ const parseVerdict = function (output, titles) {
 
 // Run one AI-judged pairing through the shared buffered recipe. Resolves with { winner, rationale }; rejects with a
 // descriptive Error (missing CLI, timeout, unparseable or invalid verdict) that fails just this competition run.
-const judgeCompetitionAsync = async function ({ cwd, first, second, instructions, signal }) {
+const judgeCompetitionAsync = async function ({ cwd, first, second, instructions, template, signal }) {
     const stdout = await runBufferedAgentAsync({
         cwd,
-        prompt: buildCompetitionPrompt({ first, second, instructions }),
+        prompt: buildCompetitionPrompt({ first, second, instructions, template }),
         timeoutMs: COMPETITION_TIMEOUT_MS,
         timeoutMessage: 'Judging the competition timed out',
         signal

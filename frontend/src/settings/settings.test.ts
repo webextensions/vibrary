@@ -9,7 +9,7 @@ import { DEFAULT_NOTIFICATIONS, normalizeSettings } from './settings.ts';
 
 test('garbage in yields complete defaults out', function () {
     for (const raw of [undefined, null, 42, 'nope', [], { notifications: 'x', taskOptions: 7 }]) {
-        assert.deepEqual(normalizeSettings(raw), { notifications: { ...DEFAULT_NOTIFICATIONS }, taskOptions: {} });
+        assert.deepEqual(normalizeSettings(raw), { notifications: { ...DEFAULT_NOTIFICATIONS }, taskOptions: {}, competitionPrompt: '' });
     }
 });
 
@@ -33,4 +33,10 @@ test('task options keep record values and drop everything else', function () {
         }
     });
     assert.deepEqual(normalized.taskOptions, { 'tasks.xml.schemas.json#a': { useRalphLoop: true } });
+});
+
+test('the competition prompt keeps a stored string and defaults everything else to empty', function () {
+    assert.equal(normalizeSettings({ competitionPrompt: 'Pick the bolder bet: {{entryA}} vs {{entryB}}' }).competitionPrompt, 'Pick the bolder bet: {{entryA}} vs {{entryB}}');
+    assert.equal(normalizeSettings({}).competitionPrompt, '');
+    assert.equal(normalizeSettings({ competitionPrompt: 42 }).competitionPrompt, '');
 });

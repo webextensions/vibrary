@@ -131,6 +131,14 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
                 persist(function (previous) {
                     return { ...previous, taskOptions: {} };
                 });
+            },
+            getCompetitionPrompt: function (): string {
+                return latestReference.current.competitionPrompt;
+            },
+            setCompetitionPrompt: function (template: string): void {
+                persist(function (previous) {
+                    return { ...previous, competitionPrompt: template };
+                });
             }
         };
     });

@@ -40,3 +40,27 @@ test('parseVerdict rejects no JSON, broken JSON, and a winner that is neither co
     assert.throws(function () { parseVerdict('{"winner": idea-a}', titles); }, /not valid JSON/);
     assert.throws(function () { parseVerdict('{"winner":"idea-c","rationale":"x"}', titles); }, /"idea-c", which is neither contender/);
 });
+
+test('a custom template substitutes its placeholders and still gets the verdict demand appended', function () {
+    const prompt = buildCompetitionPrompt({
+        first,
+        second,
+        instructions: 'favor quick wins',
+        template: 'Pick the better bet.\n{{entryA}}\nversus\n{{entryB}}\nGuidance: {{instructions}}'
+    });
+    assert.match(prompt, /^Pick the better bet\./);
+    assert.match(prompt, /Entry A - "idea-a":\nShip the thing\./);
+    assert.match(prompt, /versus\nEntry B - "idea-b":/);
+    assert.match(prompt, /Guidance: favor quick wins/);
+    // The parseable-verdict contract is appended even though the template never asked for it.
+    assert.match(prompt, /exactly "idea-a" or "idea-b"/);
+    assert.match(prompt, /Respond with ONLY one JSON object/);
+    // And the built-in framing is gone - the template replaced it.
+    assert.doesNotMatch(prompt, /head-to-head competition/);
+});
+
+test('a blank template falls back to the built-in prompt', function () {
+    const templated = buildCompetitionPrompt({ first, second, instructions: '', template: '  \n' });
+    const builtIn = buildCompetitionPrompt({ first, second, instructions: '' });
+    assert.equal(templated, builtIn);
+});

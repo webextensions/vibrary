@@ -8,6 +8,7 @@ import { listVibraryFiles } from '../files/vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
 import { MAX_PROMPT_BYTES, PROMPT_TOO_LARGE_MESSAGE, promptBytes, streamClaudeRoute } from '../shared/streamClaudeRoute.js';
+import { readSettingsAsync } from '../settings/settingsStore.js';
 import { replayMatches, selectLeastMetPairings } from './eloRankings.js';
 import { addMatchesAsync, createMatch, readRankingsAsync, removeMatchesAsync } from './rankingsStore.js';
 import { buildCompetitionPrompt, judgeCompetitionAsync } from './runClaudeCompetition.js';
@@ -172,6 +173,10 @@ const createRankingsRouter = function ({ cwd }) {
         if (scoped.size < 2) {
             return sendErrorResponse(response, 400, 'Need at least two entries in scope to run competitions');
         }
+        // The judge's prompt template (the competitionPrompt setting); empty means the built-in prompt. Read per run,
+        // not at startup, so an edit in the Settings popover applies to the very next queued batch.
+        const settings = await readSettingsAsync(cwd);
+        const template = typeof settings.competitionPrompt === 'string' ? settings.competitionPrompt : '';
         // Pairing counts consider only the matches that currently replay (both contenders in scope), the same set
         // the standings use - orphaned history must not make a live pair look already-covered.
         const played = matches.filter(function (match) {
@@ -189,9 +194,9 @@ const createRankingsRouter = function ({ cwd }) {
                     count,
                     firstTitle,
                     secondTitle,
-                    prompt: buildCompetitionPrompt({ first, second, instructions: guidance })
+                    prompt: buildCompetitionPrompt({ first, second, instructions: guidance, template })
                 }));
-                const verdict = await judgeCompetitionAsync({ cwd, first, second, instructions: guidance, signal });
+                const verdict = await judgeCompetitionAsync({ cwd, first, second, instructions: guidance, template, signal });
                 const record = createMatch({ firstTitle, secondTitle, winnerTitle: verdict.winner, judge: 'AI', rationale: verdict.rationale });
                 await addMatchesAsync(cwd, [record]);
                 played.push(record);

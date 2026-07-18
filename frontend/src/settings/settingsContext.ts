@@ -39,7 +39,11 @@ type SettingsActions = {
     // Drop the stored options for a task so it falls back to the schema defaults again.
     resetTaskOptions: (reference: string) => void;
     // Drop every task's remembered options in one call, mirroring resetNotifications above.
-    resetAllTaskOptions: () => void
+    resetAllTaskOptions: () => void;
+    // The AI competition judge's prompt template (empty = the built-in prompt). Read from the live ref like
+    // getTaskOptions - callers seed a local editor from it once, gated on `loaded`, not as a subscription.
+    getCompetitionPrompt: () => string;
+    setCompetitionPrompt: (template: string) => void
 };
 
 const SettingsStateContext = createContext<SettingsState | null>(null);

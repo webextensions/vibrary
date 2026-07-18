@@ -104,10 +104,49 @@ const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onM
     );
 };
 
+// The AI competition judge's prompt template, editable in place. Mounted only while the settings panel is open, so
+// the local editing state seeds from the stored value at open time (the same one-time-seed pattern task options
+// use); each keystroke writes through to the debounced settings persist.
+const CompetitionPromptEditor = function () {
+    const { getCompetitionPrompt, setCompetitionPrompt } = useSettingsActions();
+    const [template, setTemplate] = useState(getCompetitionPrompt);
+    return (
+        <>
+            <p className={cx(styles.settingsHeading, styles.settingsSectionHeading)}>AI competition judge prompt</p>
+            <textarea
+                className={styles.settingsTextarea}
+                rows={5}
+                placeholder="Leave empty to use the built-in judge prompt."
+                aria-label="AI competition judge prompt template"
+                value={template}
+                onChange={function (event) {
+                    setTemplate(event.target.value);
+                    setCompetitionPrompt(event.target.value);
+                }}
+            />
+            <p className={styles.settingsHint}>
+                Placeholders: {'{{entryA}}'}, {'{{entryB}}'}, {'{{instructions}}'}. The JSON answer format is always
+                appended so verdicts stay machine-readable.
+            </p>
+            <button
+                type="button"
+                className={styles.settingsReset}
+                disabled={template === ''}
+                onClick={function () {
+                    setTemplate('');
+                    setCompetitionPrompt('');
+                }}
+            >
+                Reset to the built-in prompt
+            </button>
+        </>
+    );
+};
+
 // Gear button + popover for the per-project settings: which activity kinds pop start/finish notifications (the
-// toast itself is fired by ActivityNotifier), plus a bulk reset for every task's remembered run options. Closes on an
-// outside click or Escape, matching every other popup in the app (Sidebar/TabBar menus, SpecsEditor's
-// speed-dial/Operations/Actions popups).
+// toast itself is fired by ActivityNotifier), plus a bulk reset for every task's remembered run options and the
+// competition judge's prompt template. Closes on an outside click or Escape, matching every other popup in the app
+// (Sidebar/TabBar menus, SpecsEditor's speed-dial/Operations/Actions popups).
 const NotificationSettingsMenu = function () {
     const { isKindEnabled, hasStoredTaskOptions, saveError } = useSettingsState();
     const { setKindEnabled, resetNotifications, resetAllTaskOptions } = useSettingsActions();
@@ -164,6 +203,8 @@ const NotificationSettingsMenu = function () {
                 >
                     Reset all task options
                 </button>
+
+                <CompetitionPromptEditor />
             </div>}
         </div>
     );

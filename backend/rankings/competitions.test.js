@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -93,4 +93,24 @@ test('an invalid verdict fails the run with a clear error but keeps earlier reco
     // The first pairing failed, so nothing was recorded beyond what already existed.
     const after_ = (await requestJsonAsync('/rankings')).body.output.matches.length;
     assert.equal(after_, before);
+});
+
+test('a competitionPrompt setting replaces the judge prompt for the very next run', async function () {
+    // The template drops the built-in framing but keeps the entry placeholders (the fake judge reads Entry A's title
+    // out of the prompt). Written directly as the settings file - the same bytes the settings route would persist.
+    mkdirSync(path.join(cwd, '.vibrary'), { recursive: true });
+    const settingsPath = path.join(cwd, '.vibrary', 'settings.local.json');
+    writeFileSync(settingsPath, JSON.stringify({ competitionPrompt: 'CUSTOM JUDGE FRAMING\n{{entryA}}\n{{entryB}}' }));
+    try {
+        const lines = await streamLinesAsync({ count: 1 });
+        const start = lines.find(function (line) { return line.type === 'competition_start'; });
+        assert.match(start.prompt, /^CUSTOM JUDGE FRAMING/);
+        assert.match(start.prompt, /Entry A - "idea-/);
+        // The verdict-format demand survives every template, so parsing cannot be configured away.
+        assert.match(start.prompt, /Respond with ONLY one JSON object/);
+        assert.doesNotMatch(start.prompt, /head-to-head competition/);
+        assert.deepEqual(lines.at(-1), { type: '_exit', code: 0, error: null });
+    } finally {
+        rmSync(settingsPath);
+    }
 });

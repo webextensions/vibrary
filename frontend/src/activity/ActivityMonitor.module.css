@@ -155,6 +155,22 @@
     opacity: 0.6;
 }
 
+.settings-textarea {
+    padding: 4px 6px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 12px;
+    resize: vertical;
+}
+
+.settings-hint {
+    margin: 0;
+    color: #656d76;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
 /* Second settings group in the same popover (task run options, beneath notifications): a rule and extra top space
    so the two groups read as distinct rather than one long list. */
 .settings-section-heading {

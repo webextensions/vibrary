@@ -11,7 +11,10 @@ type AppSettings = {
     notifications: NotificationSettings;
     // Keyed by formSchemaRef (e.g. "tasks.xml.schemas.json#update-npm-packages-options"); each value is the remembered
     // form data for that task's options form.
-    taskOptions: Record<string, FormData>
+    taskOptions: Record<string, FormData>;
+    // The AI competition judge's prompt template ({{entryA}}/{{entryB}}/{{instructions}} placeholders, consumed by
+    // the backend's competitions route). Empty means the built-in judge prompt.
+    competitionPrompt: string
 };
 
 const DEFAULT_NOTIFICATIONS: NotificationSettings = {
@@ -47,7 +50,9 @@ const normalizeSettings = function (raw: unknown): AppSettings {
         }
     }
 
-    return { notifications, taskOptions };
+    const competitionPrompt = typeof source.competitionPrompt === 'string' ? source.competitionPrompt : '';
+
+    return { notifications, taskOptions, competitionPrompt };
 };
 
 export { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings, type NotificationSettings };

@@ -18,7 +18,9 @@ All notable changes to this project are documented here. The format loosely foll
   matchups through the activity monitor (count and optional judging guidance chosen in a dialog): the AI weighs each
   least-compared pair and records its verdict with a rationale, streamed live into the job's transcript with each
   pairing's exact judge prompt inspectable - and every AI verdict can be overridden by discarding it or outvoting it
-  with your own comparisons.
+  with your own comparisons. The judge's prompt is customizable per project (the activity monitor's Settings popover)
+  via a template with `{{entryA}}` / `{{entryB}}` / `{{instructions}}` placeholders; the JSON answer format is always
+  appended so verdicts stay machine-readable, and clearing the template restores the built-in prompt.
 - Undo for the editor's destructive actions: single-card Remove and the bulk Delete, Change type, Find & replace, and
   Remove broken references operations each show a brief Undo toast that restores exactly what changed, leaving any
   edit made in the meantime untouched.
