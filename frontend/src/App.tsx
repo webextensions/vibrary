@@ -15,6 +15,7 @@ import { titlesInOtherFiles } from './editor/crossFileTitles.ts';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
 import { QuickOpen, type QuickOpenItem } from './shared/QuickOpen.tsx';
 import { ShortcutsDialog } from './shared/ShortcutsDialog.tsx';
+import { isStoredTrue, readStored, writeStored } from './shared/storage.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './explorer/useFileCounts.ts';
 import { useFileOperations } from './explorer/useFileOperations.ts';
@@ -47,13 +48,9 @@ const MOBILE_QUERY = '(max-width: 700px)';
 
 const App = function () {
     // Desktop: whether the inline sidebar is collapsed (persisted). Seed from storage so the first paint already
-    // matches, avoiding an expand-then-collapse flash. localStorage can throw when blocked, so fall back to expanded.
+    // matches, avoiding an expand-then-collapse flash.
     const [sidebarCollapsed, setSidebarCollapsed] = useState(function (): boolean {
-        try {
-            return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
-        } catch {
-            return false;
-        }
+        return readStored(SIDEBAR_STORAGE_KEY, isStoredTrue, false);
     });
     // Mobile: whether the off-canvas drawer is open. Ephemeral and always starts closed, independent of the desktop
     // preference above.
@@ -70,22 +67,13 @@ const App = function () {
     // The entry sort order, held here (like the filters) so it persists across tab switches - the per-tab editor
     // remounts on switch, so a sort kept inside it would reset to file order every time.
     const [sortMode, setSortMode] = useState<SortMode>(function (): SortMode {
-        try {
-            const stored = window.localStorage.getItem(SORT_STORAGE_KEY);
-            return stored !== null && isSortMode(stored) ? stored : 'file';
-        } catch {
-            return 'file';
-        }
+        return readStored(SORT_STORAGE_KEY, function (raw) { return isSortMode(raw) ? raw : null; }, 'file');
     });
     // Whether entry content and notes render as Markdown in review mode (a display preference); held here so it holds
     // across tab switches, and persisted so it survives a reload. Off by default - the plain-text view with its content
-    // clamp and Search mark. localStorage can throw when blocked, so fall back to the default.
+    // clamp and Search mark.
     const [renderMarkdown, setRenderMarkdown] = useState(function (): boolean {
-        try {
-            return window.localStorage.getItem(MARKDOWN_STORAGE_KEY) === 'true';
-        } catch {
-            return false;
-        }
+        return readStored(MARKDOWN_STORAGE_KEY, isStoredTrue, false);
     });
     // The file + query + match index from a clicked Search result, so the open file's editor can scroll to / highlight
     // the corresponding entry rather than always the first one that matches. Cleared to null once consumed isn't
@@ -560,35 +548,22 @@ const App = function () {
         patchTab(activePath, { specs: next, status: { kind: 'idle' }, dirty: true });
     }, [activePath, patchTab]);
 
-    // Set the desktop collapse flag and persist it. localStorage can throw when blocked; the choice still applies for
-    // this session.
+    // Set the desktop collapse flag and persist it; a blocked write still applies the choice for this session.
     const applyCollapsed = useCallback(function (willCollapse: boolean) {
         setSidebarCollapsed(willCollapse);
-        try {
-            window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(willCollapse));
-        } catch {
-            // ignore persistence failures; the toggle still works for this session
-        }
+        writeStored(SIDEBAR_STORAGE_KEY, String(willCollapse));
     }, []);
 
     // Set the Markdown display preference and persist it, mirroring applyCollapsed above.
     const applyRenderMarkdown = useCallback(function (isEnabled: boolean) {
         setRenderMarkdown(isEnabled);
-        try {
-            window.localStorage.setItem(MARKDOWN_STORAGE_KEY, String(isEnabled));
-        } catch {
-            // ignore persistence failures; the toggle still works for this session
-        }
+        writeStored(MARKDOWN_STORAGE_KEY, String(isEnabled));
     }, []);
 
     // Set the entry sort preference and persist it, so a chosen sort survives a reload like the other view preferences.
     const applySortMode = useCallback(function (next: SortMode) {
         setSortMode(next);
-        try {
-            window.localStorage.setItem(SORT_STORAGE_KEY, next);
-        } catch {
-            // ignore persistence failures; the sort still applies for this session
-        }
+        writeStored(SORT_STORAGE_KEY, next);
     }, []);
 
     // One toggle for both layouts: on mobile it opens/closes the off-canvas drawer; on desktop it collapses/expands

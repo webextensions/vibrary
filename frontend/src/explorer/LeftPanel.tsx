@@ -5,6 +5,7 @@ import { Resizable } from 're-resizable';
 import { useActivityQueueState } from '../activity/activityQueue.ts';
 import { type FileCount } from './useFileCounts.ts';
 import { type TreeNode } from './fileTree.ts';
+import { readStored, writeStored } from '../shared/storage.ts';
 import { useMediaQuery } from '../shared/useMediaQuery.ts';
 import { ActivityPanel } from '../activity/ActivityPanel.tsx';
 import { type LeftView, NavigationRail } from './NavigationRail.tsx';
@@ -19,9 +20,9 @@ import styles from './LeftPanel.module.css';
 // rail tap can choose between toggling the desktop collapse and closing the mobile drawer.
 const MOBILE_QUERY = '(max-width: 700px)';
 
-// The resizable body's width is remembered across reloads, like the collapse flag in App. Same plain-localStorage idiom
-// (try/catch, 'vibrary:' namespace). Clamped to [MIN_WIDTH, 40% of the viewport] so a stale or hand-edited value can
-// never wedge the panel off-screen or too narrow to use; DEFAULT_WIDTH matches the original fixed column.
+// The resizable body's width is remembered across reloads, like the collapse flag in App (the shared readStored/
+// writeStored guard). Clamped to [MIN_WIDTH, 40% of the viewport] so a stale or hand-edited value can never wedge the
+// panel off-screen or too narrow to use; DEFAULT_WIDTH matches the original fixed column.
 const PANEL_WIDTH_KEY = 'vibrary:panel-width';
 const MIN_WIDTH = 180;
 const DEFAULT_WIDTH = 260;
@@ -31,20 +32,14 @@ const clampWidth = function (width: number, max: number): number {
 };
 
 const readStoredWidth = function (): number {
-    try {
-        const stored = Number(window.localStorage.getItem(PANEL_WIDTH_KEY));
-        return Number.isFinite(stored) && stored > 0 ? stored : DEFAULT_WIDTH;
-    } catch {
-        return DEFAULT_WIDTH;
-    }
+    return readStored(PANEL_WIDTH_KEY, function (raw) {
+        const width = Number(raw);
+        return Number.isFinite(width) && width > 0 ? width : null;
+    }, DEFAULT_WIDTH);
 };
 
 const persistWidth = function (width: number): void {
-    try {
-        window.localStorage.setItem(PANEL_WIDTH_KEY, String(width));
-    } catch {
-        // Ignore: storage blocked or full means we just do not persist this preference.
-    }
+    writeStored(PANEL_WIDTH_KEY, String(width));
 };
 
 // Track the viewport width so the panel's max width can follow window resizes. useSyncExternalStore keeps matchMedia /

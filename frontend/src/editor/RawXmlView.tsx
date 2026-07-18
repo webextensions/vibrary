@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 
 import { copyText } from '../shared/copyText.ts';
 import { CopyIcon } from '../shared/Icons.tsx';
+import { isStoredTrue, readStored, writeStored } from '../shared/storage.ts';
 
 import styles from './RawXmlView.module.css';
 
@@ -37,24 +38,15 @@ const RawXmlView = function ({ xml }: { xml: string }) {
     // rarely), which keeps the side effect out of module scope where the lint config forbids it.
     SyntaxHighlighter.registerLanguage('markup', markup);
 
-    // Seed from the persisted choice (default on). localStorage can throw when blocked, so fall back to the default.
+    // Seed from the persisted choice (default on).
     const [wrap, setWrap] = useState(function (): boolean {
-        try {
-            const stored = window.localStorage.getItem(WRAP_STORAGE_KEY);
-            return stored === null ? true : stored === 'true';
-        } catch {
-            return true;
-        }
+        return readStored(WRAP_STORAGE_KEY, isStoredTrue, true);
     });
 
     const toggleWrap = function () {
         const willWrap = !wrap;
         setWrap(willWrap);
-        try {
-            window.localStorage.setItem(WRAP_STORAGE_KEY, String(willWrap));
-        } catch {
-            // ignore persistence failures; the toggle still works for this session
-        }
+        writeStored(WRAP_STORAGE_KEY, String(willWrap));
     };
 
     // Build codeTagProps fresh every render: SyntaxHighlighter mutates this object's `style` to set the wrap-driven

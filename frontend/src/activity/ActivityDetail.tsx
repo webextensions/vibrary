@@ -7,6 +7,7 @@ import { type TranscriptItem } from './activityStream.ts';
 
 import { jobElapsed, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, RefreshIcon, StopIcon } from '../shared/Icons.tsx';
+import { readStored, writeStored } from '../shared/storage.ts';
 
 import styles from './ActivityDetail.module.css';
 
@@ -16,19 +17,11 @@ const PROMPT_VIEW_KEY = 'vibrary:prompt-view';
 type PromptView = 'summary' | 'full';
 
 const readPromptView = function (): PromptView {
-    try {
-        return window.localStorage.getItem(PROMPT_VIEW_KEY) === 'full' ? 'full' : 'summary';
-    } catch {
-        return 'summary';
-    }
+    return readStored<PromptView>(PROMPT_VIEW_KEY, function (raw) { return raw === 'full' ? 'full' : 'summary'; }, 'summary');
 };
 
 const writePromptView = function (view: PromptView) {
-    try {
-        window.localStorage.setItem(PROMPT_VIEW_KEY, view);
-    } catch {
-        // ignore persistence failures; the toggle still works for this session
-    }
+    writeStored(PROMPT_VIEW_KEY, view);
 };
 
 // A tool-use card: the tool's name plus its input (pretty-printed json once the turn finalizes, raw partial json while

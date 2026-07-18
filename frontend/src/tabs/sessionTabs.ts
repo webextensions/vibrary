@@ -1,6 +1,8 @@
 // Remembers which tabs were open across reloads, scoped per served folder. localStorage is per-origin but the server can
 // be launched from different folders on the same origin, so one key holds a map keyed by the folder's absolute path -
-// each folder restores only its own tabs. All access is wrapped in try/catch since localStorage can be blocked.
+// each folder restores only its own tabs. Storage access goes through the shared readStored/writeStored guard.
+
+import { readStored, writeStored } from '../shared/storage.ts';
 
 const SESSION_STORAGE_KEY = 'vibrary:open-tabs';
 
@@ -22,43 +24,35 @@ const isSessionRecord = function (value: unknown): value is SessionRecord {
     return hasValidPaths && hasValidActive;
 };
 
+// readStored runs the parser inside its guard, so a corrupted stored value (JSON.parse throwing) lands on the empty
+// map rather than escaping to callers.
 const readMap = function (): Record<string, unknown> {
-    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-    if (raw === null) {
-        return {};
-    }
-    const parsed = JSON.parse(raw) as unknown;
-    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+    return readStored<Record<string, unknown>>(SESSION_STORAGE_KEY, function (raw) {
+        const parsed = JSON.parse(raw) as unknown;
+        return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+    }, {});
 };
 
 const readSessionTabs = function (cwd: string): SessionRecord | null {
-    try {
-        const record = readMap()[cwd];
-        return isSessionRecord(record) ? record : null;
-    } catch {
-        return null;
-    }
+    const record = readMap()[cwd];
+    return isSessionRecord(record) ? record : null;
 };
 
 const writeSessionTabs = function (cwd: string, record: SessionRecord): void {
-    try {
-        // Read-modify-write so other folders' records are preserved. Delete-then-reinsert moves this folder to the
-        // most-recently-written end of the object's key order (plain string keys iterate in insertion order), so the
-        // eviction below - trimming from the front once over the cap - drops the actual least-recently-used folders.
-        const map = readMap();
-        delete map[cwd];
-        map[cwd] = record;
-        const keys = Object.keys(map);
-        // A negative `end` on slice() counts from the array's end, not "clamp to zero" - so this must be floored
-        // explicitly, or a keys.length still under the cap would evict from the front instead of evicting nothing.
-        const staleKeys = keys.slice(0, Math.max(0, keys.length - MAX_TRACKED_FOLDERS));
-        for (const staleKey of staleKeys) {
-            delete map[staleKey];
-        }
-        window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(map));
-    } catch {
-        // Ignore: storage blocked or full means we just do not persist this session.
+    // Read-modify-write so other folders' records are preserved. Delete-then-reinsert moves this folder to the
+    // most-recently-written end of the object's key order (plain string keys iterate in insertion order), so the
+    // eviction below - trimming from the front once over the cap - drops the actual least-recently-used folders.
+    const map = readMap();
+    delete map[cwd];
+    map[cwd] = record;
+    const keys = Object.keys(map);
+    // A negative `end` on slice() counts from the array's end, not "clamp to zero" - so this must be floored
+    // explicitly, or a keys.length still under the cap would evict from the front instead of evicting nothing.
+    const staleKeys = keys.slice(0, Math.max(0, keys.length - MAX_TRACKED_FOLDERS));
+    for (const staleKey of staleKeys) {
+        delete map[staleKey];
     }
+    writeStored(SESSION_STORAGE_KEY, JSON.stringify(map));
 };
 
 export { type SessionRecord, readSessionTabs, writeSessionTabs };
