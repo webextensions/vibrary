@@ -29,10 +29,12 @@ const deriveTitleIndex = function (files: FileSummary[]): TitleIndexEntry[] {
 };
 
 type FileOperationsOptions = {
-    // The open tabs, for the rename flow's dirty check (renaming closes and reopens affected tabs).
+    // The open tabs, for the rename flow's dirty notice (unsaved edits follow the rename via rekeyTab).
     tabs: { path: string; dirty: boolean }[];
     closeTab: (path: string) => void;
     openOrFocus: (path: string) => void;
+    // Rebind an open tab to its file's new name, keeping its unsaved edits (see useOpenTabs).
+    rekeyTab: (oldPath: string, newPath: string) => void;
     // Open a just-created file the way the sidebar does (focus it and close the mobile drawer).
     onFileOpened: (name: string) => void
 };
@@ -41,7 +43,7 @@ type FileOperationsOptions = {
 // mutation - add, new-in-folder, delete, bulk delete, rename, duplicate, include-bootstrap - plus the error banner
 // state they report into. Extracted from App along the same seam as useOpenTabs/useFileCounts: one concern, a narrow
 // return surface.
-const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened }: FileOperationsOptions) {
+const useFileOperations = function ({ tabs, closeTab, openOrFocus, rekeyTab, onFileOpened }: FileOperationsOptions) {
     const [files, setFiles] = useState<string[]>([]);
     // The workspace summary the listing fetch returns: per-file titles and approved/total tallies, feeding both the
     // title index and useFileCounts without any per-file re-downloads.
@@ -228,8 +230,10 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
 
     // The explorer "More" menu's Rename action. A file renames (or moves - the new name may point into another folder)
     // just itself; a folder renames every file beneath it, since folders have no on-disk entity of their own. Open tabs
-    // are keyed by path, so affected tabs are closed and the file reopened under its new name - which drops unsaved
-    // edits, hence the extra confirmation when any affected tab is dirty.
+    // are keyed by path, so each affected tab is REKEYED to the new path - a rename moves bytes without changing them,
+    // so the tab's entries, dirty flag and fileHash all stay valid and unsaved edits survive. When an affected tab is
+    // dirty, a confirmation still states what will happen (the new file on disk keeps the last SAVED content until the
+    // user saves), rather than silently proceeding.
     const handleRename = useCallback(async function (node: TreeNode) {
         const isFolder = node.kind === 'folder';
         const entered = await promptDialog({
@@ -251,7 +255,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
             });
         });
         if (anyDirtyAffected) {
-            const confirmed = await confirmDialog('Renaming reopens the file from disk, so its unsaved changes will be lost. Continue?', 'Rename');
+            const confirmed = await confirmDialog('You have unsaved changes; they will follow the renamed file and remain unsaved until you save. Continue?', 'Rename');
             if (!confirmed) {
                 return;
             }
@@ -264,7 +268,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
                     setLoadError(`Failed to rename "${from}" to "${to}": ${(error as Error).message}`);
                     return;
                 }
-                closeTab(from);
+                rekeyTab(from, to);
             }
             setLoadError(null);
             if (!isFolder) {
@@ -274,7 +278,7 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
             // Refresh even after a failure: a folder rename may have already moved earlier files.
             await refreshListing();
         }
-    }, [tabs, closeTab, openOrFocus, refreshListing]);
+    }, [tabs, rekeyTab, openOrFocus, refreshListing]);
 
     // The explorer "More" menu's Duplicate action: copy a file's on-disk content under a new name, leaving the source
     // untouched, then open the copy. Files only - folders have no single on-disk entity to copy (unlike rename/delete,

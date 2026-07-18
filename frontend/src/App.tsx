@@ -89,7 +89,7 @@ const App = function () {
     // The quick-open file palette (Cmd/Ctrl+K).
     const [quickOpenOpen, setQuickOpenOpen] = useState<boolean>(false);
 
-    const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, reopenClosedTab, setActive, setInnerTab, patchTab, getTab } =
+    const { tabs, activePath, activeTab, anyDirty, closedTabCount, openOrFocus, openActivity, closeTab, closeTabs, rekeyTab, reopenClosedTab, setActive, setInnerTab, patchTab, getTab } =
         useOpenTabs();
     const { enqueue } = useActivityQueueActions();
     // The queue is in-memory, so a reload aborts the in-flight run and drops everything still queued. Track whether any
@@ -111,7 +111,7 @@ const App = function () {
         refreshing, listingLoaded, refreshListing,
         handleRefresh, handleAddFile, handleNewFile, handleCreateInclude,
         handleDelete, handleBulkDelete, handleRename, handleDuplicate
-    } = useFileOperations({ tabs, closeTab, openOrFocus, onFileOpened: handleOpen });
+    } = useFileOperations({ tabs, closeTab, openOrFocus, rekeyTab, onFileOpened: handleOpen });
 
     useSessionRestore({ files, listingLoaded, tabs, activePath, openOrFocus, setActive, reportError: reportLoadError });
 

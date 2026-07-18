@@ -53,8 +53,8 @@ file tabs, with a **Save all** action when more than one has unsaved edits.
 
 The header's **+** prompts for a name and creates a new vibrary file (its family taken from the name, e.g.
 `tasks-auth.xml`), a refresh button re-reads the folder, and **Collapse all folders** folds the tree. Each file's
-**More options** menu renames, duplicates, or deletes it: a rename reopens the file from disk (so unsaved edits are
-lost, and it asks first), and a delete asks first and - because `relatesTo` references resolve by title folder-wide -
+**More options** menu renames, duplicates, or deletes it: a rename keeps any open tab pointing at the file (unsaved
+edits follow the new name and remain unsaved until you save - it says so first), and a delete asks first and - because `relatesTo` references resolve by title folder-wide -
 warns when entries in other files point at the ones being removed ("2 references from other files will break"), so an
 irreversible delete never silently strands cross-file links. Ticking files' checkboxes enables a bulk **Delete** over
 the selection.

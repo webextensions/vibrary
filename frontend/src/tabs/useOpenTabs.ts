@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { loadVibraryFile, type SchemaMap } from '../editor/loadVibraryFile.ts';
+import { rekeyTabsState } from './rekeyTabs.ts';
 import { type Spec } from '../xml/vibraryXml.ts';
 
 type TabStatus = { kind: 'idle' } | { kind: 'saving' } | { kind: 'error'; message: string };
@@ -159,6 +160,17 @@ const useOpenTabs = function () {
         closeTabs([path]);
     }, [closeTabs]);
 
+    // Rebind a tab to its file's new name after a rename (see rekeyTabs.ts - unsaved edits, the dirty flag and the
+    // fileHash all survive). A no-op when the old path has no open tab. A tab rekeyed while its initial load is still
+    // in flight self-heals: the stale response is dropped by the load effect's open-tab guard, and the effect then
+    // fetches the new path (still loading, never requested).
+    const rekeyTab = useCallback(function (oldPath: string, newPath: string) {
+        setState(function (previous) {
+            const next = rekeyTabsState(previous, oldPath, newPath);
+            return next === previous ? previous : { ...previous, tabs: next.tabs, activePath: next.activePath };
+        });
+    }, []);
+
     // Reopen the most recently closed file tab, popping stale entries (already reopened some other way, e.g. clicked
     // again in the explorer) as it goes. A no-op with nothing to reopen.
     const reopenClosedTab = useCallback(function () {
@@ -243,6 +255,7 @@ const useOpenTabs = function () {
         openActivity,
         closeTab,
         closeTabs,
+        rekeyTab,
         reopenClosedTab,
         setActive,
         setInnerTab,
