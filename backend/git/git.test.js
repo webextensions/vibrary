@@ -126,6 +126,21 @@ test('an untracked file diff answers its full content, and discard deletes the f
     assert.throws(function () { readFileSync(path.join(repoCwd, 'notes.txt')); }, { code: 'ENOENT' });
 });
 
+test('untracked diff answers a notice, not raw bytes, for binary and oversized files', async function () {
+    // A NUL in the first 8000 bytes is git's own binary heuristic, so both diff branches agree on what counts.
+    writeFileSync(path.join(repoCwd, 'blob.bin'), Buffer.from([0x89, 0x50, 0x00, 0x47, 0x0D, 0x0A]));
+    const binary = await repo.requestJsonAsync('/git/diff?path=blob.bin&untracked=true');
+    assert.deepEqual(binary.body.output, { diff: 'Binary file', untracked: true });
+
+    // Over the 1 MiB preview cap: the size is reported instead of buffering and JSON-encoding the whole file.
+    writeFileSync(path.join(repoCwd, 'huge.log'), 'x'.repeat((1024 * 1024) + 1));
+    const huge = await repo.requestJsonAsync('/git/diff?path=huge.log&untracked=true');
+    assert.match(huge.body.output.diff, /too large to preview \(1048577 bytes\)/);
+    assert.equal(huge.body.output.untracked, true);
+
+    await repo.sendJsonAsync('/git/discard', { paths: ['blob.bin', 'huge.log'] });
+});
+
 test('untracked diff refuses a path git does not report as untracked (no raw read of arbitrary files)', async function () {
     // specs.xml is tracked and clean (committed, then discarded back) so git does not list it. The untracked branch
     // must not read its bytes just because the client claimed untracked=true - that would turn the diff endpoint into

@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 
 import { Router } from 'express';
 
@@ -7,6 +7,10 @@ import { generateCommitMessageAsync } from './runClaudeCommitMessage.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { commitAsync, diffAsync, discardAsync, isGitRepoAsync, pullAsync, pushAsync, removeUntrackedAsync, stageAsync, stashApplyAsync, stashDropAsync, stashListAsync, stashPopAsync, stashSaveAsync, statusAsync, unstageAsync } from './runGit.js';
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
+
+// Cap on the untracked-file preview in /git/diff - plenty for "what would I be deleting?", and the bound that keeps a
+// stray archive from being buffered whole and JSON-encoded into the envelope.
+const MAX_UNTRACKED_PREVIEW_BYTES = 1024 * 1024;
 
 const createGitRouter = function ({ cwd }) {
     const router = Router();
@@ -61,8 +65,20 @@ const createGitRouter = function ({ cwd }) {
                 if (!isUntracked) {
                     return sendErrorResponse(response, 404, 'File not found');
                 }
-                const content = await readFile(target, 'utf8');
-                return sendSuccessResponse(response, { diff: content, untracked: true });
+                // Proportionality guards the tracked branch inherits from git itself ("Binary files differ") but this
+                // raw read does not: cap the preview size (readFile would happily buffer a multi-hundred-MB archive,
+                // and the JSON envelope doubles it) and sniff binary content with git's own heuristic - a NUL byte in
+                // the first 8000 bytes - so the two branches of the dialog agree on what counts as binary. The
+                // discard flow is exactly where accidental clutter (build output, downloads, archives) shows up.
+                const fileStat = await stat(target);
+                if (fileStat.size > MAX_UNTRACKED_PREVIEW_BYTES) {
+                    return sendSuccessResponse(response, { diff: `File is too large to preview (${fileStat.size} bytes)`, untracked: true });
+                }
+                const raw = await readFile(target);
+                if (raw.subarray(0, 8000).includes(0)) {
+                    return sendSuccessResponse(response, { diff: 'Binary file', untracked: true });
+                }
+                return sendSuccessResponse(response, { diff: raw.toString('utf8'), untracked: true });
             }
             const diff = await diffAsync(cwd, { staged: staged === 'true', path: diffPath });
             return sendSuccessResponse(response, { diff, untracked: false });
