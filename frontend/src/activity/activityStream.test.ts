@@ -29,6 +29,22 @@ test('text deltas build one item that the consolidated assistant message reconci
     assert.deepEqual(state.items[0], { kind: 'text', id: 'm1:0', text: 'Hello there' });
 });
 
+test('thinking blocks stream into their own item and reconcile from the consolidated message', function () {
+    const streaming = reduceAll([
+        messageStart('m1'),
+        { type: 'stream_event', event: { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '' } } },
+        { type: 'stream_event', event: { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'Let me ' } } },
+        { type: 'stream_event', event: { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'reason' } } }
+    ]);
+    assert.deepEqual(streaming.items, [{ kind: 'thinking', id: 'm1:0', text: 'Let me reason' }]);
+
+    // The consolidated message carries the authoritative thinking text (here with a tail the deltas never delivered).
+    const reconciled = reduceAll([
+        { type: 'assistant', message: { id: 'm1', content: [{ type: 'thinking', thinking: 'Let me reason it out' }] } }
+    ], streaming);
+    assert.deepEqual(reconciled.items, [{ kind: 'thinking', id: 'm1:0', text: 'Let me reason it out' }]);
+});
+
 test('tool_use input streams as partial json and consolidates to pretty-printed input', function () {
     const streaming = reduceAll([
         messageStart('m1'),

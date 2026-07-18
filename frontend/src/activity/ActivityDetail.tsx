@@ -37,6 +37,28 @@ const ToolUse = function ({ name, input }: { name: string; input: string }) {
     );
 };
 
+// An extended-thinking block, collapsed by default and de-emphasized like the tool cards: the reasoning is context,
+// not the answer, but hiding it entirely would leave a silent gap in the typewriter view while its tokens stream.
+const Thinking = function ({ text }: { text: string }) {
+    const [open, setOpen] = useState<boolean>(false);
+    return (
+        <div className={styles.tool}>
+            <button
+                type="button"
+                className={cx(styles.toolHead, styles.toolToggle)}
+                aria-expanded={open}
+                onClick={function () {
+                    setOpen(function (previous) { return !previous; });
+                }}
+            >
+                <ChevronIcon />
+                <span className={styles.toolName}>Thinking</span>
+            </button>
+            {open && <pre className={styles.toolBody}>{text}</pre>}
+        </div>
+    );
+};
+
 // A tool result, collapsed by default since outputs can be large.
 const ToolResult = function ({ content, isError }: { content: string; isError: boolean }) {
     const [open, setOpen] = useState<boolean>(false);
@@ -141,6 +163,9 @@ const TranscriptBlock = function ({ item, isPending, onCancel }: { item: Transcr
         }
         case 'text': {
             return <div className={styles.markdown}><Streamdown>{item.text}</Streamdown></div>;
+        }
+        case 'thinking': {
+            return <Thinking text={item.text} />;
         }
         case 'tool_use': {
             return <ToolUse name={item.name} input={item.input} />;

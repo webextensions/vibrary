@@ -15,7 +15,7 @@ type ClaudeMessage = { id?: string; role?: string; content?: ContentBlock[] };
 type StreamSubEvent =
 | { type: 'message_start'; message?: ClaudeMessage } |
 { type: 'content_block_start'; index: number; content_block: ContentBlock } |
-{ type: 'content_block_delta'; index: number; delta: { type: string; text?: string; partial_json?: string } } |
+{ type: 'content_block_delta'; index: number; delta: { type: string; text?: string; partial_json?: string; thinking?: string } } |
 { type: string; [key: string]: unknown };
 
 // The events api.ts forwards to the reducer. `_exit` is the backend's own terminal line; it never reaches the reducer
@@ -34,6 +34,7 @@ type TranscriptItem =
 | { kind: 'system'; id: string; model?: string; toolCount?: number } |
 { kind: 'user'; id: string; text: string; fullText?: string } |
 { kind: 'text'; id: string; text: string } |
+{ kind: 'thinking'; id: string; text: string } |
 { kind: 'tool_use'; id: string; toolUseId: string; name: string; input: string } |
 { kind: 'tool_result'; id: string; toolUseId: string; content: string; isError: boolean } |
 { kind: 'result'; id: string; isError: boolean; text: string; durationMs?: number; costUsd?: number; numTurns?: number };
@@ -100,10 +101,17 @@ const reduceStreamEvent = function (state: TranscriptState, sub: StreamSubEvent)
             const toolBlock = block as { id: string; name: string };
             return { ...state, items: [...state.items, { kind: 'tool_use', id, toolUseId: toolBlock.id, name: toolBlock.name, input: '' }] };
         }
+        // Extended-thinking blocks (present when the CLI/model config enables thinking - outside vibrary's control)
+        // get their own item rather than silently vanishing: without one, the visible symptom is a long silent pause
+        // in the typewriter view while tokens are in fact streaming.
+        if (block.type === 'thinking') {
+            const thinkingBlock = block as { thinking?: string };
+            return { ...state, items: [...state.items, { kind: 'thinking', id, text: typeof thinkingBlock.thinking === 'string' ? thinkingBlock.thinking : '' }] };
+        }
         return state;
     }
     if (sub.type === 'content_block_delta') {
-        const change = sub as { index: number; delta: { type: string; text?: string; partial_json?: string } };
+        const change = sub as { index: number; delta: { type: string; text?: string; partial_json?: string; thinking?: string } };
         const id = blockId(state.currentMessageId, change.index);
         const items = state.items.map(function (item) {
             if (item.id !== id) {
@@ -114,6 +122,9 @@ const reduceStreamEvent = function (state: TranscriptState, sub: StreamSubEvent)
             }
             if (item.kind === 'tool_use' && change.delta.type === 'input_json_delta') {
                 return { ...item, input: item.input + (change.delta.partial_json ?? '') };
+            }
+            if (item.kind === 'thinking' && change.delta.type === 'thinking_delta') {
+                return { ...item, text: item.text + (change.delta.thinking ?? '') };
             }
             return item;
         });
@@ -152,6 +163,16 @@ const reduceAssistant = function (state: TranscriptState, message: ClaudeMessage
                 [...items, next] :
                 items.map(function (item, position) { return position === existing ? next : item; });
             isChanged = true;
+        } else if (block.type === 'thinking') {
+            const thinkingBlock = block as { thinking?: string };
+            const text = typeof thinkingBlock.thinking === 'string' ? thinkingBlock.thinking : '';
+            if (existing === -1) {
+                items = [...items, { kind: 'thinking', id, text }];
+                isChanged = true;
+            } else if (items[existing].kind === 'thinking' && (items[existing] as { text: string }).text !== text) {
+                items = items.map(function (item, position) { return position === existing ? { ...item, text } : item; });
+                isChanged = true;
+            }
         }
     }
     return isChanged ? { ...state, items } : state;
