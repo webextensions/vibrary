@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises';
 
+import ignore from 'ignore';
+
 import { MIN_QUERY_LENGTH } from '../../shared/apiLimits.js';
-import { parseVibraryXml } from '../../shared/vibraryXmlCore.js';
+import { parseSearchQuery } from '../../shared/parseSearchQuery.js';
+import { approvalState, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { listVibraryFiles } from '../files/vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 
@@ -92,12 +95,66 @@ const matchEntry = function (entry, needle, precision) {
     return null;
 };
 
+// The approved:/by: operator vocabularies, mapped onto the values the app already speaks: approvalState's three-way
+// answer (not a fourth definition of "approved" - the same helper behind the card's green/yellow button), and the
+// createdBy agent field ('' meaning unspecified).
+const APPROVED_VALUES = { yes: 'current', no: 'none', stale: 'stale' };
+const BY_VALUES = { ai: 'ai', human: 'human', unspecified: '' };
+
+// Whether one entry satisfies every non-file constraint (file: is applied to the listing, before parsing). Values
+// compare case-insensitively; an unknown vocabulary value (approved:maybe) matches nothing, so the AND stays honest.
+const entryMatchesConstraints = function (entry, constraints) {
+    return constraints.every(function ({ field, value, negated }) {
+        if (field === 'file') {
+            return true;
+        }
+        const folded = value.toLowerCase();
+        let isSatisfied = false;
+        if (field === 'type') {
+            isSatisfied = entry.type.toLowerCase() === folded;
+        } else if (field === 'label') {
+            isSatisfied = entry.labels.some(function (label) { return label.toLowerCase() === folded; });
+        } else if (field === 'approved') {
+            isSatisfied = Object.hasOwn(APPROVED_VALUES, folded) && approvalState(entry) === APPROVED_VALUES[folded];
+        } else if (field === 'by') {
+            isSatisfied = Object.hasOwn(BY_VALUES, folded) && entry.createdBy.toLowerCase() === BY_VALUES[folded];
+        }
+        return negated ? !isSatisfied : isSatisfied;
+    });
+};
+
+// Narrow the listing by the file: constraints, each a gitignore-style glob matched by the same `ignore` library that
+// backs .vibraryinclude - so file:specs*.xml behaves exactly like the include pattern a user already knows.
+const applyFileConstraints = function (names, constraints) {
+    let narrowed = names;
+    for (const { field, value, negated } of constraints) {
+        if (field !== 'file') {
+            continue;
+        }
+        const matcher = ignore().add(value);
+        narrowed = narrowed.filter(function (name) {
+            return matcher.ignores(name) !== negated;
+        });
+    }
+    return narrowed;
+};
+
+// The snippet for a constraint-only match (no needle to window around): the head of the entry's content, unmarked.
+const constraintOnlyMatch = function (entry) {
+    const firstLine = entry.content.trim().split('\n', 1)[0];
+    return { field: 'content', snippet: firstLine.slice(0, MAX_SNIPPET_LENGTH) };
+};
+
 // Collect up to `limit` entry matches within one file's parsed entries. Kept as its own function so the scan's
-// early break is not a break inside a nested loop.
-const collectMatchesInFile = function (entries, needle, limit, precision) {
+// early break is not a break inside a nested loop. An empty needle (a constraint-only query like "type:spec") makes
+// every constraint-satisfying entry a match, with the head-of-content snippet.
+const collectMatchesInFile = function (entries, needle, limit, precision, constraints) {
     const matches = [];
     for (const [entryIndex, entry] of entries.entries()) {
-        const match = matchEntry(entry, needle, precision);
+        if (!entryMatchesConstraints(entry, constraints)) {
+            continue;
+        }
+        const match = needle === '' ? constraintOnlyMatch(entry) : matchEntry(entry, needle, precision);
         if (match === null) {
             continue;
         }
@@ -122,15 +179,18 @@ const collectMatchesInFile = function (entries, needle, limit, precision) {
 // identifiers are exactly what people search a spec library for, and "api" finding "capillary" is real noise.
 const searchVibrary = async function (cwd, query, options = {}) {
     const precision = { matchCase: options.matchCase === true, wholeWord: options.wholeWord === true };
-    // The needle is the trimmed query: surrounding whitespace is meaningless here (the emptiness/floor checks already
-    // treat it that way), so a padded direct API call searches for the same thing the UI would send. It is lowercased
-    // ONCE here (not per field) unless the caller asked for case to matter.
-    const trimmed = typeof query === 'string' ? query.trim() : '';
-    const needle = precision.matchCase ? trimmed : trimmed.toLowerCase();
-    if (needle.length < MIN_QUERY_LENGTH) {
+    // The query splits into field constraints (type:/label:/approved:/by:/file:, "-" negating) and the free-text
+    // needle; the needle is lowercased ONCE here (not per field) unless the caller asked for case to matter. The
+    // length floor applies to the needle only, and only when there are no constraints: "type:spec" alone is a
+    // perfectly good query with an empty needle ("list every spec"), and the floor must not swallow it - the
+    // MAX_TOTAL_MATCHES / MAX_MATCHES_PER_FILE caps bound the cost of such a match-everything scan instead.
+    const { needle: rawNeedle, constraints } = parseSearchQuery(typeof query === 'string' ? query : '');
+    const needle = precision.matchCase ? rawNeedle : rawNeedle.toLowerCase();
+    if (constraints.length === 0 && needle.length < MIN_QUERY_LENGTH) {
         return { results: [], truncated: false };
     }
-    const allNames = await listVibraryFiles(cwd);
+    const allNames = applyFileConstraints(await listVibraryFiles(cwd), constraints);
+    // file: constraints and the panel's file multi-select AND together, so the two can never contradict each other.
     const fileScope = Array.isArray(options.files) && options.files.length > 0 ? new Set(options.files) : null;
     const names = fileScope === null ?
         allNames :
@@ -160,7 +220,7 @@ const searchVibrary = async function (cwd, query, options = {}) {
         }
         // Never collect more than this file's per-file cap, nor more than the overall budget still has room for.
         const limit = Math.min(MAX_MATCHES_PER_FILE, MAX_TOTAL_MATCHES - total);
-        const { matches, hitLimit } = collectMatchesInFile(entries, needle, limit, precision);
+        const { matches, hitLimit } = collectMatchesInFile(entries, needle, limit, precision, constraints);
         if (hitLimit) {
             isTruncated = true;
         }

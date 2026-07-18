@@ -14,6 +14,7 @@
         "dist",
         "docs/*.md",
         "shared/apiLimits.js",
+        "shared/parseSearchQuery.js",
         "shared/vibraryXmlCore.js",
         "!backend/**/*.test.js",
         "!backend/shared/testHelpers.js"

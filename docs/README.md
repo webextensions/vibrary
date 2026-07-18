@@ -38,7 +38,8 @@ vibrary check                      # exit 1 if anything is broken (prints each p
 vibrary check --require-approved   # additionally fail on any unapproved or stale entry
 vibrary check --json               # the same report, machine-readable, same exit codes
 vibrary list                       # every included file with its approved/total and broken-reference counts
-vibrary search <query>             # entry matches on stdout (--match-case / --whole-word as in the Search panel)
+vibrary search <query>             # entry matches on stdout (--match-case / --whole-word and the type:/label:/
+                                   # approved:/by:/file: operators, as in the Search panel)
 ```
 
 `vibrary check` finds broken `relatesTo` references, folder-wide duplicate titles, and unparseable files - so a CI

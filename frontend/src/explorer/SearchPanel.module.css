@@ -30,6 +30,38 @@
     outline: none;
 }
 
+/* Parsed query operators rendered back as chips, so a typed "type:spec" visibly becomes a filter. */
+.constraint-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+}
+
+.constraint-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 4px 1px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    background: #f6f8fa;
+    color: #57606a;
+    font-size: 12px;
+}
+
+.constraint-remove {
+    display: inline-flex;
+    padding: 1px;
+    border: 0;
+    background: none;
+    color: #57606a;
+    cursor: pointer;
+}
+
+.constraint-remove:hover {
+    color: #cf222e;
+}
+
 /* The precision toggles under the query box: one row, wrapping on narrow panels. */
 .precision-row {
     display: flex;

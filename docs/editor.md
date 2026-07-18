@@ -133,7 +133,12 @@ The Search panel (the magnifier in the navigation rail) searches every included 
 notes, and labels - optionally narrowed to specific files via the "Narrow to files" selector - listing each match
 with the term emphasized in its snippet. Matching is case-insensitive substring by default; the **Match case** and
 **Whole word** toggles tighten it for identifier-shaped queries (whole-word treats hyphens as boundaries, so
-"auth" still finds the hyphenated title "auth-token"). Choosing a result opens the entry's
+"auth" still finds the hyphenated title "auth-token"). The query box also understands field operators, giving the
+folder-wide search the filter panel's vocabulary: `type:spec`, `label:auth`, `approved:yes|no|stale`,
+`by:ai|human|unspecified`, `file:specs*.xml` (a gitignore-style pattern, ANDed with the file selector), and a `-`
+prefix to negate any of them. Operators combine with free text (`type:spec approved:no oauth`), each parsed operator
+shows as a removable chip under the box (a mistyped one stays plain search text), and a constraint-only query like
+`type:spec` is valid on its own - it lists every matching entry with the head of its content as the snippet. Choosing a result opens the entry's
 file, scrolls to and briefly rings the entry, reveals it (un-clamping long content and opening its extra fields so a
 match in the notes is visible), and marks the matched term in its title, content, or notes so it stands out where you
 land.

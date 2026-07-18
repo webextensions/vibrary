@@ -154,3 +154,44 @@ test('wholeWord excludes containing words but keeps hyphenated-title neighbors',
     assert.deepEqual(auth.results[0].matches.map(function (match) { return match.entryIndex; }), [2]);
     assert.equal(auth.results[0].matches[0].field, 'title');
 });
+
+test('operators gate entries and a constraint-only query is valid with an empty needle', async function () {
+    const directory = mkdtempSync(path.join(tmpdir(), 'vibrary-search-operators-'));
+    writeFileSync(path.join(directory, '.vibraryinclude'), 'specs*.xml\ntasks*.xml\n');
+    writeFileSync(path.join(directory, 'specs.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>spec-open</title><createdBy>AI</createdBy><content>first line here\nsecond line</content><labels><label>auth</label></labels></entry>',
+        '  <entry type="spec"><title>spec-signed</title><approved>0000</approved><content>drifted</content></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    writeFileSync(path.join(directory, 'tasks.xml'), [
+        '<root><entries>',
+        '  <entry type="task"><title>task-one</title><createdBy>Human</createdBy><content>a task</content></entry>',
+        '</entries></root>'
+    ].join('\n'));
+
+    // Constraint-only: the MIN_QUERY_LENGTH floor applies to the needle only, so "type:spec" alone lists every spec,
+    // with the head of the content as the snippet (there is no needle to window around).
+    const specsOnly = await searchVibrary(directory, 'type:spec');
+    assert.deepEqual(specsOnly.results[0].matches.map(function (match) { return match.title; }), ['spec-open', 'spec-signed']);
+    assert.equal(specsOnly.results[0].matches[0].snippet, 'first line here');
+
+    // approved: speaks approvalState's vocabulary (stale = signed off, content since changed).
+    const stale = await searchVibrary(directory, 'approved:stale');
+    assert.deepEqual(stale.results[0].matches.map(function (match) { return match.title; }), ['spec-signed']);
+
+    // Constraints AND together with each other and the needle; by: matches createdBy.
+    const combined = await searchVibrary(directory, 'type:spec by:ai line');
+    assert.deepEqual(combined.results[0].matches.map(function (match) { return match.title; }), ['spec-open']);
+
+    // Negation excludes; label: matches whole labels case-insensitively; file: narrows by gitignore-style glob.
+    const negated = await searchVibrary(directory, '-type:spec task');
+    assert.deepEqual(negated.results.map(function (file) { return file.path; }), ['tasks.xml']);
+    const labeled = await searchVibrary(directory, 'label:AUTH');
+    assert.deepEqual(labeled.results[0].matches.map(function (match) { return match.title; }), ['spec-open']);
+    const scoped = await searchVibrary(directory, 'file:tasks*.xml task');
+    assert.deepEqual(scoped.results.map(function (file) { return file.path; }), ['tasks.xml']);
+
+    // A query with neither a viable needle nor any constraint still answers nothing (the floor's remaining job).
+    assert.deepEqual(await searchVibrary(directory, 'x'), { results: [], truncated: false });
+});

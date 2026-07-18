@@ -4,10 +4,11 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { MIN_QUERY_LENGTH } from '../../../shared/apiLimits.js';
+import { parseSearchQuery } from '../../../shared/parseSearchQuery.js';
 import { announce } from '../shared/announcer.ts';
 import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
 import { highlightText } from '../shared/highlightText.tsx';
-import { SearchIcon, TypeIcon } from '../shared/Icons.tsx';
+import { RemoveIcon, SearchIcon, TypeIcon } from '../shared/Icons.tsx';
 
 import styles from './SearchPanel.module.css';
 
@@ -28,6 +29,9 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
     const [error, setError] = useState<string | null>(null);
     // The query the current `results` belong to, so an empty/too-short query clears the "no matches" message correctly.
     const [searchedQuery, setSearchedQuery] = useState('');
+    // The free-text needle of that query (operators stripped), for snippet highlighting and the editor jump - marking
+    // the literal "type:spec" text inside snippets would be nonsense.
+    const [searchedNeedle, setSearchedNeedle] = useState('');
     // Bumped by the error message's Retry button to re-run the search effect below without changing the query or file
     // filter - simplest way to give a failed search an explicit retry, matching SourceControlPanel's own Refresh
     // button staying live in its error state.
@@ -113,17 +117,22 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
 
     useEffect(function () {
         const trimmed = query.trim();
+        // Mirror the backend's floor rule exactly (both sides share parseSearchQuery): the length floor applies to
+        // the free-text needle only, and only when there are no constraints - "type:spec" alone is a valid query
+        // with an empty needle, and the floor must not swallow it.
+        const { needle, constraints } = parseSearchQuery(trimmed);
         let isCancelled = false;
         // Run everything (including the too-short-query reset) inside the debounce timer, so no state is set
         // synchronously during the effect body.
         const timer = setTimeout(async function () {
-            if (trimmed.length < MIN_QUERY_LENGTH) {
+            if (constraints.length === 0 && needle.length < MIN_QUERY_LENGTH) {
                 if (!isCancelled) {
                     setResults([]);
                     setTruncated(false);
                     setSearching(false);
                     setError(null);
                     setSearchedQuery('');
+                    setSearchedNeedle('');
                 }
                 return;
             }
@@ -138,6 +147,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                 setResults(output.results);
                 setTruncated(output.truncated);
                 setSearchedQuery(trimmed);
+                setSearchedNeedle(needle);
                 setError(null);
                 // The visible summary below is render-only; a screen reader hears nothing when results land, so
                 // speak the same tally through the app's live region.
@@ -165,6 +175,22 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
         return sum + file.matches.length;
     }, 0);
 
+    // The current query's parsed operators, rendered back as removable chips - a typed "type:spec" visibly BECOMES a
+    // filter, and a mistyped "typo:spec" visibly does not (it stays needle text, the honest behaviour). Removing a
+    // chip strips its first matching token from the query text, which re-runs the search via the effect above.
+    const liveConstraints = parseSearchQuery(query.trim()).constraints;
+    const removeConstraint = function (constraint: { field: string; value: string; negated: boolean }) {
+        const token = `${constraint.negated ? '-' : ''}${constraint.field}:${constraint.value}`;
+        let isRemoved = false;
+        setQuery(query.trim().split(/\s+/u).filter(function (word) {
+            if (!isRemoved && word === token) {
+                isRemoved = true;
+                return false;
+            }
+            return true;
+        }).join(' '));
+    };
+
     return (
         <div className={styles.searchPanel} onKeyDown={handleResultsKeyDown}>
             <div className={styles.searchField}>
@@ -173,7 +199,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                     ref={inputReference}
                     type="search"
                     className={styles.searchInput}
-                    placeholder="Search files..."
+                    placeholder="Search files... (try type:spec)"
                     aria-label="Search files"
                     value={query}
                     onChange={function (changeEvent) {
@@ -181,6 +207,29 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                     }}
                 />
             </div>
+
+            {liveConstraints.length > 0 &&
+            <div className={styles.constraintRow}>
+                {liveConstraints.map(function (constraint, index) {
+                    return (
+                        // Index in the key: the same operator token can legitimately appear twice.
+                        // eslint-disable-next-line @eslint-react/no-array-index-key
+                        <span key={`${constraint.field}:${constraint.value}:${index}`} className={styles.constraintChip}>
+                            {constraint.negated ? 'not ' : ''}{constraint.field}: {constraint.value}
+                            <button
+                                type="button"
+                                className={styles.constraintRemove}
+                                aria-label={`Remove the ${constraint.field} filter`}
+                                onClick={function () {
+                                    removeConstraint(constraint);
+                                }}
+                            >
+                                <RemoveIcon />
+                            </button>
+                        </span>
+                    );
+                })}
+            </div>}
 
             <div className={styles.precisionRow}>
                 <label className={styles.precisionToggle}>
@@ -259,13 +308,15 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                                                 className={styles.matchRow}
                                                 title={`Open ${match.title || 'this entry'} (${match.type}, match in ${match.field})`}
                                                 onClick={function () {
-                                                    onOpenMatch(file.path, searchedQuery, match.entryIndex);
+                                                    // A constraint-only match has no needle for the editor's jump
+                                                    // to re-find the entry by, so the entry's own title stands in.
+                                                    onOpenMatch(file.path, searchedNeedle !== '' ? searchedNeedle : match.title, match.entryIndex);
                                                 }}
                                             >
                                                 <span className={styles.matchType} title={match.type}><TypeIcon type={match.type} /></span>
-                                                <span className={styles.matchEntryTitle}>{highlightText(match.title || '(untitled)', searchedQuery, styles.mark)}</span>
+                                                <span className={styles.matchEntryTitle}>{highlightText(match.title || '(untitled)', searchedNeedle, styles.mark)}</span>
                                                 {match.field !== 'title' &&
-                                                <span className={styles.matchText}>{highlightText(match.snippet, searchedQuery, styles.mark)}</span>}
+                                                <span className={styles.matchText}>{highlightText(match.snippet, searchedNeedle, styles.mark)}</span>}
                                             </button>
                                         </li>
                                     );

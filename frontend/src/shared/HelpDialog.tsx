@@ -54,6 +54,19 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
         ]
     },
     {
+        // Not keys, but the same discoverability job: the Search panel's query-box operators, listed in the app's
+        // one "things you can type" surface so they are findable without reading the manual.
+        heading: 'Search operators (Search panel query box)',
+        shortcuts: [
+            { keys: ['type:spec'], description: 'Only entries of that type (spec, task, review, idea)' },
+            { keys: ['label:auth'], description: 'Only entries carrying that label' },
+            { keys: ['approved:yes'], description: 'By approval state: yes, no, or stale' },
+            { keys: ['by:ai'], description: 'By author: ai, human, or unspecified' },
+            { keys: ['file:specs*.xml'], description: 'Only files matching a gitignore-style pattern' },
+            { keys: ['-type:idea'], description: 'A "-" prefix negates any operator' }
+        ]
+    },
+    {
         heading: 'Tabs',
         shortcuts: [
             { keys: [MOD, 'Shift', 'T'], description: 'Reopen the last closed tab' },
