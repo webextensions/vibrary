@@ -23,7 +23,9 @@ All notable changes to this project are documented here. The format loosely foll
   appended so verdicts stay machine-readable, and clearing the template restores the built-in prompt. Once a folder
   has recorded results, ranked entries show their rating as a chip on their editor cards and the editor's Sort
   control gains a **Rating** order (highest first; view-only like the other sorts) - both dormant in folders that
-  never use the Rankings view.
+  never use the Rankings view. A collapsible **Scope** section chooses which entries compete - any mix of entry types
+  (ideas by default) and optionally only entries carrying chosen labels - remembered across reloads; results recorded
+  outside the scope stay stored and simply sit out of the scoped standings.
 - Undo for the editor's destructive actions: single-card Remove and the bulk Delete, Change type, Find & replace, and
   Remove broken references operations each show a brief Undo toast that restores exactly what changed, leaving any
   edit made in the meantime untouched.

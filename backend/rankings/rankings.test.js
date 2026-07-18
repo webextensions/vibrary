@@ -98,3 +98,26 @@ test('a broken rankings file answers 409 with the message naming the file', asyn
     assert.match(body.errorMessage, new RegExp(`${RANKINGS_FILE_NAME} is not valid JSON`));
     rmSync(path.join(cwd, RANKINGS_FILE_NAME));
 });
+
+test('a label scope narrows standings and pairing to entries carrying one of the labels', async function () {
+    // Rebuild the folder with labeled ideas; the scope keeps matches stored but replays only in-scope ones.
+    writeFileSync(path.join(cwd, 'ideas.xml'), `<root><entries>${[
+        '<entry type="idea"><title>idea-a</title><content>a</content><labels><label>backend</label></labels></entry>',
+        '<entry type="idea"><title>idea-b</title><content>b</content><labels><label>backend</label></labels></entry>',
+        '<entry type="idea"><title>idea-c</title><content>c</content><labels><label>frontend</label></labels></entry>'
+    ].join('')}</entries></root>`);
+    await sendJsonAsync('/rankings/matches', { firstTitle: 'idea-a', secondTitle: 'idea-b', winnerTitle: 'idea-a' });
+    await sendJsonAsync('/rankings/matches', { firstTitle: 'idea-a', secondTitle: 'idea-c', winnerTitle: 'idea-c' });
+    const { body } = await requestJsonAsync('/rankings?labels=backend');
+    assert.deepEqual(titlesOf(body.output.standings).toSorted(function (a, b) { return a.localeCompare(b); }), ['idea-a', 'idea-b']);
+    // Only the all-backend match replays: idea-a holds exactly one win's exchange despite its out-of-scope loss.
+    const first = body.output.standings.find(function (row) { return row.title === 'idea-a'; });
+    assert.deepEqual({ rating: first.rating, games: first.games }, { rating: BASE_RATING + (K_FACTOR / 2), games: 1 });
+    // The full history is still there (both matches), scope or not.
+    assert.equal(body.output.matches.length, 2);
+    assert.deepEqual(body.output.labels, ['backend']);
+    // Suggested pairings never leave the scope.
+    for (const pairing of body.output.suggestedPairings) {
+        assert.ok(pairing.every(function (title) { return ['idea-a', 'idea-b'].includes(title); }));
+    }
+});

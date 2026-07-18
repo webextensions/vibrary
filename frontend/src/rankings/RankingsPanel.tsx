@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { MultiValue } from 'react-select';
+import Select from 'react-select';
 
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
-import { discardMatches, getFilesSummary, getRankings, type RankingsPayload, recordManualMatch, runCompetitions } from '../api.ts';
+import { discardMatches, getFilesSummary, getRankings, type RankingsPayload, type RankingsScope, recordManualMatch, runCompetitions } from '../api.ts';
 import { announce } from '../shared/announcer.ts';
+import { AccordionSection } from '../shared/AccordionSection.tsx';
 import { AiIcon, RefreshIcon } from '../shared/Icons.tsx';
+import { readStored, writeStored } from '../shared/storage.ts';
+import { ENTRY_TYPES, type EntryType } from '../xml/vibraryXml.ts';
 import { CompareMode } from './CompareMode.tsx';
 import { MatchHistory } from './MatchHistory.tsx';
 import { RunCompetitionsDialog } from './RunCompetitionsDialog.tsx';
@@ -14,20 +19,49 @@ import styles from './RankingsPanel.module.css';
 // exactly like a search result does. First occurrence wins, matching the folder-wide title-resolution rule.
 type EntryLocation = { name: string; entryIndex: number };
 
-// The standings plus the title locations, fetched together: the locations come from the same summary the sidebar
-// badges use, so a standings row always agrees with the explorer about which file its entry is in.
-const fetchRankingsView = async function (): Promise<{ rankings: RankingsPayload; located: Map<string, EntryLocation> }> {
-    const [rankings, summary] = await Promise.all([getRankings(), getFilesSummary()]);
+// The scope choice is remembered across reloads like the editor's sort. Stored as JSON; a stale or hand-edited value
+// narrows back to known entry types, and an emptied type list falls back to the idea default rather than persisting
+// a scope that selects nothing.
+const SCOPE_KEY = 'vibrary:rankings-scope';
+
+const DEFAULT_SCOPE: RankingsScope = { types: ['idea'], labels: [] };
+
+const readStoredScope = function (): RankingsScope {
+    return readStored<RankingsScope>(SCOPE_KEY, function (raw) {
+        const parsed = JSON.parse(raw) as { types?: unknown; labels?: unknown };
+        const types = (Array.isArray(parsed.types) ? parsed.types : []).filter(function (type): type is EntryType {
+            return typeof type === 'string' && (ENTRY_TYPES as readonly string[]).includes(type);
+        });
+        const labels = (Array.isArray(parsed.labels) ? parsed.labels : []).filter(function (label): label is string {
+            return typeof label === 'string' && label !== '';
+        });
+        return { types: types.length > 0 ? types : [...DEFAULT_SCOPE.types], labels };
+    }, DEFAULT_SCOPE);
+};
+
+// The standings plus the title locations and the folder's label vocabulary, fetched together: the locations and
+// labels come from the same summary the sidebar badges use, so the panel always agrees with the explorer.
+const fetchRankingsView = async function (scope: RankingsScope): Promise<{ rankings: RankingsPayload; located: Map<string, EntryLocation>; folderLabels: string[] }> {
+    const [rankings, summary] = await Promise.all([getRankings(scope), getFilesSummary()]);
     const located = new Map<string, EntryLocation>();
+    const labels = new Set<string>();
     for (const file of summary.files) {
         for (const [entryIndex, title] of file.titles.entries()) {
             if (!located.has(title)) {
                 located.set(title, { name: file.name, entryIndex });
             }
         }
+        for (const label of file.labels) {
+            labels.add(label);
+        }
     }
-    return { rankings, located };
+    const folderLabels = [...labels].toSorted(function (a, b) {
+        return a.localeCompare(b);
+    });
+    return { rankings, located, folderLabels };
 };
+
+const TYPE_LABELS: Record<EntryType, string> = { spec: 'Specs', review: 'Reviews', task: 'Tasks', idea: 'Ideas' };
 
 // The Elo standings over the folder's idea entries (see docs/rankings.md). This panel is the feature's home: the
 // standings table now, with the head-to-head compare mode, the match history, and the AI competition runs layering
@@ -47,32 +81,41 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
     const [suggestionIndex, setSuggestionIndex] = useState(0);
     const [voting, setVoting] = useState(false);
     const [runDialogOpen, setRunDialogOpen] = useState(false);
+    // Which entries compete (types + optional labels), remembered across reloads; every request carries it, and
+    // changing it refetches. Kept matches outside the scope stay stored - they simply do not replay into the scoped
+    // standings.
+    const [scope, setScope] = useState<RankingsScope>(readStoredScope);
+    const [scopeOpen, setScopeOpen] = useState(false);
+    const [folderLabels, setFolderLabels] = useState<string[]>([]);
     const { enqueue } = useActivityQueueActions();
 
     const load = useCallback(async function () {
         try {
-            const { rankings, located } = await fetchRankingsView();
+            const { rankings, located, folderLabels: labels } = await fetchRankingsView(scope);
             setPayload(rankings);
             setLocations(located);
+            setFolderLabels(labels);
             setError(null);
         } catch (loadError) {
             setError(loadError instanceof Error ? loadError.message : 'Failed to load rankings');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [scope]);
 
-    // Load once when the view is shown. Done inline (not via `load`) so no state is set synchronously in the effect
-    // body, mirroring SourceControlPanel's mount load; `loading` already starts true.
+    // Load when the view is shown and again whenever the scope changes. Done inline (not via `load`) so no state is
+    // set synchronously in the effect body, mirroring SourceControlPanel's mount load; `loading` already starts true.
     useEffect(function () {
         let isActive = true;
-        const loadInitial = async function () {
+        const loadForScope = async function () {
             try {
-                const { rankings, located } = await fetchRankingsView();
+                const { rankings, located, folderLabels: labels } = await fetchRankingsView(scope);
                 if (isActive) {
                     setPayload(rankings);
                     setLocations(located);
+                    setFolderLabels(labels);
                     setError(null);
+                    setSuggestionIndex(0);
                 }
             } catch (loadError) {
                 if (isActive) {
@@ -84,18 +127,23 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
                 }
             }
         };
-        void loadInitial();
+        void loadForScope();
         return function () {
             isActive = false;
         };
-    }, []);
+    }, [scope]);
+
+    const updateScope = function (next: RankingsScope) {
+        setScope(next);
+        writeStored(SCOPE_KEY, JSON.stringify(next));
+    };
 
     // A vote records the pairing exactly as presented (first vs second) with the chosen winner, then adopts the
     // server's recomputed payload so the standings and the next suggestions update in the same render.
     const handleVote = useCallback(async function (pairing: [string, string], winnerTitle: string) {
         setVoting(true);
         try {
-            const result = await recordManualMatch({ firstTitle: pairing[0], secondTitle: pairing[1], winnerTitle });
+            const result = await recordManualMatch({ firstTitle: pairing[0], secondTitle: pairing[1], winnerTitle }, scope);
             setPayload(result);
             setSuggestionIndex(0);
             setError(null);
@@ -106,13 +154,13 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
         } finally {
             setVoting(false);
         }
-    }, []);
+    }, [scope]);
 
     // Discard is already confirmed by MatchHistory; this adopts the server's recomputed payload, exactly like a vote.
     const handleDiscard = useCallback(async function (ids: string[]) {
         setVoting(true);
         try {
-            const result = await discardMatches(ids);
+            const result = await discardMatches(ids, scope);
             setPayload(result);
             setSuggestionIndex(0);
             setError(null);
@@ -122,7 +170,7 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
         } finally {
             setVoting(false);
         }
-    }, []);
+    }, [scope]);
 
     // Queue an AI competitions run through the activity system - one job holding the single agent slot for the whole
     // batch, abortable and inspectable like every other agent action. The dialog closes as soon as the job is
@@ -137,7 +185,7 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
             label: `${count} AI matchup${count === 1 ? '' : 's'}`,
             prompt: promptParts.join('\n'),
             run: function (signal, onEvent) {
-                return runCompetitions({ count, instructions }, { signal, onEvent });
+                return runCompetitions({ count, instructions, scope }, { signal, onEvent });
             }
         });
         setRunDialogOpen(false);
@@ -194,6 +242,60 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
                 </div>
             </div>
 
+            <AccordionSection
+                title="Scope"
+                expanded={scopeOpen}
+                onToggle={function () {
+                    setScopeOpen(function (previous) { return !previous; });
+                }}
+                badge={
+                    <span className={styles.scopeBadge}>
+                        {scope.types.map(function (type) { return TYPE_LABELS[type]; }).join(', ')}
+                        {scope.labels.length > 0 && ` - ${scope.labels.length} label${scope.labels.length === 1 ? '' : 's'}`}
+                    </span>
+                }
+            >
+                <div className={styles.scopeTypes}>
+                    {ENTRY_TYPES.map(function (type) {
+                        return (
+                            <label key={type} className={styles.scopeTypeRow}>
+                                <input
+                                    type="checkbox"
+                                    checked={scope.types.includes(type)}
+                                    // The last checked type cannot be unchecked: a scope that selects nothing ranks
+                                    // nothing, so the checkbox simply refuses rather than silently resetting.
+                                    disabled={scope.types.includes(type) && scope.types.length === 1}
+                                    onChange={function () {
+                                        const has = scope.types.includes(type);
+                                        updateScope({
+                                            ...scope,
+                                            types: has ?
+                                                scope.types.filter(function (existing) { return existing !== type; }) :
+                                                [...scope.types, type]
+                                        });
+                                    }}
+                                />
+                                {TYPE_LABELS[type]}
+                            </label>
+                        );
+                    })}
+                </div>
+                <Select
+                    isMulti
+                    placeholder="Any label"
+                    aria-label="Narrow to labels"
+                    options={folderLabels.map(function (label) { return { value: label, label }; })}
+                    value={scope.labels.map(function (label) { return { value: label, label }; })}
+                    onChange={function (selection: MultiValue<{ value: string; label: string }>) {
+                        updateScope({ ...scope, labels: selection.map(function (option) { return option.value; }) });
+                    }}
+                />
+                <p className={styles.hint}>
+                    Entries of the checked types compete{scope.labels.length > 0 ? ', and must carry one of the chosen labels' : ''}.
+                    Results recorded outside the scope stay stored but sit out of these standings.
+                </p>
+            </AccordionSection>
+
             {runDialogOpen && <RunCompetitionsDialog onClose={function () { setRunDialogOpen(false); }} onRun={handleRunCompetitions} />}
 
             {comparing && payload !== null &&
@@ -232,7 +334,7 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
 
             {error === null && payload !== null && payload.standings.length === 0 &&
             <p className={styles.emptyState}>
-                No idea entries to rank yet. Add entries of type &quot;idea&quot; to a vibrary file, then record
+                No entries in the current scope to rank. Widen the Scope section or add entries, then record
                 head-to-head comparisons here to build an Elo-ranked backlog.
             </p>}
 
@@ -240,7 +342,7 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
             <>
                 {!hasMatches &&
                 <p className={styles.hint}>
-                    Every idea starts at 1500. Record comparisons to separate the field.
+                    Every entry starts at 1500. Record comparisons to separate the field.
                 </p>}
                 <ol className={styles.standings}>
                     {payload.standings.map(function (row, index) {

@@ -17,10 +17,10 @@ import { buildCompetitionPrompt, judgeCompetitionAsync } from './runClaudeCompet
 // client advance through a few pairs without a round trip after each vote; it re-fetches long before running out.
 const SUGGESTED_PAIRING_COUNT = 8;
 
-// Every entry title in the folder mapped to { type, content, notes }, first occurrence winning - the same
+// Every entry title in the folder mapped to { type, content, notes, labels }, first occurrence winning - the same
 // folder-wide, first-in-listing-order resolution rule relatesTo references use, so the rankings agree with the
 // editor about which entry a duplicated title means. Content and notes ride along for the competition judge's
-// prompt. Unreadable files are skipped exactly as the listing badges skip them.
+// prompt, labels for the scope filter. Unreadable files are skipped exactly as the listing badges skip them.
 const collectFolderTitlesAsync = async function (cwd) {
     const names = await listVibraryFiles(cwd);
     const titles = new Map();
@@ -33,7 +33,7 @@ const collectFolderTitlesAsync = async function (cwd) {
             const entries = parseVibraryXml(await readFile(target, 'utf8'));
             for (const entry of entries) {
                 if (entry.title !== '' && !titles.has(entry.title)) {
-                    titles.set(entry.title, { type: entry.type, content: entry.content, notes: entry.notes });
+                    titles.set(entry.title, { type: entry.type, content: entry.content, notes: entry.notes, labels: entry.labels });
                 }
             }
         } catch {
@@ -53,16 +53,31 @@ const parseTypesParameter = function (parameter) {
     return types.every(function (type) { return ENTRY_TYPES.includes(type); }) ? types : null;
 };
 
+// The scope's optional label leg: freeform (labels are user-coined, so there is nothing to validate against), empty
+// meaning no label constraint - the same "empty imposes nothing" rule the editor's filters use.
+const parseLabelsParameter = function (parameter) {
+    if (typeof parameter !== 'string' || parameter === '') {
+        return [];
+    }
+    return parameter.split(',').filter(function (label) { return label !== ''; });
+};
+
+// Whether an entry competes under the given scope: its type must be selected, and when labels are set it must carry
+// at least one of them.
+const isInScope = function (entry, types, labels) {
+    return types.includes(entry.type) && (labels.length === 0 || entry.labels.some(function (label) { return labels.includes(label); }));
+};
+
 // The full rankings picture in one payload: scoped standings, the entire match history (annotated, never filtered -
 // discarding is the user's decision, not the server's), and suggested next pairings. Standings replay only the
 // matches whose contenders BOTH currently resolve to in-scope entries: a match against a renamed or deleted entry
 // (orphaned) or an out-of-scope one is kept on disk but sits out of the replay, so the board always reflects entries
 // that actually exist right now, and repairing a title brings its history straight back.
-const buildRankingsPayloadAsync = async function (cwd, types) {
+const buildRankingsPayloadAsync = async function (cwd, types, labels) {
     const [{ matches }, titlesByName] = await Promise.all([readRankingsAsync(cwd), collectFolderTitlesAsync(cwd)]);
     const scoped = new Set();
     for (const [title, entry] of titlesByName) {
-        if (types.includes(entry.type)) {
+        if (isInScope(entry, types, labels)) {
             scoped.add(title);
         }
     }
@@ -77,7 +92,7 @@ const buildRankingsPayloadAsync = async function (cwd, types) {
     });
     const standings = replayMatches(replayable, [...scoped]);
     const suggestedPairings = selectLeastMetPairings([...scoped], replayable, SUGGESTED_PAIRING_COUNT);
-    return { standings, matches: annotated, types, suggestedPairings };
+    return { standings, matches: annotated, types, labels, suggestedPairings };
 };
 
 const createRankingsRouter = function ({ cwd }) {
@@ -95,8 +110,9 @@ const createRankingsRouter = function ({ cwd }) {
         if (types === null) {
             return sendErrorResponse(response, 400, 'Unknown entry type in "types"');
         }
+        const labels = parseLabelsParameter(request.query.labels);
         try {
-            return sendSuccessResponse(response, await buildRankingsPayloadAsync(cwd, types));
+            return sendSuccessResponse(response, await buildRankingsPayloadAsync(cwd, types, labels));
         } catch (error) {
             return sendStoreError(response, error);
         }
@@ -106,11 +122,12 @@ const createRankingsRouter = function ({ cwd }) {
     // route, not this one - so a client cannot forge an AI verdict. Both contenders must currently exist: a manual
     // result is an act of prioritizing the backlog as it stands, unlike historical records which may go orphaned.
     router.post('/rankings/matches', async function (request, response) {
-        const { firstTitle, secondTitle, winnerTitle, rationale, types: bodyTypes } = request.body || {};
+        const { firstTitle, secondTitle, winnerTitle, rationale, types: bodyTypes, labels: bodyLabels } = request.body || {};
         const types = parseTypesParameter(bodyTypes);
         if (types === null) {
             return sendErrorResponse(response, 400, 'Unknown entry type in "types"');
         }
+        const labels = parseLabelsParameter(bodyLabels);
         const titlesByName = await collectFolderTitlesAsync(cwd);
         for (const title of [firstTitle, secondTitle]) {
             if (typeof title !== 'string' || !titlesByName.has(title)) {
@@ -126,7 +143,7 @@ const createRankingsRouter = function ({ cwd }) {
         });
         try {
             await addMatchesAsync(cwd, [record]);
-            return sendSuccessResponse(response, { match: record, ...await buildRankingsPayloadAsync(cwd, types) });
+            return sendSuccessResponse(response, { match: record, ...await buildRankingsPayloadAsync(cwd, types, labels) });
         } catch (error) {
             // createMatch built the record from client fields, so a validation message here ("names a winner that is
             // neither contender") describes the request, not the file on disk.
@@ -141,7 +158,7 @@ const createRankingsRouter = function ({ cwd }) {
     // pairing's exact judge prompt on its competition_start line (every agent run's prompt stays inspectable, the
     // Activity monitor's standing promise).
     router.post('/rankings/competitions', async function (request, response) {
-        const { count, instructions, types: bodyTypes } = request.body || {};
+        const { count, instructions, types: bodyTypes, labels: bodyLabels } = request.body || {};
         const types = parseTypesParameter(bodyTypes);
         if (types === null) {
             return sendErrorResponse(response, 400, 'Unknown entry type in "types"');
@@ -152,6 +169,7 @@ const createRankingsRouter = function ({ cwd }) {
         if (promptBytes(instructions) > MAX_PROMPT_BYTES) {
             return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
         }
+        const labels = parseLabelsParameter(bodyLabels);
         const guidance = typeof instructions === 'string' ? instructions : '';
 
         let matches;
@@ -164,7 +182,7 @@ const createRankingsRouter = function ({ cwd }) {
         const scoped = new Map();
         const scopedTitles = [];
         for (const [title, entry] of titlesByName) {
-            if (!types.includes(entry.type)) {
+            if (!isInScope(entry, types, labels)) {
                 continue;
             }
             scoped.set(title, entry);
@@ -208,7 +226,7 @@ const createRankingsRouter = function ({ cwd }) {
     // Discards match results by id - one, several, or the whole log - and answers with the recomputed picture, so
     // the client never has to guess what the standings look like after a discard.
     router.delete('/rankings/matches', async function (request, response) {
-        const { ids, types: bodyTypes } = request.body || {};
+        const { ids, types: bodyTypes, labels: bodyLabels } = request.body || {};
         const types = parseTypesParameter(bodyTypes);
         if (types === null) {
             return sendErrorResponse(response, 400, 'Unknown entry type in "types"');
@@ -216,9 +234,10 @@ const createRankingsRouter = function ({ cwd }) {
         if (!Array.isArray(ids) || ids.some(function (id) { return typeof id !== 'string'; })) {
             return sendErrorResponse(response, 400, 'Expected an "ids" array of match ids');
         }
+        const labels = parseLabelsParameter(bodyLabels);
         try {
             const { removed } = await removeMatchesAsync(cwd, ids);
-            return sendSuccessResponse(response, { removed, ...await buildRankingsPayloadAsync(cwd, types) });
+            return sendSuccessResponse(response, { removed, ...await buildRankingsPayloadAsync(cwd, types, labels) });
         } catch (error) {
             return sendStoreError(response, error);
         }

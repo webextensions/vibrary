@@ -404,34 +404,52 @@ type RankingRow = { title: string; rating: number; wins: number; losses: number;
 // removed since the match) - the record is kept and flagged, and sits out of the replay until repaired or discarded.
 type RankingsMatch = { id: string; playedAt: string; firstTitle: string; secondTitle: string; winnerTitle: string; judge: 'AI' | 'Human'; rationale: string; orphanedTitles: string[] };
 // The whole rankings picture in one payload; every mutation answers with the same recomputed shape.
-type RankingsPayload = { standings: RankingRow[]; matches: RankingsMatch[]; types: EntryType[]; suggestedPairings: [string, string][] };
+type RankingsPayload = { standings: RankingRow[]; matches: RankingsMatch[]; types: EntryType[]; labels: string[]; suggestedPairings: [string, string][] };
 
-// The types scope travels as a comma-separated value (query param and body alike); an empty selection is omitted so
-// the backend applies its default scope (idea entries).
-const typesToParameter = function (types: EntryType[]): string | undefined {
-    return types.length > 0 ? types.join(',') : undefined;
+// The scope narrowing which entries compete: entry types (empty = the backend's idea default) and optional labels
+// (an entry must carry at least one; empty imposes nothing, like the editor's filters).
+type RankingsScope = { types: EntryType[]; labels: string[] };
+
+// Scope legs travel as comma-separated values (query param and body alike); an empty selection is omitted so the
+// backend applies its own default.
+const scopeToParameters = function (scope: RankingsScope): { types?: string; labels?: string } {
+    return {
+        types: scope.types.length > 0 ? scope.types.join(',') : undefined,
+        labels: scope.labels.length > 0 ? scope.labels.join(',') : undefined
+    };
 };
 
-const getRankings = function (types: EntryType[] = []): Promise<RankingsPayload> {
-    const parameter = typesToParameter(types);
-    return request<RankingsPayload>(`/api/rankings${parameter === undefined ? '' : `?types=${encodeURIComponent(parameter)}`}`);
+const EMPTY_SCOPE: RankingsScope = { types: [], labels: [] };
+
+const getRankings = function (scope: RankingsScope = EMPTY_SCOPE): Promise<RankingsPayload> {
+    const { types, labels } = scopeToParameters(scope);
+    const query = new URLSearchParams();
+    if (types !== undefined) {
+        query.set('types', types);
+    }
+    if (labels !== undefined) {
+        query.set('labels', labels);
+    }
+    const suffix = query.size > 0 ? `?${query.toString()}` : '';
+    return request<RankingsPayload>(`/api/rankings${suffix}`);
 };
 
 // Record one Human-judged head-to-head result (the AI judge writes through its own competition run route).
-const recordManualMatch = function (match: { firstTitle: string; secondTitle: string; winnerTitle: string; rationale?: string }, types: EntryType[] = []): Promise<RankingsPayload & { match: RankingsMatch }> {
-    return requestJson<RankingsPayload & { match: RankingsMatch }>('/api/rankings/matches', 'POST', { ...match, types: typesToParameter(types) });
+const recordManualMatch = function (match: { firstTitle: string; secondTitle: string; winnerTitle: string; rationale?: string }, scope: RankingsScope = EMPTY_SCOPE): Promise<RankingsPayload & { match: RankingsMatch }> {
+    return requestJson<RankingsPayload & { match: RankingsMatch }>('/api/rankings/matches', 'POST', { ...match, ...scopeToParameters(scope) });
 };
 
 // Discard recorded results by id - one, several, or the whole log - resolving with the recomputed picture.
-const discardMatches = function (ids: string[], types: EntryType[] = []): Promise<RankingsPayload & { removed: number }> {
-    return requestJson<RankingsPayload & { removed: number }>('/api/rankings/matches', 'DELETE', { ids, types: typesToParameter(types) });
+const discardMatches = function (ids: string[], scope: RankingsScope = EMPTY_SCOPE): Promise<RankingsPayload & { removed: number }> {
+    return requestJson<RankingsPayload & { removed: number }>('/api/rankings/matches', 'DELETE', { ids, ...scopeToParameters(scope) });
 };
 
 // Runs the backend's AI competition judge over `count` least-met pairings as one streamed job, recording each
 // verdict as an AI match; per-pairing progress arrives through `options.onEvent` as competition_start (carrying that
 // pairing's exact judge prompt) and competition_result (carrying the recorded match) events.
-const runCompetitions = function (body: { count: number; instructions: string }, options: StreamOptions): Promise<string> {
-    return streamClaude('/api/rankings/competitions', body, options);
+const runCompetitions = function (body: { count: number; instructions: string; scope?: RankingsScope }, options: StreamOptions): Promise<string> {
+    const { scope = EMPTY_SCOPE, ...rest } = body;
+    return streamClaude('/api/rankings/competitions', { ...rest, ...scopeToParameters(scope) }, options);
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
