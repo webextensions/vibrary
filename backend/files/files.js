@@ -193,8 +193,13 @@ const createFilesRouter = function ({ cwd }) {
     });
 
     // Read a form-schemas sidecar (e.g. "docs/tasks/tasks.xml.schemas.json") that an entry's <formSchemaRef> points at.
-    // Read-only and deliberately outside the listing/.vibraryinclude surface: the sidecar is resolved on demand, never
-    // browsed or edited through the app. The name is tightly constrained to a "<vibrary>.xml.schemas.json" basename.
+    // Read-only and never browsed or edited through the app; the name is tightly constrained to a
+    // "<vibrary>.xml.schemas.json" basename. Include-gated by DIRECTORY, not by the sidecar's nominal parent name:
+    // a formSchemaRef resolves against the referencing entry's directory, and nothing requires the sidecar's parent
+    // vibrary file to exist (an included tasks-foo.xml may reference tasks.xml.schemas.json with no tasks.xml
+    // anywhere) - so requiring the stripped name to be included would break legitimate references. Requiring at least
+    // one INCLUDED vibrary file in the sidecar's directory matches how sidecars are actually consumed, while keeping
+    // an excluded folder's schema contents (field names, enum values, descriptions) unreadable.
     router.get('/schema-file/:name', async function (request, response) {
         const { name } = request.params;
         if (!isValidSchemasName(name)) {
@@ -206,6 +211,14 @@ const createFilesRouter = function ({ cwd }) {
         }
 
         try {
+            const files = await listVibraryFiles(cwd);
+            const directory = path.posix.dirname(name);
+            const hasIncludedSibling = files.some(function (file) {
+                return path.posix.dirname(file) === directory;
+            });
+            if (!hasIncludedSibling) {
+                return sendErrorResponse(response, 404, 'File not found');
+            }
             const content = await readFile(target, 'utf8');
             return sendSuccessResponse(response, { name, content });
         } catch (error) {

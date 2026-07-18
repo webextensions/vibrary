@@ -46,7 +46,8 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
   the browser AND under plain node: `scripts/canonicalize-vibrary.js` (the git diff driver's canonicalizer) and the
   backend import it. `frontend/src/xml/vibraryXml.ts` is its hand-maintained type layer (`as`-cast re-exports).
 - `.vibraryinclude` (gitignore-style patterns, `ignore` library) gates EVERYTHING: listing, create, read, save,
-  rename, delete all check it.
+  rename, delete all check it; the schemas-sidecar route is gated by its directory holding an included file (see
+  the route comment for why not by parent name).
 - `scripts/` - dev launchers (`start-server.js`, `start-build.js`, `notifier.js`) and the reorder-insensitive git
   diff driver (`vibrary-diff.js` + `canonicalize-vibrary.js`, wired by `setup-git-textconv.js` via the committed
   `.gitconfig` fragment).

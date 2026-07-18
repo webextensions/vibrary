@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -241,6 +241,21 @@ test('the schema-file sidecar route reads by its own tight name shape', async fu
     assert.equal((await requestJsonAsync('/schema-file/notes.json')).status, 400);
     assert.equal((await requestJsonAsync('/schema-file/..%2Ftasks.xml.schemas.json')).status, 400);
     assert.equal((await requestJsonAsync('/schema-file/specs.xml.schemas.json')).status, 404);
+});
+
+test('the schema-file route is include-gated by directory, not by the sidecar parent name', async function () {
+    // A directory holding only a sidecar (no included vibrary file) must not serve it: excluding a folder's files
+    // via .vibraryinclude would otherwise leave that folder's schema contents readable through the API.
+    mkdirSync(path.join(cwd, 'excluded-folder'), { recursive: true });
+    writeFileSync(path.join(cwd, 'excluded-folder', 'tasks.xml.schemas.json'), '{"hidden":{"type":"object"}}');
+    assert.equal((await requestJsonAsync('/schema-file/excluded-folder%2Ftasks.xml.schemas.json')).status, 404);
+
+    // A sidecar next to an INCLUDED file is served even when its nominal parent (tasks.xml here) does not exist -
+    // a formSchemaRef resolves against the referencing entry's directory, not against the sidecar's stripped name.
+    mkdirSync(path.join(cwd, 'included-folder'), { recursive: true });
+    writeFileSync(path.join(cwd, 'included-folder', 'specs-here.xml'), VALID_XML);
+    writeFileSync(path.join(cwd, 'included-folder', 'tasks.xml.schemas.json'), '{"visible":{"type":"object"}}');
+    assert.equal((await requestJsonAsync('/schema-file/included-folder%2Ftasks.xml.schemas.json')).status, 200);
 });
 
 test('move-entries relocates selected entries into another file, appended after its own', async function () {
