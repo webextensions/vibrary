@@ -8,7 +8,7 @@ import { type SchemaMap } from './loadVibraryFile.ts';
 import { useSettings } from '../settings/settingsContext.ts';
 import { type Spec } from '../xml/vibraryXml.ts';
 
-import { optionsToPrompt, schemaDefaults } from './taskOptions.ts';
+import { isRalphLoopEnabled, optionsToPrompt, schemaDefaults } from './taskOptions.ts';
 
 import formStyles from './forms.module.css';
 import styles from './SpecCard.module.css';
@@ -128,7 +128,10 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
             instructions = entered;
         }
         const options = optionsSchema ? optionsToPrompt(optionsSchema, optionsData) : '';
-        const runArguments = { title: value.title, content: value.content, notes: value.notes, instructions, options };
+        // The Ralph-loop opt-in travels as a structured flag keyed on the schema property, not as prompt text (see
+        // isRalphLoopEnabled); the rendered options line stays in the prompt for the agent to read.
+        const useRalphLoop = optionsSchema !== null && isRalphLoopEnabled(optionsSchema, optionsData);
+        const runArguments = { title: value.title, content: value.content, notes: value.notes, instructions, options, useRalphLoop };
         // The concise bubble shown in the activity: the user-authored parts, minus the backend's boilerplate framing (the
         // exact prompt is available via the bubble's "Full" toggle).
         const promptParts = [value.content];

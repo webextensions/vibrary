@@ -238,9 +238,11 @@ const applySpec = function (spec: { title: string; content: string; notes: strin
 // Runs the backend's headless AI agent to carry out a single task, editing files directly and streaming its activity
 // through `options.onEvent`. Resolves with the run's final result text once the agent finishes. `instructions` carries
 // optional custom one-time guidance; `task.options` carries the directive block derived from the task's per-run options
-// form. Both are folded into the agent's prompt when non-empty.
-const runTask = function (task: { title: string; content: string; notes: string; instructions: string; options: string }, options: StreamOptions): Promise<string> {
-    return streamClaude('/api/run-task', { title: task.title, content: task.content, notes: task.notes, instructions: task.instructions, options: task.options }, options);
+// form. Both are folded into the agent's prompt when non-empty. `useRalphLoop` is the structured per-run opt-in
+// derived from the options form's `useRalphLoop` property key (the backend keys its loop behavior on this flag, never
+// on the rendered options text).
+const runTask = function (task: { title: string; content: string; notes: string; instructions: string; options: string; useRalphLoop: boolean }, options: StreamOptions): Promise<string> {
+    return streamClaude('/api/run-task', { title: task.title, content: task.content, notes: task.notes, instructions: task.instructions, options: task.options, useRalphLoop: task.useRalphLoop }, options);
 };
 
 // Runs the backend's headless AI agent to make the codebase conform to several selected specs in a single run, editing

@@ -44,4 +44,20 @@ const optionsToPrompt = function (schema: RJSFSchema, formData: FormData): strin
     return lines.join('\n');
 };
 
-export { type FormData, optionsToPrompt, schemaDefaults };
+// The per-run Ralph-loop opt-in, detected by the schema property KEY `useRalphLoop` - the one documented contract for
+// this behavior. Titles are presentation (user-editable in the *.xml.schemas.json sidecar, free to be reworded or
+// translated), so the backend must never regex the rendered "- Use Ralph loop: yes" line; this flag travels as a
+// structured field in the /run-task body instead. Applies the same cleared-value -> schema-default fallback as
+// optionsToPrompt, so the two views of the form can never disagree.
+const isRalphLoopEnabled = function (schema: RJSFSchema, formData: FormData): boolean {
+    const properties = (schema.properties ?? {}) as Record<string, RJSFSchema>;
+    const property = properties.useRalphLoop;
+    if (property === undefined) {
+        return false;
+    }
+    const rawValue = formData.useRalphLoop;
+    const value = isEmptyValue(rawValue) ? property.default : rawValue;
+    return value === true;
+};
+
+export { type FormData, isRalphLoopEnabled, optionsToPrompt, schemaDefaults };

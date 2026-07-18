@@ -70,7 +70,8 @@ Each `<entry>` has these child elements:
 - `formSchemaRef` - only consulted on `type="task"` entries: a reference to a per-run options form, in
   `<sibling-file>#<schemaId>` form (for example `tasks.xml.schemas.json#deploy-options`), resolved against that
   sidecar's schemas when the file loads. Empty (the default) means the task has no options form. Ignored on every
-  other entry type.
+  other entry type. One schema property KEY is a behavioral contract: a boolean property named `useRalphLoop` arms
+  the run's Ralph-loop mode when true - its display `title` is free presentation, but the key is what the app detects.
 - `created` / `updated` - ISO 8601 timestamps: when the entry was created and when it was last edited. The editor
   stamps `updated` on every change and renders both in the viewer's locale.
 - `updatedBy` - who made the last edit, either `Human` or `AI`: edits through the editor stamp `Human`, agent runs

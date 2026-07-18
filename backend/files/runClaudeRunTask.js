@@ -10,13 +10,6 @@ const RUN_TASK_TIMEOUT_MS = 60 * 60 * 1000;
 // clean finish or when --max-iterations is hit; we only clear any copy left behind by an abort/timeout mid-loop.
 const RALPH_STATE_FILE = join('.claude', 'ralph-loop.local.md');
 
-// Detect the per-run "Use Ralph loop" opt-in from the rendered options block. The block is produced by the frontend's
-// optionsToPrompt as "- <title>: yes|no"; this mirrors the `useRalphLoop` property title in
-// docs/tasks/tasks.xml.schemas.json, so keep the two in sync if either changes.
-const isRalphLoopSelected = function (options) {
-    return /^- Use Ralph loop\b.*: yes$/m.test(options);
-};
-
 // The instruction handed to "claude -p". It carries out a single task against the project, editing files on disk as
 // needed. The <notes> line is omitted when the task has none. `options` carries the directive block derived from the
 // task's per-run options form, and `instructions` carries optional custom one-time guidance the user supplied for this
@@ -59,9 +52,10 @@ const buildPrompt = function ({ title, content, notes, options, instructions, is
 
 // Run the headless agent to carry out the given task against `cwd`, streaming its activity line by line through
 // `onLine` (claude's stream-json events). Resolves on a clean exit; rejects with a descriptive Error otherwise (missing
-// CLI, non-zero exit, timeout, or abort).
-const runTaskAsync = async function ({ cwd, title, content, notes, options, instructions, signal, onLine }) {
-    const isRalphLoopEnabled = isRalphLoopSelected(options);
+// CLI, non-zero exit, timeout, or abort). `isRalphLoopEnabled` is the structured per-run opt-in the frontend derives
+// from the options form's `useRalphLoop` property KEY (see taskOptions.ts) - the rendered "- Use Ralph loop: yes"
+// line still appears in `options` for the agent to read, but it is presentation, not the control channel.
+const runTaskAsync = async function ({ cwd, title, content, notes, options, instructions, isRalphLoopEnabled, signal, onLine }) {
     try {
         return await runStreamedAgentAsync({
             cwd,
@@ -79,4 +73,4 @@ const runTaskAsync = async function ({ cwd, title, content, notes, options, inst
     }
 };
 
-export { isRalphLoopSelected, runTaskAsync };
+export { runTaskAsync };

@@ -154,7 +154,7 @@ const createAgentsRouter = function ({ cwd }) {
     // Run a headless "claude -p" agent that carries out a single task. Like /apply, not file-name scoped: running acts
     // on the whole project (cwd), so the task's text is sent in the body rather than read back from a file.
     router.post('/run-task', function (request, response) {
-        const { title, content, notes, instructions, options } = request.body || {};
+        const { title, content, notes, instructions, options, useRalphLoop } = request.body || {};
         if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
             return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
         }
@@ -170,6 +170,9 @@ const createAgentsRouter = function ({ cwd }) {
                 notes: typeof notes === 'string' ? notes : '',
                 instructions: typeof instructions === 'string' ? instructions : '',
                 options: typeof options === 'string' ? options : '',
+                // The structured Ralph-loop opt-in (the frontend derives it from the options form's `useRalphLoop`
+                // property key); anything but an explicit true stays off.
+                isRalphLoopEnabled: useRalphLoop === true,
                 signal,
                 onLine
             });

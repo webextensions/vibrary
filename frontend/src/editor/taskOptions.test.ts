@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { optionsToPrompt, schemaDefaults } from './taskOptions.ts';
+import { isRalphLoopEnabled, optionsToPrompt, schemaDefaults } from './taskOptions.ts';
 
-// optionsToPrompt's exact "- <title>: <value>" rendering is a cross-module contract: the backend's
-// isRalphLoopSelected (runClaudeRunTask.js) regex-matches the "- Use Ralph loop...: yes" line to arm the Ralph-loop
-// prompt block, so a drift in this format would silently disable that opt-in. schemaDefaults and the cleared-value
-// fallback also encode rjsf quirks (cleared multi-selects report [] and cleared text '', never undefined) that a
-// refactor could easily reintroduce.
+// isRalphLoopEnabled is the control channel for the backend's Ralph-loop behavior (a structured flag keyed on the
+// schema property KEY, sent through the /run-task body), so its key-detection and default fallback are pinned here.
+// schemaDefaults and the cleared-value fallback also encode rjsf quirks (cleared multi-selects report [] and cleared
+// text '', never undefined) that a refactor could easily reintroduce.
 
 const SCHEMA = {
     properties: {
@@ -28,9 +27,24 @@ test('optionsToPrompt renders booleans as yes/no with the exact "- Title: value"
         optionsToPrompt(SCHEMA, { useRalphLoop: true }),
         '- Use Ralph loop: yes'
     );
-    // The backend's Ralph opt-in detection depends on this exact line shape.
-    assert.match(optionsToPrompt(SCHEMA, { useRalphLoop: true }), /^- Use Ralph loop\b.*: yes$/m);
     assert.equal(optionsToPrompt(SCHEMA, { useRalphLoop: false }), '- Use Ralph loop: no');
+});
+
+test('isRalphLoopEnabled keys on the useRalphLoop property, not its display title', function () {
+    assert.equal(isRalphLoopEnabled(SCHEMA, { useRalphLoop: true }), true);
+    assert.equal(isRalphLoopEnabled(SCHEMA, { useRalphLoop: false }), false);
+    // A retitled (or translated) property still works - the KEY is the contract.
+    const retitled = { properties: { useRalphLoop: { type: 'boolean', title: 'Iterate until done', default: false } } } as const;
+    assert.equal(isRalphLoopEnabled(retitled, { useRalphLoop: true }), true);
+    // A schema without the property never arms the loop, whatever else the form holds.
+    assert.equal(isRalphLoopEnabled({ properties: { other: { type: 'boolean', title: 'Use Ralph loop' } } }, { other: true }), false);
+});
+
+test('isRalphLoopEnabled falls back to the schema default for a cleared value', function () {
+    const defaultOn = { properties: { useRalphLoop: { type: 'boolean', title: 'Use Ralph loop', default: true } } } as const;
+    assert.equal(isRalphLoopEnabled(defaultOn, {}), true);
+    assert.equal(isRalphLoopEnabled(SCHEMA, {}), false);
+    assert.equal(isRalphLoopEnabled(defaultOn, { useRalphLoop: false }), false);
 });
 
 test('optionsToPrompt joins arrays, prints strings, and labels untitled properties by key', function () {
