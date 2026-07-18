@@ -50,6 +50,9 @@ type SpecCardProperties = {
     renderMarkdown?: boolean;
     // Another entry in this file bears the same title; references by that title are ambiguous, so the card says so.
     hasDuplicateTitle?: boolean;
+    // The entry's Elo rating from the Rankings view's recorded matches; undefined (no badge) when the folder has no
+    // recorded results or this entry is outside the ranked scope.
+    rating?: number;
     // The file this card's entry lives in, forwarded to the run section so a queued job records its entry target.
     currentFilePath: string | null;
     schemas: SchemaMap;
@@ -185,7 +188,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, currentFilePath, schemas, allTitles, labelSuggestions, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, rating, currentFilePath, schemas, allTitles, labelSuggestions, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const [populating, setPopulating] = useState(false);
     // Abort an in-flight Populate when the card unmounts - there is no field left to drop the title into.
@@ -472,6 +475,10 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                         (
                             <span className={styles.specCardTitle}>{value.title === '' ? `(untitled ${value.type} #${index + 1})` : renderText(value.title)}</span>
                         )}
+                    {rating !== undefined &&
+                    <span className={styles.ratingBadge} title="Elo rating from the Rankings view's recorded comparisons">
+                        {rating}
+                    </span>}
                     {hasDuplicateTitle &&
                     <span
                         className={styles.duplicateTitleWarning}

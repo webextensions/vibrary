@@ -20,6 +20,7 @@ import { reinsertEntries } from './reinsertEntries.ts';
 import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
 import { labelOptions } from './labelOptions.ts';
 import { restoreEntries } from './restoreEntries.ts';
+import { useRatings } from '../rankings/useRatings.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
@@ -205,6 +206,9 @@ const SpecsEditor = function (
     });
 
     const { enqueue } = useActivityQueueActions();
+    // Elo ratings from the Rankings view's recorded matches, for the card badges and the rating sort; empty (and
+    // both features dormant) until the folder has recorded results.
+    const ratings = useRatings();
 
     // Id of the entry briefly ring-highlighted after the file was opened from a Search result; cleared on a timer.
     const [highlightId, setHighlightId] = useState<string | null>(null);
@@ -600,7 +604,8 @@ const SpecsEditor = function (
     // The order the cards render in. 'file' keeps the map order above (the on-disk order); the others are view-only
     // re-orderings that leave each entry's original index untouched, so updateAt/removeAt and the selection still
     // address the right spec. Array#sort is stable, so ties keep their file order. Recency falls back to `created` for
-    // an entry that was never updated.
+    // an entry that was never updated. Rating sorts highest first with unrated entries after every rated one; in a
+    // folder with no recorded matches the map is empty, every entry ties, and the sort is a stable no-op.
     const sortedShown = sortMode === 'file' ?
         shown :
         shown.toSorted(function (a, b) {
@@ -609,6 +614,9 @@ const SpecsEditor = function (
             }
             if (sortMode === 'updated') {
                 return (b.spec.updated || b.spec.created).localeCompare(a.spec.updated || a.spec.created);
+            }
+            if (sortMode === 'rating') {
+                return (ratings.get(b.spec.title) ?? -Infinity) - (ratings.get(a.spec.title) ?? -Infinity);
             }
             return STATE_ORDER.indexOf(approvalState(a.spec)) - STATE_ORDER.indexOf(approvalState(b.spec));
         });
@@ -1197,6 +1205,7 @@ const SpecsEditor = function (
                             value={spec}
                             currentFilePath={currentFilePath}
                             schemas={schemas}
+                            rating={ratings.get(spec.title)}
                             allTitles={allTitles}
                             labelSuggestions={labelSuggestions}
                             takenTitles={takenTitles}
