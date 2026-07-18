@@ -8,6 +8,12 @@ import styles from './QuickOpen.module.css';
 // stable identity for React and dedup; `select` runs when the row is chosen.
 type QuickOpenItem = { key: string; label: string; hint?: string; select: () => void };
 
+// Cap on rendered rows: with an empty query every file plus every entry title "matches", and building thousands of
+// DOM rows on open (then again per keystroke) lags on the phone-class hardware the app supports - for rows nobody
+// scrolls, since the palette's point is typing to narrow. Mirrors the backend search's own bounding stance; a muted
+// note reports how many matches are hidden.
+const MAX_SHOWN = 100;
+
 // A command-palette-style "go to anything" (Cmd/Ctrl+K): type to filter files and entries, Up/Down to move the
 // highlight, Enter to choose, Esc or a backdrop click to close. The input keeps focus the whole time and an active
 // index tracks the highlight (a controlled combobox) rather than roving DOM focus between rows, so typing and
@@ -24,15 +30,16 @@ const QuickOpen = function ({ items, onClose }: { items: QuickOpenItem[]; onClos
     const previouslyFocusedReference = useRef<Element | null>(null);
 
     // Case-insensitive substring match over the label AND hint (so typing a file name surfaces the file and its
-    // entries), preserving the given order - the goal is fast keyboard reach, not fuzzy scoring.
-    const matches = useMemo(function () {
+    // entries), preserving the given order - the goal is fast keyboard reach, not fuzzy scoring. Only the first
+    // MAX_SHOWN matches render (navigation wraps within the shown slice); hiddenCount feeds the keep-typing note.
+    const { matches, hiddenCount } = useMemo(function () {
         const needle = query.trim().toLowerCase();
-        if (needle === '') {
-            return items;
-        }
-        return items.filter(function (item) {
-            return `${item.label} ${item.hint ?? ''}`.toLowerCase().includes(needle);
-        });
+        const all = needle === '' ?
+            items :
+            items.filter(function (item) {
+                return `${item.label} ${item.hint ?? ''}`.toLowerCase().includes(needle);
+            });
+        return { matches: all.slice(0, MAX_SHOWN), hiddenCount: Math.max(0, all.length - MAX_SHOWN) };
     }, [items, query]);
 
     // Derive the in-range index rather than storing a clamped one: a narrower query can shrink the list past the raw
@@ -133,6 +140,7 @@ const QuickOpen = function ({ items, onClose }: { items: QuickOpenItem[]; onClos
                             );
                         })}
                     </ul>}
+                {hiddenCount > 0 && <p className={styles.empty}>...and {hiddenCount} more - keep typing to narrow</p>}
             </div>
         </div>,
         document.body
