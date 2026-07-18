@@ -12,6 +12,7 @@
         "backend",
         "bin",
         "dist",
+        "docs/*.md",
         "shared/apiLimits.js",
         "shared/vibraryXmlCore.js",
         "!backend/**/*.test.js",

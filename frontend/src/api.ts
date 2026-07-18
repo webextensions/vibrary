@@ -157,6 +157,14 @@ const getVersion = async function (): Promise<string> {
     const output = await request<{ version: string }>('/api/version');
     return output.version;
 };
+
+// One shipped manual page as raw markdown, from the installed package (not the served folder) - `name` is one of the
+// backend's small allowlist (backend/documentation/documentation.js), offered by the Help dialog's Guide tab.
+const getManualPage = async function (name: string): Promise<string> {
+    const output = await request<{ content: string }>(`/api/docs/${encodeURIComponent(name)}`);
+    return output.content;
+};
+
 // The file's content plus its opaque version token (fileHash), which saveFile echoes back so the server can detect
 // that the file changed on disk after this read.
 const getFile = async function (name: string): Promise<{ content: string; fileHash: string }> {
@@ -390,4 +398,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

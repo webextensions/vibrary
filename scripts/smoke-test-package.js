@@ -109,6 +109,12 @@ try {
         throw new Error(`/api/files-summary did not parse the fixture entry: ${JSON.stringify(summaryEnvelope)}`);
     }
 
+    console.log('Checking /api/docs/editor.md (the Help dialog\'s Guide needs docs/*.md in the tarball)...');
+    const manualEnvelope = await fetchJsonAsync(`${url}api/docs/editor.md`);
+    if (manualEnvelope.status !== 'success' || typeof manualEnvelope.output.content !== 'string' || manualEnvelope.output.content.length === 0) {
+        throw new Error(`/api/docs/editor.md did not serve the shipped manual - is docs/*.md missing from package.json "files"? ${JSON.stringify(manualEnvelope)}`);
+    }
+
     console.log('Smoke test passed: the packed tarball serves and parses vibrary files when installed with --omit=dev.');
 } catch (error) {
     console.error(`smoke-test-package: ${error.message}`);

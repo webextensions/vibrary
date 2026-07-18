@@ -159,8 +159,9 @@ does not block the others).
   browser when there is nothing to reopen).
 - Ctrl+K / Cmd+K - open the quick-open palette to jump to a file or entry by name (type to filter, arrow keys to move,
   Enter to open).
-- `?` - open the keyboard-shortcuts help dialog (also reachable from the `?` button at the foot of the navigation
-  rail). Ignored while typing in a field.
+- `?` - open the Help dialog (also reachable from the `?` button at the foot of the navigation rail): a Shortcuts tab
+  listing everything in this section, and a Guide tab rendering this manual (Overview, Editor guide, File format) from
+  the installed package. Ignored while typing in a field.
 - `/` - jump to the structured editor's text filter, opening the filter panel first if it is closed. Ignored while
   typing in a field, and a no-op unless a structured editor with entries is showing.
 - Alt+ArrowUp / Alt+ArrowDown - move to the previous / next entry card, and Home / End jump to the first / last, landing

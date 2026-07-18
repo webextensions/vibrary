@@ -6,6 +6,7 @@ import compression from 'compression';
 import express from 'express';
 
 import { createAgentsRouter } from './files/agents.js';
+import { createDocumentationRouter } from './documentation/documentation.js';
 import { createFilesRouter } from './files/files.js';
 import { createGitRouter } from './git/git.js';
 import { createSearchRouter } from './search/search.js';
@@ -42,6 +43,8 @@ const createApp = async function ({ cwd = process.cwd(), hmr = false } = {}) {
     app.use('/api', createGitRouter({ cwd }));
     app.use('/api', createSearchRouter({ cwd }));
     app.use('/api', createSettingsRouter({ cwd }));
+    // Deliberately not { cwd }-scoped: it serves the package's own shipped manual (see backend/documentation/documentation.js).
+    app.use('/api', createDocumentationRouter());
 
     // Unmatched API paths answer with the JSON error envelope, registered before the frontend fallbacks so a typo'd
     // or removed endpoint can never fall through to index.html - a 200 of HTML where JSON was expected reads as a

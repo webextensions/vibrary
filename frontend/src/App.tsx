@@ -14,7 +14,7 @@ import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { titlesInOtherFiles } from './editor/crossFileTitles.ts';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
 import { QuickOpen, type QuickOpenItem } from './shared/QuickOpen.tsx';
-import { ShortcutsDialog } from './shared/ShortcutsDialog.tsx';
+import { HelpDialog } from './shared/HelpDialog.tsx';
 import { isStoredTrue, readStored, writeStored } from './shared/storage.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './explorer/useFileCounts.ts';
@@ -84,8 +84,8 @@ const App = function () {
     // it was clicked FROM (file + title), so a Back button can retrace the relation-exploration path. Persistent (a
     // manual tab switch does not clear it); Back navigates without pushing, so it never loops.
     const [backStack, setBackStack] = useState<{ path: string; title: string }[]>([]);
-    // The keyboard-shortcuts help dialog, opened by the "?" key or the rail's help button.
-    const [shortcutsOpen, setShortcutsOpen] = useState<boolean>(false);
+    // The Help dialog (Shortcuts + Guide tabs), opened by the "?" key or the rail's help button.
+    const [helpOpen, setHelpOpen] = useState<boolean>(false);
     // The quick-open file palette (Cmd/Ctrl+K).
     const [quickOpenOpen, setQuickOpenOpen] = useState<boolean>(false);
 
@@ -432,7 +432,7 @@ const App = function () {
         };
     }, [activeTab, onSave, closedTabCount, reopenClosedTab]);
 
-    // "?" opens the keyboard-shortcuts help - but only as a bare keypress, never while the user is typing into a field
+    // "?" opens the Help dialog - but only as a bare keypress, never while the user is typing into a field
     // (the editor is full of inputs where "?" is just a character) and not as part of a modified chord. A separate
     // listener from the Ctrl/Cmd shortcuts above so its editable-target guard does not entangle with theirs.
     useEffect(function () {
@@ -445,7 +445,7 @@ const App = function () {
                 return;
             }
             event.preventDefault();
-            setShortcutsOpen(true);
+            setHelpOpen(true);
         };
         window.addEventListener('keydown', handleHelpKey);
         return function () {
@@ -738,7 +738,7 @@ const App = function () {
                 onOpenJobEntry={handleOpenJobEntry}
                 onOpenMatch={handleOpenMatch}
                 onShowHelp={function () {
-                    setShortcutsOpen(true);
+                    setHelpOpen(true);
                 }}
             />
 
@@ -944,10 +944,10 @@ const App = function () {
                     ))}
             </main>
 
-            <ShortcutsDialog
-                open={shortcutsOpen}
+            <HelpDialog
+                open={helpOpen}
                 onClose={function () {
-                    setShortcutsOpen(false);
+                    setHelpOpen(false);
                 }}
             />
 

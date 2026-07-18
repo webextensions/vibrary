@@ -58,8 +58,8 @@ const NavigationRail = function ({ active, onSelect, badges, onClose, onShowHelp
             <button
                 type="button"
                 className={cx(styles.railButton, styles.railButtonBottom)}
-                aria-label="Keyboard shortcuts"
-                title="Keyboard shortcuts (?)"
+                aria-label="Help"
+                title="Help (?)"
                 onClick={onShowHelp}
             >
                 <HelpIcon />
