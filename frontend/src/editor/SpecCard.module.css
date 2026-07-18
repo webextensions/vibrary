@@ -197,6 +197,7 @@
    references (their expanded chips are the amber .chip-dangling ones). Surfaces the problem without expanding the card;
    the tooltip names the missing titles. */
 .dangling-refs-warning {
+    position: relative; /* anchors the repair popup below */
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -209,6 +210,60 @@
     font-size: 11px;
     white-space: nowrap;
     cursor: help;
+}
+
+/* The repair popup under the broken-references badge: one row per dangling reference, its proposed target (or "no
+   similar entry found"), and a per-row Repair. Never applies anything automatically - a wrong link is worse than a
+   broken one, because a broken link announces itself. */
+.repair-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 280px;
+    padding: 8px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgb(140 149 159 / 0.2);
+    color: #1f2328;
+    cursor: default;
+    white-space: normal;
+}
+
+.repair-row {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    font-size: 12px;
+}
+
+.repair-reference {
+    color: #9a6700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.repair-none {
+    color: #656d76;
+}
+
+.repair-hint {
+    color: #1f2328;
+}
+
+.repair-apply {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #0969da;
+    font: inherit;
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 /* Shown while editing the title of an entry that other entries reference: a muted, informational heads-up (not the

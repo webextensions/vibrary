@@ -10,7 +10,9 @@ import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
 import { danglingRelations } from './danglingRelations.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
+import { repairCandidates } from './repairReference.ts';
 import { specToMarkdown } from './specMarkdown.ts';
+import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
 import { highlightText } from '../shared/highlightText.tsx';
 import { AGENTS, ENTRY_TYPES, type EntryType, hashContent, normalizeTitle, type Spec } from '../xml/vibraryXml.ts';
@@ -276,6 +278,34 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
         return new Set(danglingRelations(value.relatesTo, new Set(takenTitles)));
     }, [value.relatesTo, takenTitles]);
 
+    // The best repair candidate per dangling reference (or null - "no similar entry found", which is itself useful:
+    // it says the target really is gone and Remove is the informed choice). Candidates come from the same folder-wide
+    // takenTitles the dangling check uses, so a renamed target in another file is proposed. Never applied
+    // automatically - a confidently-wrong repair is worse than a dangling reference, because a broken link announces
+    // itself and a wrong one does not.
+    const repairSuggestions = useMemo(function () {
+        return [...danglingReferences].map(function (reference) {
+            return { reference, suggestion: repairCandidates(reference, takenTitles)[0] ?? null };
+        });
+    }, [danglingReferences, takenTitles]);
+    const hasRepairSuggestion = repairSuggestions.some(function (entry) { return entry.suggestion !== null; });
+    const [repairOpen, setRepairOpen] = useState(false);
+    const repairWrapReference = useRef<HTMLSpanElement>(null);
+    useDismissablePopup(repairOpen, function () { setRepairOpen(false); }, repairWrapReference);
+
+    // Re-point one dangling reference at its proposed target, deduplicating if the entry already relates to it -
+    // repair changes ONLY relatesTo, so the edit (and its undo) stays minimal.
+    const applyRepair = function (reference: string, target: string) {
+        const next: string[] = [];
+        for (const item of value.relatesTo) {
+            const mapped = item === reference ? target : item;
+            if (!next.includes(mapped)) {
+                next.push(mapped);
+            }
+        }
+        update({ relatesTo: next });
+    };
+
     // Hash of the current content; the human approval stores the hash it was signed off against. A stored hash that no
     // longer matches means the content changed since approval (stale), surfaced as a yellow "Reapprove" button.
     const currentHash = hashContent(value.content);
@@ -461,10 +491,23 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                     </span>}
                     {danglingReferences.size > 0 &&
                     <span
+                        ref={repairWrapReference}
                         className={styles.danglingRefsWarning}
                         title={`Points to no entry: ${[...danglingReferences].join(', ')}. These "Relates to" reference${danglingReferences.size === 1 ? '' : 's'} resolve to nothing (their targets were renamed or removed).`}
                     >
                         {danglingReferences.size} broken {danglingReferences.size === 1 ? 'reference' : 'references'}
+                        {hasRepairSuggestion &&
+                        <button
+                            type="button"
+                            className={styles.danglingRefsFix}
+                            aria-expanded={repairOpen}
+                            title="Propose likely targets for the broken references"
+                            onClick={function () {
+                                setRepairOpen(function (previous) { return !previous; });
+                            }}
+                        >
+                            Repair...
+                        </button>}
                         <button
                             type="button"
                             className={styles.danglingRefsFix}
@@ -475,6 +518,32 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                         >
                             Remove
                         </button>
+                        {repairOpen &&
+                        <div className={styles.repairPanel}>
+                            {repairSuggestions.map(function ({ reference, suggestion }) {
+                                return (
+                                    <div key={reference} className={styles.repairRow}>
+                                        <span className={styles.repairReference}>{reference}</span>
+                                        {suggestion === null ?
+                                            <span className={styles.repairNone}>no similar entry found</span> :
+                                            (
+                                                <>
+                                                    <span className={styles.repairHint}>did you mean <strong>{suggestion}</strong>?</span>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.repairApply}
+                                                        onClick={function () {
+                                                            applyRepair(reference, suggestion);
+                                                        }}
+                                                    >
+                                                        Repair
+                                                    </button>
+                                                </>
+                                            )}
+                                    </div>
+                                );
+                            })}
+                        </div>}
                     </span>}
                     {/* Suppressed while the title is a duplicate: referencedBy is resolved by the entry's live-edited
                         title, so a title typed to collide with another referenced entry would otherwise show THAT

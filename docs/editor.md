@@ -51,8 +51,11 @@ controls:
   matches no entry (a broken link
   left by a
   renamed or removed target) renders instead as an inert amber chip with a tooltip explaining it points to nothing, and
-  the card's header shows a **N broken references** badge (naming the missing titles on hover) with a **Remove** action
-  that drops the dead references in one click, so the problem is both visible and fixable without expanding the card.
+  the card's header shows a **N broken references** badge (naming the missing titles on hover) with two actions:
+  **Repair...** opens a small panel proposing the likely intended target for each dead reference ("did you mean
+  `oauth-token-refresh`?" - matched by normalization, closeness, or containment against every title in the folder, and
+  never applied without a click), and **Remove** drops the dead references in one click. A reference with no similar
+  entry says so - which is exactly when Remove is the informed choice.
   The file's row in the sidebar also carries an amber count of its broken references, so files with dead links stand
   out across the whole folder without opening each one.
 - **Referenced by** - the reverse of "Relates to": a read-only list of the entries (across every file in the folder)
