@@ -10,10 +10,11 @@ import { beginShutdown, spawnClaudeAsync, terminateActiveClaudeRunsAsync } from 
 // CLI - against a fake `claude` executable prepended to PATH. The fake keys its behavior off the prompt argument, so
 // each test drives one path without any mocking of child_process itself.
 
-const FAKE_CLAUDE = `#!/bin/sh
+const FAKE_CLAUDE = String.raw`#!/bin/sh
 case "$2" in
     *SLEEP*) sleep 30 ;;
     *FAIL*) echo "boom from stderr" >&2; exit 3 ;;
+    *SPLIT*) printf 'result: \360\237\230'; sleep 0.2; printf '\200 done' ;;
     *) printf 'OK-OUTPUT' ;;
 esac
 `;
@@ -36,6 +37,12 @@ const baseOptions = function (prompt) {
 
 test('resolves with the full stdout on a clean exit', async function () {
     assert.equal(await spawnClaudeAsync(baseOptions('hello')), 'OK-OUTPUT');
+});
+
+test('reassembles a multi-byte UTF-8 character split across two stdout chunks', async function () {
+    // The fake writes the 4-byte emoji U+1F600 split mid-character across two flushes; without setEncoding('utf8')
+    // each partial sequence would decode to replacement characters (U+FFFD) instead of the emoji.
+    assert.equal(await spawnClaudeAsync(baseOptions('please SPLIT')), 'result: \u{1F600} done');
 });
 
 test('rejects with the trimmed stderr on a non-zero exit', async function () {

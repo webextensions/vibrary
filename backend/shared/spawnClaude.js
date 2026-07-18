@@ -87,6 +87,10 @@ const runClaudeProcess = function ({ cwd, args, timeoutMs, timeoutMessage, signa
         }
 
         const child = spawn('claude', args, { cwd, detached: true });
+        // Decode through Node's StringDecoder so a multi-byte UTF-8 character split across two chunks arrives intact;
+        // per-chunk Buffer.toString() would turn each half into replacement characters (U+FFFD).
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
         activeChildren.add(child);
 
         let stdout = '';
