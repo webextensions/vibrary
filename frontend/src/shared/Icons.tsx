@@ -66,6 +66,21 @@ const SourceControlIcon = function () {
     );
 };
 
+// Trophy glyph for the navigation rail's Rankings view.
+const TrophyIcon = function () {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <g stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6.5 3.5h7v4.5a3.5 3.5 0 0 1-7 0z" />
+                <path d="M6.5 4.5H3.75a.25.25 0 0 0-.25.25C3.5 7.5 5 9 6.7 9.3" />
+                <path d="M13.5 4.5h2.75a.25.25 0 0 1 .25.25C16.5 7.5 15 9 13.3 9.3" />
+                <path d="M10 11.5v2.5" />
+                <path d="M7 16.5h6M8.5 14h3" />
+            </g>
+        </svg>
+    );
+};
+
 // Pulse/heartbeat glyph for the navigation rail's Activity monitor view.
 const ActivityIcon = function () {
     return (
@@ -481,5 +496,6 @@ export {
     SpecIcon,
     StopIcon,
     TaskIcon,
+    TrophyIcon,
     TypeIcon
 };

@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- A **Rankings** view (trophy icon in the navigation rail) that Elo-ranks the folder's idea entries from recorded
+  head-to-head results: a standings table (rating, wins-losses, games) whose rows jump to their entries in the
+  editor. Results live in a `vibrary-rankings.json` at the folder root; standings are replayed from the kept records,
+  so discarding results recomputes exactly. The compare mode, match history, and AI-judged competitions build on this.
 - Undo for the editor's destructive actions: single-card Remove and the bulk Delete, Change type, Find & replace, and
   Remove broken references operations each show a brief Undo toast that restores exactly what changed, leaving any
   edit made in the meantime untouched.

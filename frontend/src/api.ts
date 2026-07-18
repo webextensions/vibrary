@@ -38,7 +38,7 @@ const request = async function <T>(url: string, init?: RequestInit): Promise<T> 
 
 // Send a JSON payload and parse the JSON envelope back - the shape shared by every non-streaming mutation. `init`
 // carries the rare per-call extras (an abort signal, keepalive for the pagehide flush).
-const requestJson = function <T>(url: string, method: 'POST' | 'PUT', payload: unknown, init?: Pick<RequestInit, 'signal' | 'keepalive'>): Promise<T> {
+const requestJson = function <T>(url: string, method: 'POST' | 'PUT' | 'DELETE', payload: unknown, init?: Pick<RequestInit, 'signal' | 'keepalive'>): Promise<T> {
     return request<T>(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -398,4 +398,33 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+// One row of the Elo standings: the entry's title plus its replayed rating and record.
+type RankingRow = { title: string; rating: number; wins: number; losses: number; games: number };
+// One recorded comparison. `orphanedTitles` names any contender that no longer resolves to an entry (renamed or
+// removed since the match) - the record is kept and flagged, and sits out of the replay until repaired or discarded.
+type RankingsMatch = { id: string; playedAt: string; firstTitle: string; secondTitle: string; winnerTitle: string; judge: 'AI' | 'Human'; rationale: string; orphanedTitles: string[] };
+// The whole rankings picture in one payload; every mutation answers with the same recomputed shape.
+type RankingsPayload = { standings: RankingRow[]; matches: RankingsMatch[]; types: EntryType[]; suggestedPairings: [string, string][] };
+
+// The types scope travels as a comma-separated value (query param and body alike); an empty selection is omitted so
+// the backend applies its default scope (idea entries).
+const typesToParameter = function (types: EntryType[]): string | undefined {
+    return types.length > 0 ? types.join(',') : undefined;
+};
+
+const getRankings = function (types: EntryType[] = []): Promise<RankingsPayload> {
+    const parameter = typesToParameter(types);
+    return request<RankingsPayload>(`/api/rankings${parameter === undefined ? '' : `?types=${encodeURIComponent(parameter)}`}`);
+};
+
+// Record one Human-judged head-to-head result (the AI judge writes through its own competition run route).
+const recordManualMatch = function (match: { firstTitle: string; secondTitle: string; winnerTitle: string; rationale?: string }, types: EntryType[] = []): Promise<RankingsPayload & { match: RankingsMatch }> {
+    return requestJson<RankingsPayload & { match: RankingsMatch }>('/api/rankings/matches', 'POST', { ...match, types: typesToParameter(types) });
+};
+
+// Discard recorded results by id - one, several, or the whole log - resolving with the recomputed picture.
+const discardMatches = function (ids: string[], types: EntryType[] = []): Promise<RankingsPayload & { removed: number }> {
+    return requestJson<RankingsPayload & { removed: number }>('/api/rankings/matches', 'DELETE', { ids, types: typesToParameter(types) });
+};
+
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, recordManualMatch, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

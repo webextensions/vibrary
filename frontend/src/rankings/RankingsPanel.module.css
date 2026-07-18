@@ -1,0 +1,136 @@
+.rankings-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.heading {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #57606a;
+}
+
+.icon-button {
+    display: inline-flex;
+    padding: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: #57606a;
+    cursor: pointer;
+}
+
+.icon-button:hover {
+    background: #f3f4f6;
+}
+
+.error-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid #ffb77c;
+    border-radius: 6px;
+    background: #fff8f0;
+    color: #7d4e00;
+    font-size: 13px;
+}
+
+.retry-button {
+    align-self: flex-start;
+    padding: 2px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.empty-state,
+.hint {
+    margin: 0;
+    color: #656d76;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.standings {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.standing-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    border-bottom: 1px solid #f0f2f4;
+}
+
+.rank {
+    flex: none;
+    min-width: 18px;
+    color: #8c959f;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.title-cell {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.title-button {
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #0969da;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.title-button:hover {
+    text-decoration: underline;
+}
+
+.title-button:disabled {
+    color: #1f2328;
+    text-decoration: none;
+    cursor: default;
+}
+
+.record {
+    color: #8c959f;
+    font-size: 11px;
+}
+
+.rating {
+    flex: none;
+    color: #1f2328;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
