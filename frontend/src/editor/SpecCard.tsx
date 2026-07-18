@@ -1,6 +1,5 @@
 import cx from 'classnames';
-import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { lazy, type ReactNode, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -22,6 +21,14 @@ import { RunActionSection } from './RunActionSection.tsx';
 
 import formStyles from './forms.module.css';
 import styles from './SpecCard.module.css';
+
+// Load the Markdown renderer on demand: react-markdown's remark/micromark stack is a sizeable chunk that most
+// sessions never need (the review-mode Markdown toggle is off by default and persisted off) - the same treatment
+// RawXmlView (prism), ActivityDetail (streamdown), and TaskOptionsForm (rjsf) already get. lazy() wants a default
+// export; react-markdown has one.
+const ReactMarkdown = lazy(function () {
+    return import('react-markdown');
+});
 
 type Option = { value: string; label: string };
 
@@ -333,7 +340,13 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
     // Review-mode content: rendered Markdown when the toolbar toggle is on (the clamp and Search mark, which act on the
     // raw text, do not apply then), otherwise the plain pre-wrapped text with its clamp and optional Show more/less.
     const contentReview = renderMarkdown ?
-        <div className={styles.markdownBody}><ReactMarkdown>{value.content}</ReactMarkdown></div> :
+        (
+            // The plain-text rendering doubles as the Suspense fallback, so toggling Markdown on shows ordinary text
+            // for the split second the chunk loads instead of a blank.
+            <Suspense fallback={<span className={styles.multiline}>{orDash(value.content)}</span>}>
+                <div className={styles.markdownBody}><ReactMarkdown>{value.content}</ReactMarkdown></div>
+            </Suspense>
+        ) :
         (
             <>
                 <span
@@ -358,7 +371,11 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
 
     // Notes follow content: rendered Markdown when the toggle is on (no clamp on notes either way), else plain text.
     const notesReview = renderMarkdown ?
-        <div className={styles.markdownBody}><ReactMarkdown>{value.notes}</ReactMarkdown></div> :
+        (
+            <Suspense fallback={<span className={styles.multiline}>{orDash(value.notes)}</span>}>
+                <div className={styles.markdownBody}><ReactMarkdown>{value.notes}</ReactMarkdown></div>
+            </Suspense>
+        ) :
         <span className={styles.multiline}>{renderText(orDash(value.notes))}</span>;
 
     return (
