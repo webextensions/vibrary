@@ -34,6 +34,9 @@ Three subcommands work without a browser (or a `claude` CLI, or an API key - non
 same `.vibraryinclude`-scoped files and the same rules the app's badges use:
 
 ```bash
+vibrary init                       # scaffold this folder: a starter .vibraryinclude plus a specs.xml whose
+                                   # entries demonstrate approvals, relations and labels (create-only: never
+                                   # overwrites; --minimal writes just the .vibraryinclude)
 vibrary check                      # exit 1 if anything is broken (prints each problem); 0 when clean
 vibrary check --require-approved   # additionally fail on any unapproved or stale entry
 vibrary check --json               # the same report, machine-readable, same exit codes

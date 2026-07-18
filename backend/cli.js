@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { Command, InvalidArgumentError } from 'commander';
 
 import { checkVibraryAsync } from './files/checkVibrary.js';
+import { initVibraryAsync } from './files/initVibrary.js';
 import { searchVibrary } from './search/searchVibrary.js';
 import { vibraryIncludeExistsAsync } from './files/vibraryFiles.js';
 import { startServer } from './server.js';
@@ -67,6 +68,23 @@ const buildProgram = function () {
                 // stack from an unhandled rejection.
                 console.error(`vibrary-server failed to start: ${error.message}`);
                 process.exitCode = 1;
+            }
+        });
+
+    program
+        .command('init')
+        .description('Scaffold this folder: a starter .vibraryinclude and a specs.xml demonstrating approvals, relations, and labels')
+        .option('--minimal', 'write only the .vibraryinclude', false)
+        .action(async function (options) {
+            const { written, skipped } = await initVibraryAsync(process.cwd(), { minimal: options.minimal });
+            for (const name of written) {
+                console.log(`created ${name}`);
+            }
+            for (const name of skipped) {
+                console.log(`kept existing ${name} (not overwritten)`);
+            }
+            if (written.length === 0) {
+                console.log('Nothing to do - everything already exists.');
             }
         });
 

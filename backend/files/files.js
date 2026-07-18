@@ -574,4 +574,4 @@ const createFilesRouter = function ({ cwd }) {
     return router;
 };
 
-export { createFilesRouter };
+export { createFilesRouter, VIBRARY_INCLUDE_TEMPLATE };

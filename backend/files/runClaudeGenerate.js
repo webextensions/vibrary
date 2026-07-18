@@ -1,4 +1,13 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { runStreamedAgentAsync } from '../shared/spawnClaude.js';
+
+// The format doc inside the INSTALLED package (docs/*.md is in the files list; the smoke test guards its presence).
+// The prompt points the agent at THIS copy, not at one in the served folder: the old "if docs/vibrary-file-format.md
+// exists in this folder, read it" was true in vibrary's own repo and false for every npm-installed user - a
+// works-on-my-machine gap where installed users' agents only ever saw the abbreviated inline rules.
+const FORMAT_DOC_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'vibrary-file-format.md');
 
 // Give the headless agent room to read the codebase and write the file; reject rather than hang forever if it stalls.
 const GENERATE_TIMEOUT_MS = 10 * 60 * 1000;
@@ -11,10 +20,8 @@ const buildPrompt = function (name, type, count, instructions, existingLabels) {
     const lines = [
         `Add exactly ${count} new <entry type="${type}"> elements to the file "${name}" in this project.`,
         '',
-        // Conditional on purpose: the format doc ships with vibrary's own repo, not with the folders the server is
-        // typically started in - pointing the agent at a file that does not exist there wastes a turn.
-        'If docs/vibrary-file-format.md exists in this folder, read it to learn the XML format (when it does not, the',
-        `rules below cover the essentials). Then read the existing entries in ${name} and explore the project's`,
+        `Read ${FORMAT_DOC_PATH} to learn the XML format (the rules below cover the essentials).`,
+        `Then read the existing entries in ${name} and explore the project's`,
         'codebase to find accurate, non-obvious facts about it worth capturing.',
         '',
         'Rules:',

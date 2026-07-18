@@ -67,6 +67,27 @@ test('check --json emits the report machine-readably with the same exit contract
     assert.equal(report.problems[0].kind, 'broken-reference');
 });
 
+test('init scaffolds a bare folder and a rerun keeps existing files', async function () {
+    const initCwd = mkdtempSync(path.join(tmpdir(), 'vibrary-cli-init-'));
+    try {
+        const first = await runCliAsync(initCwd, 'init');
+        assert.equal(first.code, 0);
+        assert.match(first.stdout, /created \.vibraryinclude/);
+        assert.match(first.stdout, /created specs\.xml/);
+
+        const second = await runCliAsync(initCwd, 'init');
+        assert.equal(second.code, 0);
+        assert.match(second.stdout, /kept existing specs\.xml/);
+        assert.match(second.stdout, /Nothing to do/);
+
+        // The scaffolded folder is immediately healthy by the app's own rules.
+        const checked = await runCliAsync(initCwd, 'check');
+        assert.equal(checked.code, 0);
+    } finally {
+        rmSync(initCwd, { recursive: true, force: true });
+    }
+});
+
 test('list prints per-file tallies and search prints entry matches', async function () {
     const listed = await runCliAsync(cleanCwd, 'list');
     assert.equal(listed.code, 0);

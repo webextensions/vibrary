@@ -78,6 +78,9 @@ test('generate surfaces the folder\'s existing label vocabulary in its prompt', 
     ].join('\n'));
     const lines = await streamLinesAsync('/files/specs.xml/generate', { type: 'spec', count: 1 });
     assert.match(lines[0].text, /already uses these labels: auth, backend/);
+    // The prompt points at the PACKAGE's own shipped format doc (an absolute path that always exists), not at a copy
+    // that may or may not be in the served folder - the old conditional was false for every npm-installed user.
+    assert.match(lines[0].text, /Read .*docs[/\\]vibrary-file-format\.md to learn the XML format/);
 
     // Without any labels in the folder, the hint is omitted entirely rather than rendered empty.
     writeFileSync(path.join(cwd, 'specs.xml'), '<root><entries><entry type="spec"><title>seed</title><content>c</content></entry></entries></root>');
