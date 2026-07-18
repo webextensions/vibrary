@@ -320,3 +320,37 @@ test('move-entries creates the target file when it does not exist yet', async fu
     assert.match(created.body.output.content, /<title>alpha<\/title>/); // the new file holds the moved entry
     assert.doesNotMatch((await requestJsonAsync('/files/specs-split.xml')).body.output.content, /<title>alpha<\/title>/);
 });
+
+test('duplicate copies content to the new name, leaving the source intact', async function () {
+    const duplicated = await sendJsonAsync('/files/specs.xml/duplicate', { newName: 'tasks-dup.xml' });
+    assert.equal(duplicated.status, 200);
+    assert.equal(duplicated.body.output.name, 'tasks-dup.xml');
+
+    const copy = await requestJsonAsync('/files/tasks-dup.xml');
+    assert.equal(copy.status, 200);
+    assert.equal(copy.body.output.content, VALID_XML);
+    assert.equal((await requestJsonAsync('/files/specs.xml')).status, 200); // the source survives
+});
+
+test('duplicate refuses an existing target with a 409 (the wx flag, not an overwrite)', async function () {
+    const collided = await sendJsonAsync('/files/specs.xml/duplicate', { newName: 'specs-broken.xml' });
+    assert.equal(collided.status, 409);
+    assert.match(collided.body.errorMessage ?? '', /already exists/);
+});
+
+test('duplicate answers 404 for a non-included source and 400 for a non-included target name', async function () {
+    // ideas.xml exists on disk but is not matched by the .vibraryinclude patterns, so as a SOURCE it is unfindable...
+    const hiddenSource = await sendJsonAsync('/files/ideas.xml/duplicate', { newName: 'tasks-from-hidden.xml' });
+    assert.equal(hiddenSource.status, 404);
+
+    // ...and as a TARGET name it is refused before any filesystem work.
+    const hiddenTarget = await sendJsonAsync('/files/specs.xml/duplicate', { newName: 'ideas-copy.xml' });
+    assert.equal(hiddenTarget.status, 400);
+    assert.match(hiddenTarget.body.errorMessage ?? '', /vibraryinclude/);
+});
+
+test('duplicate creates the parent directory for a nested target name', async function () {
+    const nested = await sendJsonAsync('/files/specs.xml/duplicate', { newName: 'nested/tasks-nested-dup.xml' });
+    assert.equal(nested.status, 200);
+    assert.equal((await requestJsonAsync('/files/nested%2Ftasks-nested-dup.xml')).status, 200);
+});
