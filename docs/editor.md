@@ -121,11 +121,12 @@ the open file), and **Created by** (Human / AI / Unspecified - the entry's prove
 entry's title, content, notes, or labels. An entry is shown when it matches every dimension that is set; an empty selection
 (or empty text) in a dimension imposes no constraint there. A dot on the
 Filter button and an "X of Y shown" count both indicate when a filter is active, and a **Clear filters** link resets
-all four at once. This narrows the open file's list; to jump to a matching entry across all files, use the Search
+them all at once. This narrows the open file's list; to jump to a matching entry across all files, use the Search
 panel instead.
 
 The Search panel (the magnifier in the navigation rail) searches every included file's entries by title, content,
-notes, and labels, listing each match with the term emphasized in its snippet. Choosing a result opens the entry's
+notes, and labels - optionally narrowed to specific files via the "Narrow to files" selector - listing each match
+with the term emphasized in its snippet. Choosing a result opens the entry's
 file, scrolls to and briefly rings the entry, reveals it (un-clamping long content and opening its extra fields so a
 match in the notes is visible), and marks the matched term in its title, content, or notes so it stands out where you
 land.

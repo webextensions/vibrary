@@ -43,7 +43,9 @@ entries, so elements outside it are not preserved - anything else placed in the 
 All entry types share the same fields; the only behavioral difference is that the editor's headless-agent run action -
 "Apply this spec" or "Run this task" - is shown only on `type="spec"` and `type="task"` entries (`review` and `idea`
 have none). A `task` entry may additionally declare a `formSchemaRef` (see below) for a per-run options form; the other
-types leave it empty. An entry with no `type` attribute is treated as a `spec`.
+types leave it empty. An entry with no `type` attribute is treated as a `spec`. Field values are normalized by the
+same round trip that drops unknown elements: an unrecognized `type` (including case variants like `Task`) becomes
+`spec`, and a `createdBy`/`updatedBy` other than `Human`/`AI` becomes empty, on the next save.
 
 ## Fields
 
