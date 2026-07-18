@@ -150,6 +150,30 @@ const CREATOR_FILTER_OPTIONS: Option[] = [
     { value: '', label: 'Unspecified' }
 ];
 
+// Success toast with an Undo affordance, shared by every lossy in-place operation (single remove, bulk delete,
+// broken-reference cleanup, find & replace, bulk type change). The 8s window - longer than default - lives here
+// because the toast carries the only recovery path; the onUndo callback must restore into the LIVE list via
+// specsReference (see reinsertEntries/restoreEntries at the call sites) so edits made while the toast is up survive.
+const showUndoToast = function (message: string, onUndo: () => void) {
+    toast.success(function ({ closeToast }) {
+        return (
+            <span className={styles.undoToast}>
+                {message}
+                <button
+                    type="button"
+                    className={styles.undoButton}
+                    onClick={function () {
+                        onUndo();
+                        closeToast();
+                    }}
+                >
+                    Undo
+                </button>
+            </span>
+        );
+    }, { autoClose: 8000 });
+};
+
 // View-only orderings for the entry list. 'file' is the on-disk order (the default, and the only one in which the
 // manual up/down reorder makes sense - so reorder is disabled under any other). The rest are derived, non-destructive
 // sorts that never touch the saved order.
@@ -351,23 +375,9 @@ const SpecsEditor = function (
         // The single-card counterpart of the bulk-delete Undo: the card's Remove button already confirms, but a confirm
         // only guards intent - this gives an actual recovery path. reinsertEntries puts the entry back at its original
         // position in the LIVE list, so an edit to another entry while the toast is up is preserved (see reinsertEntries).
-        toast.success(function ({ closeToast }) {
-            return (
-                <span className={styles.undoToast}>
-                    Removed 1 entry
-                    <button
-                        type="button"
-                        className={styles.undoButton}
-                        onClick={function () {
-                            onChange(reinsertEntries(specsReference.current, [{ index, spec: removed }]));
-                            closeToast();
-                        }}
-                    >
-                        Undo
-                    </button>
-                </span>
-            );
-        }, { autoClose: 8000 });
+        showUndoToast('Removed 1 entry', function () {
+            onChange(reinsertEntries(specsReference.current, [{ index, spec: removed }]));
+        });
     };
 
     // Every title a "Make unique" fix (and a Duplicate) must avoid: the saved cross-file titles PLUS this file's live,
@@ -957,23 +967,9 @@ const SpecsEditor = function (
         const touchedCount = changes.length;
         // The dropped refs were already dead links, but a user may have meant to CREATE those targets rather than cut
         // the links - so the same Undo the other bulk ops offer (restoring only entries untouched since) applies here.
-        toast.success(function ({ closeToast }) {
-            return (
-                <span className={styles.undoToast}>
-                    Removed {removedCount} broken {removedCount === 1 ? 'reference' : 'references'} from {touchedCount} {touchedCount === 1 ? 'entry' : 'entries'}
-                    <button
-                        type="button"
-                        className={styles.undoButton}
-                        onClick={function () {
-                            onChange(restoreEntries(specsReference.current, changes));
-                            closeToast();
-                        }}
-                    >
-                        Undo
-                    </button>
-                </span>
-            );
-        }, { autoClose: 8000 });
+        showUndoToast(`Removed ${removedCount} broken ${removedCount === 1 ? 'reference' : 'references'} from ${touchedCount} ${touchedCount === 1 ? 'entry' : 'entries'}`, function () {
+            onChange(restoreEntries(specsReference.current, changes));
+        });
     };
 
     // Apply the Find & replace dialog's terms across the selected entries' content and notes. replaceInEntries rewrites
@@ -991,23 +987,9 @@ const SpecsEditor = function (
             return after === undefined || after === before ? [] : [{ before, after }];
         });
         onChange(result.specs);
-        toast.success(function ({ closeToast }) {
-            return (
-                <span className={styles.undoToast}>
-                    Replaced {result.occurrences} {result.occurrences === 1 ? 'occurrence' : 'occurrences'} across {result.entriesChanged} {result.entriesChanged === 1 ? 'entry' : 'entries'}
-                    <button
-                        type="button"
-                        className={styles.undoButton}
-                        onClick={function () {
-                            onChange(restoreEntries(specsReference.current, replaced));
-                            closeToast();
-                        }}
-                    >
-                        Undo
-                    </button>
-                </span>
-            );
-        }, { autoClose: 8000 });
+        showUndoToast(`Replaced ${result.occurrences} ${result.occurrences === 1 ? 'occurrence' : 'occurrences'} across ${result.entriesChanged} ${result.entriesChanged === 1 ? 'entry' : 'entries'}`, function () {
+            onChange(restoreEntries(specsReference.current, replaced));
+        });
     };
 
     // Set the type of every selected entry to `type`, skipping (and never re-stamping) entries already of that type.
@@ -1029,23 +1011,9 @@ const SpecsEditor = function (
         }
         onChange(next);
         const count = changes.length;
-        toast.success(function ({ closeToast }) {
-            return (
-                <span className={styles.undoToast}>
-                    Changed {count} {count === 1 ? 'entry' : 'entries'} to {type}
-                    <button
-                        type="button"
-                        className={styles.undoButton}
-                        onClick={function () {
-                            onChange(restoreEntries(specsReference.current, changes));
-                            closeToast();
-                        }}
-                    >
-                        Undo
-                    </button>
-                </span>
-            );
-        }, { autoClose: 8000 });
+        showUndoToast(`Changed ${count} ${count === 1 ? 'entry' : 'entries'} to ${type}`, function () {
+            onChange(restoreEntries(specsReference.current, changes));
+        });
     };
 
     // Move the selected entries into `targetName`. The server does the move and App reloads both files; pass the
@@ -1103,25 +1071,9 @@ const SpecsEditor = function (
         setSelectedIds(new Set());
         setOperationsOpen(false);
         const removedCount = removed.length;
-        // A longer-than-default window here because the whole point is to give the user time to react to an accidental
-        // bulk delete; the toast carries the only recovery path (the entries are already gone from the editor).
-        toast.success(function ({ closeToast }) {
-            return (
-                <span className={styles.undoToast}>
-                    Removed {removedCount} {removedCount === 1 ? 'entry' : 'entries'}
-                    <button
-                        type="button"
-                        className={styles.undoButton}
-                        onClick={function () {
-                            onChange(reinsertEntries(specsReference.current, removed));
-                            closeToast();
-                        }}
-                    >
-                        Undo
-                    </button>
-                </span>
-            );
-        }, { autoClose: 8000 });
+        showUndoToast(`Removed ${removedCount} ${removedCount === 1 ? 'entry' : 'entries'}`, function () {
+            onChange(reinsertEntries(specsReference.current, removed));
+        });
     };
 
     return (
