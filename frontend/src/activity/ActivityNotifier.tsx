@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 
 import { useActivityQueueState } from './activityQueue.ts';
-import { useSettings } from '../settings/settingsContext.ts';
+import { useSettingsState } from '../settings/settingsContext.ts';
 import { FINISHED_STATUSES, KIND_META } from './activityPresentation.ts';
 
 // Renders nothing; watches the job queue and pops a top-right toast when a job starts and when it finishes, for the
@@ -17,7 +17,7 @@ import { FINISHED_STATUSES, KIND_META } from './activityPresentation.ts';
 // failures. The effect re-runs on every jobs change, so each transition fires exactly once.
 const ActivityNotifier = function () {
     const { jobs } = useActivityQueueState();
-    const { isKindEnabled } = useSettings();
+    const { isKindEnabled } = useSettingsState();
     const startNotifiedReference = useRef(new Set<string>());
     const finishNotifiedReference = useRef(new Map<string, number>()); // job id -> endedAt of the last toasted finish
 

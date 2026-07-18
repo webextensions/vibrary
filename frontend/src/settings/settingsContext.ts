@@ -3,27 +3,23 @@ import { createContext, use } from 'react';
 import { type JobKind } from '../activity/activityQueue.ts';
 import { type FormData } from '../editor/taskOptions.ts';
 
-// Context and accessor for the per-project settings store. The stateful provider lives in SettingsProvider.tsx; kept
+// Context and accessors for the per-project settings store. The stateful provider lives in SettingsProvider.tsx; kept
 // separate (like activityQueue.ts) so each file exports one kind of thing and React Fast Refresh stays happy.
+//
+// Split into STATE and ACTIONS like the activity queue's context, and for the same reason: the hottest writer is
+// rjsf's per-keystroke task-options onChange, and the widest consumers are per-card (every RunActionSection). The
+// actions bundle is referentially stable for the provider's whole life, and the state bundle's identity deliberately
+// EXCLUDES settings.taskOptions (its readers live in the actions bundle, off the provider's ref), so a keystroke in
+// one card's options form re-renders no other card.
 
-type SettingsStore = {
-    // False until the settings file has been fetched once; consumers that seed state from it (e.g. task options) wait
-    // for this before applying stored values.
+type SettingsState = {
+    // False until the settings file has been fetched once; consumers that seed state from stored values (e.g. task
+    // options) wait for this before applying them.
     loaded: boolean;
     isKindEnabled: (kind: JobKind) => boolean;
-    setKindEnabled: (kind: JobKind, isEnabled: boolean) => void;
-    // Restore every notification toggle to its DEFAULT_NOTIFICATIONS value, mirroring resetTaskOptions below.
-    resetNotifications: () => void;
-    // Remembered options for a task's options form, keyed by its formSchemaRef; null when nothing is stored yet.
-    getTaskOptions: (reference: string) => FormData | null;
-    setTaskOptions: (reference: string, formData: FormData) => void;
-    // Drop the stored options for a task so it falls back to the schema defaults again.
-    resetTaskOptions: (reference: string) => void;
     // Whether any task has remembered options at all, so a "reset all" entry point can hide/disable itself when
     // there is nothing to reset.
     hasStoredTaskOptions: boolean;
-    // Drop every task's remembered options in one call, mirroring resetNotifications above.
-    resetAllTaskOptions: () => void;
     // The debounced write-to-disk's error message, or null once a write has since succeeded (or none has failed yet).
     // Every other feature that persists user intent (SourceControlPanel's actions, ActivityQueue jobs) surfaces a
     // visible error on failure; a toggled notification preference or remembered task-options form should too, rather
@@ -31,14 +27,38 @@ type SettingsStore = {
     saveError: string | null
 };
 
-const SettingsContext = createContext<SettingsStore | null>(null);
+type SettingsActions = {
+    setKindEnabled: (kind: JobKind, isEnabled: boolean) => void;
+    // Restore every notification toggle to its DEFAULT_NOTIFICATIONS value, mirroring resetTaskOptions below.
+    resetNotifications: () => void;
+    // Remembered options for a task's options form, keyed by its formSchemaRef; null when nothing is stored yet.
+    // Reads the provider's live ref (not React state), which is what lets it live in the stable bundle - callers use
+    // it for one-time seeding gated on `loaded`, not as a subscription.
+    getTaskOptions: (reference: string) => FormData | null;
+    setTaskOptions: (reference: string, formData: FormData) => void;
+    // Drop the stored options for a task so it falls back to the schema defaults again.
+    resetTaskOptions: (reference: string) => void;
+    // Drop every task's remembered options in one call, mirroring resetNotifications above.
+    resetAllTaskOptions: () => void
+};
 
-const useSettings = function (): SettingsStore {
-    const value = use(SettingsContext);
+const SettingsStateContext = createContext<SettingsState | null>(null);
+const SettingsActionsContext = createContext<SettingsActions | null>(null);
+
+const useSettingsState = function (): SettingsState {
+    const value = use(SettingsStateContext);
     if (value === null) {
-        throw new Error('useSettings must be used within a SettingsProvider');
+        throw new Error('useSettingsState must be used within a SettingsProvider');
     }
     return value;
 };
 
-export { SettingsContext, type SettingsStore, useSettings };
+const useSettingsActions = function (): SettingsActions {
+    const value = use(SettingsActionsContext);
+    if (value === null) {
+        throw new Error('useSettingsActions must be used within a SettingsProvider');
+    }
+    return value;
+};
+
+export { type SettingsActions, SettingsActionsContext, type SettingsState, SettingsStateContext, useSettingsActions, useSettingsState };

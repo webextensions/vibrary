@@ -5,7 +5,7 @@ import { useActivityQueueActions, useActivityQueueState } from '../activity/acti
 import { applySpecs, runTask } from '../api.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
-import { useSettings } from '../settings/settingsContext.ts';
+import { useSettingsActions, useSettingsState } from '../settings/settingsContext.ts';
 import { type Spec } from '../xml/vibraryXml.ts';
 
 import { isRalphLoopEnabled, optionsToPrompt, schemaDefaults } from './taskOptions.ts';
@@ -36,7 +36,11 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
     // State subscription is deliberate here: the button mirrors this entry's live queue status (review the
     // activeJob derivation below), so re-rendering on queue transitions is exactly what it needs.
     const { jobs } = useActivityQueueState();
-    const { loaded: settingsLoaded, getTaskOptions, setTaskOptions, resetTaskOptions } = useSettings();
+    // State supplies only `loaded` (whose identity holds through task-options keystrokes - see settingsContext.ts);
+    // the option readers/writers come from the stable actions bundle, so typing in one card's form re-renders no
+    // other card's run section.
+    const { loaded: settingsLoaded } = useSettingsState();
+    const { getTaskOptions, setTaskOptions, resetTaskOptions } = useSettingsActions();
     // True only while the custom-instructions prompt is open - NOT while the run itself executes (the card hands the
     // job to the activity monitor and returns); the button's queued/running state is derived from the queue below.
     const [prompting, setPrompting] = useState(false);

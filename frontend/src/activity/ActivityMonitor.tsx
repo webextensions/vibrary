@@ -4,7 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { type Job, type JobKind, type JobStatus, useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
-import { useSettings } from '../settings/settingsContext.ts';
+import { useSettingsActions, useSettingsState } from '../settings/settingsContext.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, FilterIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
@@ -99,7 +99,8 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry,
 // outside click or Escape, matching every other popup in the app (Sidebar/TabBar menus, SpecsEditor's
 // speed-dial/Operations/Actions popups).
 const NotificationSettingsMenu = function () {
-    const { isKindEnabled, setKindEnabled, resetNotifications, hasStoredTaskOptions, resetAllTaskOptions, saveError } = useSettings();
+    const { isKindEnabled, hasStoredTaskOptions, saveError } = useSettingsState();
+    const { setKindEnabled, resetNotifications, resetAllTaskOptions } = useSettingsActions();
     const [open, setOpen] = useState(false);
     const wrapReference = useRef<HTMLDivElement>(null);
 

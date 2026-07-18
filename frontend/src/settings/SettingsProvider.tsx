@@ -1,10 +1,10 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { type JobKind } from '../activity/activityQueue.ts';
 import { getSettings, saveSettings } from '../api.ts';
 import { type FormData } from '../editor/taskOptions.ts';
 import { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings } from './settings.ts';
-import { SettingsContext } from './settingsContext.ts';
+import { type SettingsActions, SettingsActionsContext, SettingsStateContext } from './settingsContext.ts';
 
 // Holds the per-project settings (activity-start notification toggles, remembered task options) loaded once from
 // `.vibrary/settings.local.json` and written back on change. Writes are debounced so rjsf's per-keystroke onChange
@@ -75,69 +75,86 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
         };
     }, []);
 
-    const persist = function (updater: (previous: AppSettings) => AppSettings) {
-        const next = updater(latestReference.current);
-        latestReference.current = next;
-        setSettings(next);
-        pendingSaveReference.current = next;
-        if (saveTimerReference.current !== null) {
-            clearTimeout(saveTimerReference.current);
-        }
-        saveTimerReference.current = setTimeout(function () {
-            saveTimerReference.current = null;
-            pendingSaveReference.current = null;
-            void (async function () {
-                try {
-                    await saveSettings(next);
-                    setSaveError(null);
-                } catch (error) {
-                    console.error('[vibrary] failed to save settings:', error);
-                    setSaveError((error as Error).message);
-                }
-            })();
-        }, SAVE_DEBOUNCE_MS);
-    };
+    // The actions bundle is created ONCE (useState initializer) so its identity never changes - the same freeze the
+    // activity queue's actions use. Everything the closures touch is render-stable (refs and setState functions), and
+    // every mutation folds off latestReference, never a captured settings snapshot.
+    const [actions] = useState<SettingsActions>(function () {
+        const persist = function (updater: (previous: AppSettings) => AppSettings) {
+            const next = updater(latestReference.current);
+            latestReference.current = next;
+            setSettings(next);
+            pendingSaveReference.current = next;
+            if (saveTimerReference.current !== null) {
+                clearTimeout(saveTimerReference.current);
+            }
+            saveTimerReference.current = setTimeout(function () {
+                saveTimerReference.current = null;
+                pendingSaveReference.current = null;
+                void (async function () {
+                    try {
+                        await saveSettings(next);
+                        setSaveError(null);
+                    } catch (error) {
+                        console.error('[vibrary] failed to save settings:', error);
+                        setSaveError((error as Error).message);
+                    }
+                })();
+            }, SAVE_DEBOUNCE_MS);
+        };
+        return {
+            setKindEnabled: function (kind: JobKind, isEnabled: boolean): void {
+                persist(function (previous) {
+                    return { ...previous, notifications: { ...previous.notifications, [kind]: isEnabled } };
+                });
+            },
+            resetNotifications: function (): void {
+                persist(function (previous) {
+                    return { ...previous, notifications: { ...DEFAULT_NOTIFICATIONS } };
+                });
+            },
+            getTaskOptions: function (reference: string): FormData | null {
+                return latestReference.current.taskOptions[reference] ?? null;
+            },
+            setTaskOptions: function (reference: string, formData: FormData): void {
+                persist(function (previous) {
+                    return { ...previous, taskOptions: { ...previous.taskOptions, [reference]: formData } };
+                });
+            },
+            resetTaskOptions: function (reference: string): void {
+                persist(function (previous) {
+                    const nextTaskOptions = { ...previous.taskOptions };
+                    delete nextTaskOptions[reference];
+                    return { ...previous, taskOptions: nextTaskOptions };
+                });
+            },
+            resetAllTaskOptions: function (): void {
+                persist(function (previous) {
+                    return { ...previous, taskOptions: {} };
+                });
+            }
+        };
+    });
 
-    const store = {
-        loaded,
-        isKindEnabled: function (kind: JobKind): boolean {
-            return settings.notifications[kind];
-        },
-        setKindEnabled: function (kind: JobKind, isEnabled: boolean): void {
-            persist(function (previous) {
-                return { ...previous, notifications: { ...previous.notifications, [kind]: isEnabled } };
-            });
-        },
-        resetNotifications: function (): void {
-            persist(function (previous) {
-                return { ...previous, notifications: { ...DEFAULT_NOTIFICATIONS } };
-            });
-        },
-        getTaskOptions: function (reference: string): FormData | null {
-            return settings.taskOptions[reference] ?? null;
-        },
-        setTaskOptions: function (reference: string, formData: FormData): void {
-            persist(function (previous) {
-                return { ...previous, taskOptions: { ...previous.taskOptions, [reference]: formData } };
-            });
-        },
-        resetTaskOptions: function (reference: string): void {
-            persist(function (previous) {
-                const nextTaskOptions = { ...previous.taskOptions };
-                delete nextTaskOptions[reference];
-                return { ...previous, taskOptions: nextTaskOptions };
-            });
-        },
-        hasStoredTaskOptions: Object.keys(settings.taskOptions).length > 0,
-        resetAllTaskOptions: function (): void {
-            persist(function (previous) {
-                return { ...previous, taskOptions: {} };
-            });
-        },
-        saveError
-    };
+    // The state bundle's memo deps deliberately EXCLUDE settings.taskOptions: a per-keystroke options edit changes
+    // only that slice (persist spreads it fresh while `notifications` keeps its reference), so the state identity
+    // holds and no state consumer re-renders. hasStoredTaskOptions is folded to a boolean first for the same reason.
+    const hasStoredTaskOptions = Object.keys(settings.taskOptions).length > 0;
+    const state = useMemo(function () {
+        return {
+            loaded,
+            isKindEnabled: function (kind: JobKind): boolean {
+                return settings.notifications[kind];
+            },
+            hasStoredTaskOptions,
+            saveError
+        };
+    }, [settings.notifications, hasStoredTaskOptions, loaded, saveError]);
 
-    return <SettingsContext value={store}>{children}</SettingsContext>;
+    return (
+        <SettingsStateContext value={state}>
+            <SettingsActionsContext value={actions}>{children}</SettingsActionsContext>
+        </SettingsStateContext>
+    );
 };
 
 export { SettingsProvider };
