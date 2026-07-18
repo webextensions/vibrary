@@ -7,7 +7,6 @@ import { ENTRY_TYPES } from '../../shared/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { isValidVibraryName, isVibraryNameIncluded } from './vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
-import { applySpecAsync } from './runClaudeApply.js';
 import { applySpecsAsync } from './runClaudeApplyBatch.js';
 import { generateSpecsAsync } from './runClaudeGenerate.js';
 import { runChatAsync } from './runClaudeChat.js';
@@ -127,32 +126,8 @@ const createAgentsRouter = function ({ cwd }) {
         });
     });
 
-    // Run a headless "claude -p" agent that makes the codebase conform to a single spec. Not file-name scoped: applying
-    // acts on the whole project (cwd), so the spec's text is sent in the body rather than read back from a file.
-    router.post('/apply', function (request, response) {
-        const { title, content, notes, instructions } = request.body || {};
-        if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
-            return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
-        }
-        if (promptBytes(title, content, notes, instructions) > MAX_PROMPT_BYTES) {
-            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
-        }
-
-        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return applySpecAsync({
-                cwd,
-                title,
-                content,
-                notes: typeof notes === 'string' ? notes : '',
-                instructions: typeof instructions === 'string' ? instructions : '',
-                signal,
-                onLine
-            });
-        });
-    });
-
-    // Run a headless "claude -p" agent that carries out a single task. Like /apply, not file-name scoped: running acts
-    // on the whole project (cwd), so the task's text is sent in the body rather than read back from a file.
+    // Run a headless "claude -p" agent that carries out a single task. Like /apply-batch, not file-name scoped:
+    // running acts on the whole project (cwd), so the task's text is sent in the body rather than read back from a file.
     router.post('/run-task', function (request, response) {
         const { title, content, notes, instructions, options, useRalphLoop } = request.body || {};
         if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
@@ -198,8 +173,9 @@ const createAgentsRouter = function ({ cwd }) {
         });
     });
 
-    // Run a headless "claude -p" agent that makes the codebase conform to several selected specs in a single run.
-    // Like /apply, project-scoped: the entries' text is sent in the body and acted on against the whole project (cwd).
+    // Run a headless "claude -p" agent that makes the codebase conform to the selected specs in a single run - the
+    // frontend's single-card Apply is a batch of one. Project-scoped: the entries' text is sent in the body and acted
+    // on against the whole project (cwd).
     router.post('/apply-batch', function (request, response) {
         const { entries, instructions } = request.body || {};
         if (!Array.isArray(entries) || entries.length === 0) {

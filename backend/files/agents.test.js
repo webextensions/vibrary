@@ -59,7 +59,7 @@ const streamLinesAsync = async function (route, payload) {
 };
 
 test('a clean run streams the prompt echo, the CLI lines, and a code-0 _exit terminator', async function () {
-    const lines = await streamLinesAsync('/apply', { title: 'demo', content: 'do the thing' });
+    const lines = await streamLinesAsync('/apply-batch', { entries: [{ title: 'demo', content: 'do the thing' }] });
     assert.equal(lines[0].type, 'user_prompt');
     assert.match(lines[0].text, /do the thing/);
     assert.equal(lines[1].session_id, '11111111-2222-3333-4444-555555555555');
@@ -73,7 +73,7 @@ test('a failing run terminates the stream with a code-1 _exit carrying the stder
 });
 
 test('a second run while one is active is refused with a 409, and the slot frees afterwards', async function () {
-    const first = streamLinesAsync('/apply', { title: 'demo', content: 'please SLEEP a while' });
+    const first = streamLinesAsync('/apply-batch', { entries: [{ title: 'demo', content: 'please SLEEP a while' }] });
     await delay(200); // let the first request claim the run slot and spawn
 
     // Any streaming agent route contends for the same slot; validation failures never claim it.
@@ -92,7 +92,7 @@ test('content that would overflow the single argv argument is refused with a 413
     // Comfortably over the 96 KiB prompt budget, but well under the 10 MB body limit, so it reaches the guard.
     const huge = 'x'.repeat(200 * 1024);
 
-    const applied = await sendJsonAsync('/apply', { title: 'demo', content: huge });
+    const applied = await sendJsonAsync('/apply-batch', { entries: [{ title: 'demo', content: huge }] });
     assert.equal(applied.status, 413);
     assert.match(applied.body.errorMessage ?? '', /too large/);
 
@@ -105,7 +105,7 @@ test('content that would overflow the single argv argument is refused with a 413
 });
 
 test('validation failures answer the plain JSON envelope, not a stream', async function () {
-    const { status, body } = await sendJsonAsync('/apply', { title: 'demo', content: '' });
+    const { status, body } = await sendJsonAsync('/apply-batch', { entries: [{ title: 'demo', content: '' }] });
     assert.equal(status, 400);
     assert.equal(body.status, 'error');
 

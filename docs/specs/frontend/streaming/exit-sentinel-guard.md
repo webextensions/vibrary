@@ -26,5 +26,5 @@ the activity row offers Retry.
 
 ## Tests
 
-[frontend/src/api.test.ts](../../../frontend/src/api.test.ts) drives `applySpec` against a mocked `fetch` whose NDJSON
-body covers all three terminal cases above.
+[frontend/src/api.test.ts](../../../frontend/src/api.test.ts) drives `applySpecs` against a mocked `fetch` whose
+NDJSON body covers all three terminal cases above.

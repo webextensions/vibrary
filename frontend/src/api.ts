@@ -228,13 +228,6 @@ const generateSpecs = function (name: string, type: EntryType, count: number, in
     return streamClaude(`/api/files/${encodeURIComponent(name)}/generate`, { type, count, instructions }, options);
 };
 
-// Runs the backend's headless AI agent to make the codebase conform to a single spec, editing files directly and
-// streaming its activity through `options.onEvent`. Resolves with the run's final result text once the agent finishes.
-// `instructions` carries optional custom one-time guidance for this run; it is folded into the agent's prompt when non-empty.
-const applySpec = function (spec: { title: string; content: string; notes: string; instructions: string }, options: StreamOptions): Promise<string> {
-    return streamClaude('/api/apply', { title: spec.title, content: spec.content, notes: spec.notes, instructions: spec.instructions }, options);
-};
-
 // Runs the backend's headless AI agent to carry out a single task, editing files directly and streaming its activity
 // through `options.onEvent`. Resolves with the run's final result text once the agent finishes. `instructions` carries
 // optional custom one-time guidance; `task.options` carries the directive block derived from the task's per-run options
@@ -245,10 +238,10 @@ const runTask = function (task: { title: string; content: string; notes: string;
     return streamClaude('/api/run-task', { title: task.title, content: task.content, notes: task.notes, instructions: task.instructions, options: task.options, useRalphLoop: task.useRalphLoop }, options);
 };
 
-// Runs the backend's headless AI agent to make the codebase conform to several selected specs in a single run, editing
+// Runs the backend's headless AI agent to make the codebase conform to the selected specs in a single run, editing
 // files directly and streaming its activity through `options.onEvent`. Resolves with the run's final result text once
-// the agent finishes. `instructions` carries optional custom one-time guidance for the whole batch, the bulk
-// counterpart of applySpec's own `instructions`; folded into the agent's prompt when non-empty.
+// the agent finishes. The single-card Apply is a batch of one - there is no separate single-spec route. `instructions`
+// carries optional custom one-time guidance for the whole run; folded into the agent's prompt when non-empty.
 const applySpecs = function (entries: { title: string; content: string; notes: string }[], instructions: string, options: StreamOptions): Promise<string> {
     return streamClaude('/api/apply-batch', { entries, instructions }, options);
 };
@@ -396,4 +389,4 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
-export { ApiError, applySpec, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, populateTitle, pullChanges, pushChanges, renameFile, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

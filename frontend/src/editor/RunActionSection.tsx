@@ -2,7 +2,7 @@ import type { RJSFSchema } from '@rjsf/utils';
 import { lazy, Suspense, useMemo, useState } from 'react';
 
 import { useActivityQueueActions, useActivityQueueState } from '../activity/activityQueue.ts';
-import { applySpec, runTask } from '../api.ts';
+import { applySpecs, runTask } from '../api.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { useSettings } from '../settings/settingsContext.ts';
@@ -94,9 +94,15 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
         resetTaskOptions(optionsReference);
     };
 
+    // A single-card Apply is a batch of one: there is no separate single-spec route (the batch prompt goes singular
+    // for one entry), so the card adapts its arguments to applySpecs. The 'apply-spec' job kind stays client-side
+    // vocabulary for the monitor's label.
+    const applyOne = function (spec: { title: string; content: string; notes: string; instructions: string }, streamOptions: Parameters<typeof applySpecs>[2]) {
+        return applySpecs([{ title: spec.title, content: spec.content, notes: spec.notes }], spec.instructions, streamOptions);
+    };
     const runAction = value.type === 'task' ?
         { label: 'Run this task', kind: 'run-task' as const, busyLabel: 'Running...', run: runTask } :
-        { label: 'Apply this spec', kind: 'apply-spec' as const, busyLabel: 'Applying...', run: applySpec };
+        { label: 'Apply this spec', kind: 'apply-spec' as const, busyLabel: 'Applying...', run: applyOne };
 
     // A queued or running job for this same entry (matched by kind plus label, which enqueue sets to the entry's
     // title). While one exists the button reports it and refuses to queue a duplicate - an impatient double-click

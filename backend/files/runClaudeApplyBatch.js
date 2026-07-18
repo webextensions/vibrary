@@ -1,24 +1,30 @@
 import { runStreamedAgentAsync } from '../shared/spawnClaude.js';
 
 // Give the headless agent room to read the codebase and edit files; reject rather than hang forever if it stalls.
-// The base matches the single-spec apply's budget; each additional entry buys extra room (a batch of N is roughly N
-// specs' worth of work in ONE run, so holding it to a 1-spec budget guaranteed timeouts that SIGTERM the agent
-// mid-edit and leave the working tree half conformed). The overall ceiling keeps a wedged run from living for hours.
+// Each entry past the first buys extra room on the base budget (a batch of N is roughly N specs' worth of work in
+// ONE run, so holding it to a 1-spec budget guaranteed timeouts that SIGTERM the agent mid-edit and leave the
+// working tree half conformed). The overall ceiling keeps a wedged run from living for hours.
 const APPLY_BASE_TIMEOUT_MS = 10 * 60 * 1000;
 const APPLY_PER_ENTRY_TIMEOUT_MS = 2 * 60 * 1000;
 const APPLY_MAX_TIMEOUT_MS = 60 * 60 * 1000;
 
 // The instruction handed to "claude -p". It makes the codebase conform to every selected spec in a single run, editing
-// files on disk as needed. Each entry becomes a labeled block (Title / Content / optional Notes); the Notes line is
-// omitted when an entry has none. `instructions` carries optional custom one-time guidance for the whole batch (the
-// bulk counterpart of the single-spec /apply route's own `instructions`); appended once, after every entry, when
-// non-empty.
+// files on disk as needed (a single-card Apply arrives as a batch of one, so the opening line goes singular then).
+// Each entry becomes a labeled block (Title / Content / optional Notes); the Notes line is omitted when an entry has
+// none. `instructions` carries optional custom one-time guidance for the whole batch; appended once, after every
+// entry, when non-empty.
 const buildPrompt = function (entries, instructions) {
-    const lines = [
-        'Apply the following specs to this project\'s codebase. Read them, then make any code changes needed so the',
-        'project conforms to all of them. Edit files directly.',
-        ''
-    ];
+    const lines = entries.length === 1 ?
+        [
+            'Apply the following spec to this project\'s codebase. Read it, then make any code changes needed so the',
+            'project conforms to it. Edit files directly.',
+            ''
+        ] :
+        [
+            'Apply the following specs to this project\'s codebase. Read them, then make any code changes needed so the',
+            'project conforms to all of them. Edit files directly.',
+            ''
+        ];
     for (const [index, { title, content, notes }] of entries.entries()) {
         lines.push(`Spec ${index + 1}:`);
         lines.push(`Title: ${title}`);

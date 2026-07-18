@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { applySpec } from './api.ts';
+import { applySpecs } from './api.ts';
 
 // Build a fetch stub whose response body is the given NDJSON lines, delivered as one chunk and then a clean
 // end-of-stream - the shape the frontend sees when the backend (or the dev proxy) closes the connection.
@@ -17,7 +17,7 @@ const fetchReturningLines = function (lines: string[]) {
     };
 };
 
-const spec = { title: 'a-spec', content: 'content', notes: '', instructions: '' };
+const entries = [{ title: 'a-spec', content: 'content', notes: '' }];
 
 test('a stream that ends with the _exit sentinel resolves with the result text', async function (t) {
     t.mock.method(globalThis, 'fetch', fetchReturningLines([
@@ -25,7 +25,7 @@ test('a stream that ends with the _exit sentinel resolves with the result text',
         '{"type":"result","result":"all done"}',
         '{"type":"_exit","code":0,"error":null}'
     ]));
-    assert.equal(await applySpec(spec, {}), 'all done');
+    assert.equal(await applySpecs(entries, '', {}), 'all done');
 });
 
 test('a stream that ends WITHOUT the _exit sentinel rejects instead of resolving empty', async function (t) {
@@ -33,7 +33,7 @@ test('a stream that ends WITHOUT the _exit sentinel rejects instead of resolving
         '{"type":"system","subtype":"init"}',
         '{"type":"assistant","message":{"id":"m1","content":[]}}'
     ]));
-    await assert.rejects(applySpec(spec, {}), { message: 'The connection to the server was lost while the agent was running' });
+    await assert.rejects(applySpecs(entries, '', {}), { message: 'The connection to the server was lost while the agent was running' });
 });
 
 test('an _exit line carrying an error rejects with that error message', async function (t) {
@@ -41,5 +41,5 @@ test('an _exit line carrying an error rejects with that error message', async fu
         '{"type":"system","subtype":"init"}',
         '{"type":"_exit","code":1,"error":"claude exited with code 1"}'
     ]));
-    await assert.rejects(applySpec(spec, {}), { message: 'claude exited with code 1' });
+    await assert.rejects(applySpecs(entries, '', {}), { message: 'claude exited with code 1' });
 });
