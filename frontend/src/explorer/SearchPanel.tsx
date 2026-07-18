@@ -3,6 +3,7 @@ import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState }
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
+import { MIN_QUERY_LENGTH } from '../../../shared/apiLimits.js';
 import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
 import { highlightText } from '../shared/highlightText.tsx';
 import { SearchIcon, TypeIcon } from '../shared/Icons.tsx';
@@ -13,9 +14,6 @@ type Option = { value: string; label: string };
 
 // Wait for the user to pause typing before hitting the backend, so each keystroke does not fire a request.
 const DEBOUNCE_MS = 250;
-// Matches the backend's floor (searchVibrary's MIN_QUERY_LENGTH - keep the two in sync): a one-character query is
-// too broad to be useful, and skipping it here avoids a round trip that would answer with nothing.
-const MIN_QUERY_LENGTH = 2;
 
 // Entry search across the included vibrary files. Results are grouped by file, one row per matching ENTRY (title +
 // snippet); clicking a row opens the file and asks the editor to scroll to / highlight that entry (see App's

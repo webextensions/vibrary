@@ -1,15 +1,15 @@
 import cx from 'classnames';
 import { type FormEvent, useState } from 'react';
 
+import { MAX_GENERATE_COUNT } from '../../../shared/apiLimits.js';
 import { ENTRY_TYPE_BY_FAMILY, type EntryType } from '../xml/vibraryXml.ts';
 
 import { ResponsiveDialog } from '../shared/ResponsiveDialog.tsx';
 
 import styles from './SpecsEditor.module.css';
 
-// Default and bounds for the "how many" input; the backend enforces the same upper bound.
+// Default for the "how many" input; the upper bound is the shared MAX_GENERATE_COUNT the backend route enforces.
 const DEFAULT_GENERATE_COUNT = 3;
-const MAX_GENERATE_COUNT = 50;
 
 // Options for the "what to create" dropdown: the family label (plural) maps to the singular entry type written to file.
 const CREATE_TYPE_OPTIONS: { value: EntryType; label: string }[] = Object.entries(ENTRY_TYPE_BY_FAMILY).map(function ([family, entryType]) {

@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer';
 
 import { Router } from 'express';
 
+import { MAX_GENERATE_COUNT } from '../../shared/apiLimits.js';
 import { ENTRY_TYPES } from '../../shared/vibraryXmlCore.js';
 import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { isValidVibraryName, isVibraryNameIncluded } from './vibraryFiles.js';
@@ -12,9 +13,6 @@ import { generateSpecsAsync } from './runClaudeGenerate.js';
 import { runChatAsync } from './runClaudeChat.js';
 import { runTaskAsync } from './runClaudeRunTask.js';
 import { sendErrorResponse } from '../shared/sendResponse.js';
-
-// Upper bound on specs generated in one request, guarding against a runaway agent run.
-const MAX_GENERATE_COUNT = 50;
 
 // A claude session id, as captured from the CLI's own stream-json init event (a UUID). Enforced before the value
 // lands on the agent's argv as --resume's value: the process already runs with permission prompts disabled, and a

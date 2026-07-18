@@ -69,8 +69,8 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 
 ## Packaging
 
-- The tarball ships only `backend`, `bin`, `dist`, and `shared/vibraryXmlCore.js` (the backend imports the
-  core at RUNTIME). A new runtime import outside those paths, or a backend-reachable package left in
+- The tarball ships only `backend`, `bin`, `dist`, and the allowlisted `shared/` modules (`vibraryXmlCore.js`,
+  `apiLimits.js`) - the backend imports them at RUNTIME. A new runtime import outside those paths, or a backend-reachable package left in
   devDependencies, breaks the installed package while everything still works from the repo - this has happened.
   Frontend-only libraries belong in devDependencies (vite prebuilds them into `dist/`); anything the backend or the
   shipped core resolves at runtime belongs in dependencies.

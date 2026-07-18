@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
+import { MIN_QUERY_LENGTH } from '../../shared/apiLimits.js';
 import { parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { listVibraryFiles } from '../files/vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
@@ -10,9 +11,6 @@ const MAX_TOTAL_MATCHES = 500;
 const MAX_MATCHES_PER_FILE = 50;
 // Keep snippets short so the results list stays scannable.
 const MAX_SNIPPET_LENGTH = 200;
-// A one-character query is too broad to be useful and scans every included file for nothing; the frontend's
-// SearchPanel enforces the same floor before sending, so the UI never hits this branch.
-const MIN_QUERY_LENGTH = 2;
 
 // The entry fields a match can live in, in the order the snippet prefers them.
 const SEARCH_FIELDS = ['title', 'content', 'notes'];
