@@ -152,6 +152,10 @@ does not block the others).
 
 ## Keyboard and mouse shortcuts
 
+A skip link ("Skip to editor") is the first Tab stop on every load, jumping past the rail, sidebar, and tab strip
+straight to the editor. For screen readers, a single polite live region announces the changes that are otherwise
+visual-only: completed saves, the filter's shown count, search result tallies, and keyboard approvals.
+
 - Ctrl+Enter / Cmd+Enter - send the chat composer's message in an activity tab.
 - Ctrl+S / Cmd+S - save the active file (plain Ctrl+S only; a no-op when there is nothing to save, with the browser's
   own save dialog suppressed).

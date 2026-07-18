@@ -3,6 +3,25 @@
     height: 100%;
 }
 
+/* The skip link: visually parked off-screen until keyboard focus reaches it (it is the first tab stop), then shown
+ * as a small pill over the top-left corner. Never display:none - that would remove it from the tab order entirely. */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 8px;
+    z-index: 100;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #0969da;
+    color: #fff;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 8px;
+}
+
 .editor {
     flex: 1;
     display: flex;

@@ -14,6 +14,8 @@ import { ErrorBoundary } from './shared/ErrorBoundary.tsx';
 import { titlesInOtherFiles } from './editor/crossFileTitles.ts';
 import { loadVibraryFile } from './editor/loadVibraryFile.ts';
 import { QuickOpen, type QuickOpenItem } from './shared/QuickOpen.tsx';
+import { Announcer } from './shared/Announcer.tsx';
+import { announce } from './shared/announcer.ts';
 import { HelpDialog } from './shared/HelpDialog.tsx';
 import { isStoredTrue, readStored, writeStored } from './shared/storage.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
@@ -345,6 +347,9 @@ const App = function () {
             }
             patchTab(path, { status: { kind: 'idle' }, dirty: false, fileHash });
             markCounted(path, specs);
+            // A completed save is otherwise silent to a screen reader (the spinner stops, the dirty dot clears -
+            // both visual-only); save failures surface via the tab's error banner, which is visible text.
+            announce(`Saved ${path}`);
             // One summary request refreshes the title options and (eventually) the badges; markCounted above covers
             // the badge in the meantime.
             void refreshListing();
@@ -382,6 +387,7 @@ const App = function () {
                 }
                 patchTab(path, { status: { kind: 'idle' }, dirty: false, fileHash });
                 markCounted(path, tab.specs);
+                announce(`Saved ${path}`);
             } catch (error) {
                 patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
             }
@@ -708,6 +714,10 @@ const App = function () {
 
     return (
         <div className={styles.layout}>
+            {/* The first focusable element in the DOM; visually hidden until focused. The chrome before the editor
+              * (rail + sidebar + tab strip) is otherwise a toll every keyboard user pays on every load. */}
+            <a href="#vibrary-editor" className={styles.skipLink}>Skip to editor</a>
+            <Announcer />
             <LeftPanel
                 files={files}
                 hasVibraryInclude={hasVibraryInclude}
@@ -742,7 +752,7 @@ const App = function () {
                 }}
             />
 
-            <main className={styles.editor}>
+            <main id="vibrary-editor" className={styles.editor}>
                 <header className={styles.editorHead}>
                     <button
                         type="button"

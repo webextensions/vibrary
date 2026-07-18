@@ -4,6 +4,7 @@ import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
 import { MIN_QUERY_LENGTH } from '../../../shared/apiLimits.js';
+import { announce } from '../shared/announcer.ts';
 import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
 import { highlightText } from '../shared/highlightText.tsx';
 import { SearchIcon, TypeIcon } from '../shared/Icons.tsx';
@@ -138,6 +139,12 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                 setTruncated(output.truncated);
                 setSearchedQuery(trimmed);
                 setError(null);
+                // The visible summary below is render-only; a screen reader hears nothing when results land, so
+                // speak the same tally through the app's live region.
+                const total = output.results.reduce(function (sum, file) { return sum + file.matches.length; }, 0);
+                announce(total === 0 ?
+                    'No matches.' :
+                    `${total} ${total === 1 ? 'match' : 'matches'} in ${output.results.length} ${output.results.length === 1 ? 'file' : 'files'}`);
             } catch (caught) {
                 if (!isCancelled) {
                     setError((caught as Error).message);

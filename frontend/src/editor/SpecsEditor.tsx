@@ -5,6 +5,7 @@ import Select from 'react-select';
 import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
+import { announce } from '../shared/announcer.ts';
 import { MenuPanel } from '../shared/MenuPanel.tsx';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { useEscapeToClear } from '../shared/useEscapeToClear.ts';
@@ -601,6 +602,23 @@ const SpecsEditor = function (
             return STATE_ORDER.indexOf(approvalState(a.spec)) - STATE_ORDER.indexOf(approvalState(b.spec));
         });
 
+    // Speak the filter tally through the app's live region: the "X of Y shown" toolbar count is render-only, so
+    // applying a filter is silent to a screen reader. Debounced so typing in the text filter announces the settled
+    // count rather than one message per keystroke; nothing is announced while no filter constrains the list (the
+    // full list is not news).
+    const shownCount = shown.length;
+    useEffect(function () {
+        if (!hasActiveFilter) {
+            return undefined;
+        }
+        const timer = setTimeout(function () {
+            announce(`${shownCount} of ${specs.length} entries shown`);
+        }, 400);
+        return function () {
+            clearTimeout(timer);
+        };
+    }, [hasActiveFilter, shownCount, specs.length]);
+
     // Selected specs in document order, ignoring any stale ids whose spec was removed. The footer count, and the
     // Approve/Remove Approval/Duplicate/Delete operations (which apply to any entry type), read from this.
     const selectedSpecs = specs.filter(function (spec) {
@@ -735,6 +753,9 @@ const SpecsEditor = function (
             if (index !== -1 && specs[index].approved !== hashContent(specs[index].content)) {
                 event.preventDefault();
                 updateAt(index, { ...specs[index], approved: hashContent(specs[index].content) });
+                // The button turning green is the only feedback otherwise - silent to a screen reader, on the one
+                // action (a bare keystroke sign-off) where misfiring matters most.
+                announce(`Approved ${specs[index].title || 'the focused entry'}`);
             }
             return;
         }
