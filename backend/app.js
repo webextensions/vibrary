@@ -9,6 +9,7 @@ import { createAgentsRouter } from './files/agents.js';
 import { createDocumentationRouter } from './documentation/documentation.js';
 import { createFilesRouter } from './files/files.js';
 import { createGitRouter } from './git/git.js';
+import { createRankingsRouter } from './rankings/rankings.js';
 import { createSearchRouter } from './search/search.js';
 import { createSettingsRouter } from './settings/settings.js';
 import { blockCrossSiteRequests } from './shared/blockCrossSiteRequests.js';
@@ -41,6 +42,7 @@ const createApp = async function ({ cwd = process.cwd(), hmr = false } = {}) {
     app.use('/api', createFilesRouter({ cwd }));
     app.use('/api', createAgentsRouter({ cwd }));
     app.use('/api', createGitRouter({ cwd }));
+    app.use('/api', createRankingsRouter({ cwd }));
     app.use('/api', createSearchRouter({ cwd }));
     app.use('/api', createSettingsRouter({ cwd }));
     // Deliberately not { cwd }-scoped: it serves the package's own shipped manual (see backend/documentation/documentation.js).
