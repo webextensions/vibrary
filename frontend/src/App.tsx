@@ -114,9 +114,14 @@ const App = function () {
 
     useSessionRestore({ files, listingLoaded, tabs, activePath, openOrFocus, setActive, reportError: reportLoadError });
 
-    const allTitles = titleIndex.map(function (entry) {
-        return entry.title;
-    });
+    // Memoized on the title index: App re-renders on every activity-queue transition, and a fresh array identity here
+    // would invalidate SpecsEditor's takenTitles memo (and, transitively, each card's dangling-reference set) for
+    // renders where nothing about titles changed.
+    const allTitles = useMemo(function () {
+        return titleIndex.map(function (entry) {
+            return entry.title;
+        });
+    }, [titleIndex]);
 
     // Titles used in files OTHER than the open one, so the editor can flag a title that collides across files (a
     // relatesTo reference resolves by exact title folder-wide, so a cross-file duplicate is ambiguous too). Keyed on
