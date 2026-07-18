@@ -1,0 +1,100 @@
+.compare {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #f6f8fa;
+    outline: none;
+}
+
+.compare:focus-visible {
+    border-color: #54aeff;
+}
+
+.compare-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hint {
+    color: #656d76;
+    font-size: 12px;
+}
+
+.icon-button {
+    display: inline-flex;
+    padding: 2px;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    color: #57606a;
+    cursor: pointer;
+}
+
+.icon-button:hover {
+    background: #eaeef2;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.card-title {
+    color: #1f2328;
+    font-size: 13px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* Clamp long content to a scrollable window so one essay-length idea does not push its rival off-screen. */
+.card-content {
+    overflow-y: auto;
+    max-height: 130px;
+    margin: 0;
+    color: #57606a;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.wins-button {
+    align-self: flex-start;
+    padding: 3px 10px;
+    border: 1px solid #1f883d;
+    border-radius: 6px;
+    background: #2da44e;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.wins-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.secondary-button {
+    align-self: flex-start;
+    padding: 3px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.secondary-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}

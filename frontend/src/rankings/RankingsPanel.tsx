@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getFilesSummary, getRankings, type RankingsPayload } from '../api.ts';
+import { getFilesSummary, getRankings, type RankingsPayload, recordManualMatch } from '../api.ts';
+import { announce } from '../shared/announcer.ts';
 import { RefreshIcon } from '../shared/Icons.tsx';
+import { CompareMode } from './CompareMode.tsx';
 
 import styles from './RankingsPanel.module.css';
 
@@ -35,6 +37,12 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
     const [locations, setLocations] = useState<Map<string, EntryLocation>>(function () {
         return new Map();
     });
+    // Compare mode: which suggested pairing is on deck (Skip advances through the server's least-met suggestions,
+    // wrapping) and whether a vote is in flight. A recorded vote replaces the whole payload with the server's
+    // recomputed answer - fresh standings AND fresh suggestions - so the index resets to the new best pairing.
+    const [comparing, setComparing] = useState(false);
+    const [suggestionIndex, setSuggestionIndex] = useState(0);
+    const [voting, setVoting] = useState(false);
 
     const load = useCallback(async function () {
         try {
@@ -77,24 +85,77 @@ const RankingsPanel = function ({ onOpenEntry }: { onOpenEntry: (name: string, t
         };
     }, []);
 
+    // A vote records the pairing exactly as presented (first vs second) with the chosen winner, then adopts the
+    // server's recomputed payload so the standings and the next suggestions update in the same render.
+    const handleVote = useCallback(async function (pairing: [string, string], winnerTitle: string) {
+        setVoting(true);
+        try {
+            const result = await recordManualMatch({ firstTitle: pairing[0], secondTitle: pairing[1], winnerTitle });
+            setPayload(result);
+            setSuggestionIndex(0);
+            setError(null);
+            const loser = winnerTitle === pairing[0] ? pairing[1] : pairing[0];
+            announce(`Recorded: ${winnerTitle} over ${loser}`);
+        } catch (voteError) {
+            setError(voteError instanceof Error ? voteError.message : 'Failed to record the result');
+        } finally {
+            setVoting(false);
+        }
+    }, []);
+
     const hasMatches = payload !== null && payload.matches.length > 0;
+    const suggestions = payload === null ? [] : payload.suggestedPairings;
+    const currentPairing = suggestions.length === 0 ? null : suggestions[suggestionIndex % suggestions.length];
 
     return (
         <div className={styles.rankingsPanel}>
             <div className={styles.headerRow}>
                 <h2 className={styles.heading}>Rankings</h2>
-                <button
-                    type="button"
-                    className={styles.iconButton}
-                    aria-label="Refresh rankings"
-                    title="Refresh rankings"
-                    onClick={function () {
-                        void load();
-                    }}
-                >
-                    <RefreshIcon />
-                </button>
+                <div className={styles.headerActions}>
+                    {payload !== null && payload.standings.length >= 2 && !comparing &&
+                    <button
+                        type="button"
+                        className={styles.compareButton}
+                        onClick={function () {
+                            setSuggestionIndex(0);
+                            setComparing(true);
+                        }}
+                    >
+                        Compare
+                    </button>}
+                    <button
+                        type="button"
+                        className={styles.iconButton}
+                        aria-label="Refresh rankings"
+                        title="Refresh rankings"
+                        onClick={function () {
+                            void load();
+                        }}
+                    >
+                        <RefreshIcon />
+                    </button>
+                </div>
             </div>
+
+            {comparing && payload !== null &&
+            <CompareMode
+                pairing={currentPairing}
+                locations={locations}
+                busy={voting}
+                onVote={function (winnerTitle) {
+                    if (currentPairing !== null) {
+                        void handleVote(currentPairing, winnerTitle);
+                    }
+                }}
+                onSkip={function () {
+                    setSuggestionIndex(function (index) {
+                        return index + 1;
+                    });
+                }}
+                onClose={function () {
+                    setComparing(false);
+                }}
+            />}
 
             {error !== null &&
             <div className={styles.errorBox} role="alert">
