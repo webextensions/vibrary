@@ -1,0 +1,25 @@
+name: checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # The engines floor (22.18.0, where native .test.ts type stripping must hold) plus current - .nvmrc pins the
+        # dev version, which alone would test neither claim.
+        node-version: ['22.18.0', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: node --run lint
+      - run: node --run typecheck
+      - run: node --run test
+      - run: node --run build
