@@ -53,6 +53,9 @@ type SpecCardProperties = {
     schemas: SchemaMap;
     // Titles across every file, from the last-saved server summary; backs the "Relates to" option list.
     allTitles: string[];
+    // Folder-wide label vocabulary (saved summary merged with this file's live labels), offered as the label input's
+    // suggestions so existing labels get reused instead of respelled.
+    labelSuggestions: string[];
     // Every title a new one must avoid: allTitles UNIONED with this file's LIVE (in-memory, possibly unsaved) titles.
     // The duplicate-title warning is computed from the in-memory entries, so the "Make unique" fix has to see them too
     // - checking only the saved allTitles would find no collision for two freshly-typed duplicates and silently no-op.
@@ -180,7 +183,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, currentFilePath, schemas, allTitles, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, currentFilePath, schemas, allTitles, labelSuggestions, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const [populating, setPopulating] = useState(false);
     // Abort an in-flight Populate when the card unmounts - there is no field left to drop the title into.
@@ -582,6 +585,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                                     classNamePrefix="rs"
                                     isMulti
                                     placeholder="Add labels..."
+                                    options={toOptions(labelSuggestions)}
                                     value={toOptions(value.labels)}
                                     onChange={function (options: MultiValue<Option>) {
                                         update({ labels: fromOptions(options) });

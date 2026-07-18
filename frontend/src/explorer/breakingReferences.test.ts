@@ -3,8 +3,8 @@ import { test } from 'node:test';
 
 import { countBreakingReferences } from './breakingReferences.ts';
 
-const summary = function (name: string, titles: string[]): { name: string; titles: string[]; approved: number | null; total: number | null; brokenReferences: number | null } {
-    return { name, titles, approved: 0, total: titles.length, brokenReferences: 0 };
+const summary = function (name: string, titles: string[]): { name: string; titles: string[]; labels: string[]; approved: number | null; total: number | null; brokenReferences: number | null } {
+    return { name, titles, labels: [], approved: 0, total: titles.length, brokenReferences: 0 };
 };
 
 test('counts references from surviving files to titles the delete removes', function () {

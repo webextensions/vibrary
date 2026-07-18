@@ -57,8 +57,27 @@ test('GET /files lists only included files, honoring "!" re-exclusion', async fu
 test('GET /files-summary tallies parseable files and marks a malformed one with null counts', async function () {
     const { body } = await requestJsonAsync('/files-summary');
     const byName = new Map(body.output.files.map(function (file) { return [file.name, file]; }));
-    assert.deepEqual(byName.get('specs.xml'), { name: 'specs.xml', titles: ['first-spec'], approved: 0, total: 1, brokenReferences: 0 });
-    assert.deepEqual(byName.get('specs-broken.xml'), { name: 'specs-broken.xml', titles: [], approved: null, total: null, brokenReferences: null });
+    assert.deepEqual(byName.get('specs.xml'), { name: 'specs.xml', titles: ['first-spec'], labels: [], approved: 0, total: 1, brokenReferences: 0 });
+    assert.deepEqual(byName.get('specs-broken.xml'), { name: 'specs-broken.xml', titles: [], labels: [], approved: null, total: null, brokenReferences: null });
+});
+
+test('GET /files-summary reports each file\'s label vocabulary (unique, first-use order)', async function () {
+    // A temporary labeled file: the summary must surface its distinct labels so the client can offer the folder-wide
+    // vocabulary as label-input suggestions. Removed afterwards so the listing-shape tests above stay authoritative.
+    const labeled = path.join(cwd, 'specs-labeled.xml');
+    writeFileSync(labeled, [
+        '<root><entries>',
+        '  <entry type="spec"><title>l-one</title><content>A</content><labels><label>auth</label><label>backend</label></labels></entry>',
+        '  <entry type="spec"><title>l-two</title><content>B</content><labels><label>auth</label></labels></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    try {
+        const { body } = await requestJsonAsync('/files-summary');
+        const summary = body.output.files.find(function (file) { return file.name === 'specs-labeled.xml'; });
+        assert.deepEqual(summary.labels, ['auth', 'backend']);
+    } finally {
+        rmSync(labeled);
+    }
 });
 
 test('GET /files-summary reflects an on-disk change on the very next call (the mtime cache never goes stale)', async function () {

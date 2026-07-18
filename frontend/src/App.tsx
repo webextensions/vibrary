@@ -126,6 +126,12 @@ const App = function () {
         });
     }, [titleIndex]);
 
+    // The folder's saved label vocabulary (every file's labels from the summary), memoized for the same reason as
+    // allTitles above; the editor merges the open file's live labels over it (see labelOptions.ts).
+    const folderLabels = useMemo(function () {
+        return [...new Set(fileSummaries.flatMap(function (file) { return file.labels; }))];
+    }, [fileSummaries]);
+
     // Titles used in files OTHER than the open one, so the editor can flag a title that collides across files (a
     // relatesTo reference resolves by exact title folder-wide, so a cross-file duplicate is ambiguous too). Keyed on
     // the active file's PATH rather than the whole tab object (which is a fresh reference on every keystroke), so it
@@ -911,6 +917,7 @@ const App = function () {
                                         specs={activeTab.specs}
                                         schemas={activeTab.schemas}
                                         allTitles={allTitles}
+                                        folderLabels={folderLabels}
                                         crossFileTitles={crossFileTitles}
                                         backlinks={backlinks}
                                         currentFilePath={activeFilePath}

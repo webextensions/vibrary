@@ -86,6 +86,10 @@ const createFilesRouter = function ({ cwd }) {
                     const summary = {
                         name,
                         titles: entries.map(function (entry) { return entry.title; }).filter(function (title) { return title !== ''; }),
+                        // The file's label vocabulary (unique, in first-use order), so the client can offer the
+                        // FOLDER-wide set as label-input suggestions - a per-file options list is what lets "auth"
+                        // and "authentication" coexist unseen across files.
+                        labels: [...new Set(entries.flatMap(function (entry) { return entry.labels; }))],
                         approved: countApprovedSpecs(entries),
                         total: entries.length,
                         // Per-entry source + targets, retained so the second pass can both count this file's dangling
@@ -96,7 +100,7 @@ const createFilesRouter = function ({ cwd }) {
                     parsed.push(summary);
                 } catch {
                     summaryCache.delete(target);
-                    parsed.push({ name, titles: [], approved: null, total: null, references: [] });
+                    parsed.push({ name, titles: [], labels: [], approved: null, total: null, references: [] });
                 }
             }
             // Prune cache entries for files no longer in the listing (deleted, renamed, or excluded).
@@ -114,6 +118,7 @@ const createFilesRouter = function ({ cwd }) {
                 return {
                     name: file.name,
                     titles: file.titles,
+                    labels: file.labels,
                     approved: file.approved,
                     total: file.total,
                     brokenReferences: file.approved === null ? null : relatesTo.filter(function (reference) { return !knownTitles.has(reference); }).length

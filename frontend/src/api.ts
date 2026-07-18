@@ -287,7 +287,7 @@ type TitleIndexEntry = { title: string; path: string };
 // One-request workspace summary: every included file's name, entry titles, and approved/total tallies, plus whether
 // a .vibraryinclude exists. Replaces the old pattern of re-downloading every file's full content client-side to
 // derive the title index and the sidebar badges. Null tallies mark a file the server could not read/parse.
-type FileSummary = { name: string; titles: string[]; approved: number | null; total: number | null; brokenReferences: number | null };
+type FileSummary = { name: string; titles: string[]; labels: string[]; approved: number | null; total: number | null; brokenReferences: number | null };
 // One entry that references a given title, for the editor's "Referenced by" backlinks. Keyed by target title in the
 // Backlinks map; a title with no incoming references is simply absent from the map.
 type BacklinkSource = { file: string; title: string };

@@ -67,6 +67,24 @@ test('a clean run streams the prompt echo, the CLI lines, and a code-0 _exit ter
     assert.deepEqual(lines.at(-1), { type: '_exit', code: 0, error: null });
 });
 
+test('generate surfaces the folder\'s existing label vocabulary in its prompt', async function () {
+    // The include file and labeled entries make this cwd a real vibrary folder; the echoed user_prompt line is the
+    // exact prompt handed to the CLI, so the vocabulary hint is asserted end to end (route -> collector -> builder).
+    writeFileSync(path.join(cwd, '.vibraryinclude'), 'specs*.xml\n');
+    writeFileSync(path.join(cwd, 'specs.xml'), [
+        '<root><entries>',
+        '  <entry type="spec"><title>seed</title><content>c</content><labels><label>backend</label><label>auth</label></labels></entry>',
+        '</entries></root>'
+    ].join('\n'));
+    const lines = await streamLinesAsync('/files/specs.xml/generate', { type: 'spec', count: 1 });
+    assert.match(lines[0].text, /already uses these labels: auth, backend/);
+
+    // Without any labels in the folder, the hint is omitted entirely rather than rendered empty.
+    writeFileSync(path.join(cwd, 'specs.xml'), '<root><entries><entry type="spec"><title>seed</title><content>c</content></entry></entries></root>');
+    const unlabeled = await streamLinesAsync('/files/specs.xml/generate', { type: 'spec', count: 1 });
+    assert.doesNotMatch(unlabeled[0].text, /already uses these labels/);
+});
+
 test('a failing run terminates the stream with a code-1 _exit carrying the stderr text', async function () {
     const lines = await streamLinesAsync('/run-task', { title: 'demo', content: 'please FAIL' });
     assert.deepEqual(lines.at(-1), { type: '_exit', code: 1, error: 'agent exploded' });

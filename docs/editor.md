@@ -37,7 +37,9 @@ controls:
 - **Copy** - copies the entry to the clipboard as Markdown (the title as a heading, the content, and any notes, labels
   and relations), for pasting into a PR, doc, or chat.
 - **Notes** - multi-line textarea.
-- **Labels** - freeform creatable multi-select. Type a label and press Enter to add it; any value is allowed. In review
+- **Labels** - freeform creatable multi-select. Type a label and press Enter to add it; any value is allowed, and the
+  dropdown suggests every label already used anywhere in the folder (including unsaved ones in the open file), so an
+  existing spelling gets reused instead of a near-duplicate being coined. In review
   mode each label renders as a chip; clicking a chip toggles that label into (or out of) the label filter (see
   Filtering below) as a quick "show me more/fewer like this".
 - **Relates to** - searchable multi-select. Type to filter; options are the titles of all entries

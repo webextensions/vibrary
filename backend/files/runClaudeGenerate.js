@@ -7,7 +7,7 @@ const GENERATE_TIMEOUT_MS = 10 * 60 * 1000;
 // the editor recomputes it from <content> on load (see vibraryXmlCore.parseVibraryXml). `instructions` carries optional
 // custom one-time guidance the user supplied for this run (the same field every other run/apply route accepts);
 // appended as an extra block only when non-empty.
-const buildPrompt = function (name, type, count, instructions) {
+const buildPrompt = function (name, type, count, instructions, existingLabels) {
     const lines = [
         `Add exactly ${count} new <entry type="${type}"> elements to the file "${name}" in this project.`,
         '',
@@ -30,10 +30,18 @@ const buildPrompt = function (name, type, count, instructions) {
         '- Set <created> and <updated> to the current UTC time in ISO 8601 (for example 2026-06-24T12:00:00.000Z).',
         '- Use a hyphenated lowercase <title>. Add relevant <label> entries under <labels>, and add <ref> entries under',
         '  <relatesTo> pointing to existing entry titles where they genuinely relate.',
-        '- Keep the file valid XML, matching the existing structure and four-space indentation.',
-        '',
-        `Edit ${name} directly.`
+        '- Keep the file valid XML, matching the existing structure and four-space indentation.'
     ];
+    // Show the agent the vocabulary the folder already uses: without it every run is free to coin new variants
+    // ("auth" / "Auth" / "authentication"), and agent runs are the largest source of that drift. Advisory, not a
+    // closed list - a genuinely new topic still deserves a new label.
+    if (existingLabels.length > 0) {
+        lines.push(
+            `- The folder already uses these labels: ${existingLabels.join(', ')}.`,
+            '  Reuse them where they fit; only coin a new label when none of them applies.'
+        );
+    }
+    lines.push('', `Edit ${name} directly.`);
     if (instructions !== '') {
         lines.push('', 'Additional one-time instructions for this run:', instructions);
     }
@@ -42,11 +50,12 @@ const buildPrompt = function (name, type, count, instructions) {
 
 // Run the headless agent to append `count` entries of `type` to `name` within `cwd`, streaming its activity line by
 // line through `onLine` (claude's stream-json events). Resolves on a clean exit; rejects with a descriptive Error
-// otherwise (missing CLI, non-zero exit, timeout, or abort).
-const generateSpecsAsync = function ({ cwd, name, type, count, instructions, signal, onLine }) {
+// otherwise (missing CLI, non-zero exit, timeout, or abort). `existingLabels` is the folder's label vocabulary
+// (already bounded by collectFolderLabelsAsync), surfaced in the prompt so runs reuse it instead of coining variants.
+const generateSpecsAsync = function ({ cwd, name, type, count, instructions, existingLabels = [], signal, onLine }) {
     return runStreamedAgentAsync({
         cwd,
-        prompt: buildPrompt(name, type, count, instructions),
+        prompt: buildPrompt(name, type, count, instructions, existingLabels),
         timeoutMs: GENERATE_TIMEOUT_MS,
         timeoutMessage: 'Spec generation timed out',
         signal,

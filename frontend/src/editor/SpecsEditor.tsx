@@ -18,6 +18,7 @@ import { promptForCustomInstructions } from './customInstructions.ts';
 import { moveEntry } from './moveEntry.ts';
 import { reinsertEntries } from './reinsertEntries.ts';
 import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
+import { labelOptions } from './labelOptions.ts';
 import { restoreEntries } from './restoreEntries.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
@@ -44,6 +45,9 @@ type SpecsEditorProperties = {
     // Resolved option-form schemas for this file's entries, keyed by formSchemaRef; forwarded to each SpecCard.
     schemas: SchemaMap;
     allTitles: string[];
+    // The folder's saved label vocabulary (from the workspace summary); merged with this file's live labels for the
+    // label input's suggestions (see labelOptions.ts).
+    folderLabels: string[];
     // Titles used in OTHER files in the folder, so a card can flag a title that collides across files (not just
     // within this one) - relatesTo references resolve by exact title folder-wide.
     crossFileTitles: Set<string>;
@@ -180,7 +184,7 @@ const showUndoToast = function (message: string, onUndo: () => void) {
 // sorts that never touch the saved order.
 
 const SpecsEditor = function (
-    { defaultEntryType, specs, schemas, allTitles, crossFileTitles, backlinks, currentFilePath, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, onOpenBacklink, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
+    { defaultEntryType, specs, schemas, allTitles, folderLabels, crossFileTitles, backlinks, currentFilePath, highlightQuery, highlightMatchIndex, highlightExactTitle, onChange, onGenerate, onOpenRelated, onOpenBacklink, showFilters, statusFilter, onStatusFilterChange, typeFilter, onTypeFilterChange, labelFilter, onLabelFilterChange, creatorFilter, onCreatorFilterChange, textFilter, onTextFilterChange, sortMode, onSortModeChange, otherFiles, sourceDirty, onMoveEntries, renderMarkdown, onRenderMarkdownChange }:
     SpecsEditorProperties
 ) {
     // Ids of specs currently open in edit mode. Existing specs default to review mode; only newly added specs (or
@@ -387,6 +391,13 @@ const SpecsEditor = function (
     const takenTitles = useMemo(function () {
         return [...allTitles, ...specs.map(function (spec) { return spec.title; })];
     }, [allTitles, specs]);
+
+    // The label input's suggestion list: the folder's saved vocabulary merged with this file's LIVE labels - the same
+    // live-over-saved treatment takenTitles gives titles, and the fix for label drift at the moment it is free (a user
+    // typing "auth" sees that it exists instead of coining "authentication").
+    const labelSuggestions = useMemo(function () {
+        return labelOptions(folderLabels, specs);
+    }, [folderLabels, specs]);
 
     // This file's LIVE reverse-reference map (target title -> the entries here pointing at it), so a relation the user
     // just added or removed shows in "Referenced by" immediately, without a save. Mirrors how crossFileTitles and the
@@ -1187,6 +1198,7 @@ const SpecsEditor = function (
                             currentFilePath={currentFilePath}
                             schemas={schemas}
                             allTitles={allTitles}
+                            labelSuggestions={labelSuggestions}
                             takenTitles={takenTitles}
                             referencedBy={backlinksFor(spec)}
                             onOpenRelated={onOpenRelated}

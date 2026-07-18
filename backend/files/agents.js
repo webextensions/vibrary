@@ -8,6 +8,7 @@ import { abortOnDisconnect } from '../shared/abortOnDisconnect.js';
 import { isValidVibraryName, isVibraryNameIncluded } from './vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { applySpecsAsync } from './runClaudeApplyBatch.js';
+import { collectFolderLabelsAsync } from './folderLabels.js';
 import { generateSpecsAsync } from './runClaudeGenerate.js';
 import { runChatAsync } from './runClaudeChat.js';
 import { runTaskAsync } from './runClaudeRunTask.js';
@@ -121,8 +122,12 @@ const createAgentsRouter = function ({ cwd }) {
             return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
         }
 
+        // Gathered before the run claims the single-flight slot: a folder that fails to parse just yields fewer
+        // suggestions, never a failed generate.
+        const existingLabels = await collectFolderLabelsAsync(cwd);
+
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
-            return generateSpecsAsync({ cwd, name, type, count, instructions: typeof instructions === 'string' ? instructions : '', signal, onLine });
+            return generateSpecsAsync({ cwd, name, type, count, instructions: typeof instructions === 'string' ? instructions : '', existingLabels, signal, onLine });
         });
     });
 
