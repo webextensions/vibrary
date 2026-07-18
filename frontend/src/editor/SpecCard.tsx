@@ -48,6 +48,8 @@ type SpecCardProperties = {
     renderMarkdown?: boolean;
     // Another entry in this file bears the same title; references by that title are ambiguous, so the card says so.
     hasDuplicateTitle?: boolean;
+    // The file this card's entry lives in, forwarded to the run section so a queued job records its entry target.
+    currentFilePath: string | null;
     schemas: SchemaMap;
     // Titles across every file, from the last-saved server summary; backs the "Relates to" option list.
     allTitles: string[];
@@ -178,7 +180,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, currentFilePath, schemas, allTitles, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const [populating, setPopulating] = useState(false);
     // Abort an in-flight Populate when the card unmounts - there is no field left to drop the title into.
@@ -693,7 +695,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                         <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
 
-                    <RunActionSection value={value} schemas={schemas} />
+                    <RunActionSection value={value} filePath={currentFilePath} schemas={schemas} />
                 </div>}
             </div>
         </fieldset>

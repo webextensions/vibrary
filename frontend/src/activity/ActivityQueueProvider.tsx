@@ -232,6 +232,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             error: null,
             prompt: spec.prompt !== undefined && spec.prompt !== '' ? spec.prompt : null,
             sessionId: null,
+            target: spec.target ?? null,
             run: spec.run
         };
         const promise = new Promise<string>(function (resolve, reject) {
@@ -316,8 +317,9 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             return;
         }
         try {
-            // Pass the original prompt through so the retried row's fresh transcript seeds the same initial bubble.
-            await enqueue({ kind: target.kind, label: target.label, prompt: target.prompt ?? undefined, run: target.run });
+            // Pass the original prompt and entry target through so the retried row's fresh transcript seeds the same
+            // initial bubble and keeps its open-the-entry link.
+            await enqueue({ kind: target.kind, label: target.label, prompt: target.prompt ?? undefined, target: target.target ?? undefined, run: target.run });
         } catch {
             // The re-run's result is shown on its own row; nothing here consumes it.
         }

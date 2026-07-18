@@ -431,6 +431,15 @@ const LabelIcon = function () {
     );
 };
 
+const GoToIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M12.5 8.75v3.75a1.5 1.5 0 0 1-1.5 1.5H3.5A1.5 1.5 0 0 1 2 12.5V5a1.5 1.5 0 0 1 1.5-1.5h3.75" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9.5 2h4.5v4.5M13.6 2.4 8 8" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
+};
+
 const HelpIcon = function () {
     return (
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
@@ -454,6 +463,7 @@ export {
     EditIcon,
     ExplorerIcon,
     FilterIcon,
+    GoToIcon,
     HelpIcon,
     LabelIcon,
     ListIcon,

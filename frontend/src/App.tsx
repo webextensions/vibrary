@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
-import { useActivityQueueActions, useActivityQueueState } from './activity/activityQueue.ts';
+import { type JobTarget, useActivityQueueActions, useActivityQueueState } from './activity/activityQueue.ts';
 import { ApiError, generateSpecs, moveEntries, saveFile } from './api.ts';
 import { ChevronIcon, CloseIcon, CodeIcon, FilterIcon, ListIcon, MenuIcon, RefreshIcon, SaveIcon } from './shared/Icons.tsx';
 import { LeftPanel } from './explorer/LeftPanel.tsx';
@@ -19,6 +19,7 @@ import { isStoredTrue, readStored, writeStored } from './shared/storage.ts';
 import { type EntryType, entryTypeFromName, serializeVibraryXml, type Spec } from './xml/vibraryXml.ts';
 import { useFileCounts } from './explorer/useFileCounts.ts';
 import { useFileOperations } from './explorer/useFileOperations.ts';
+import { resolveJobTarget } from './activity/resolveJobTarget.ts';
 import { useSessionRestore } from './tabs/useSessionRestore.ts';
 import { useOpenTabs } from './tabs/useOpenTabs.ts';
 
@@ -632,6 +633,18 @@ const App = function () {
         openEntryByTitle(file, title);
     }, [openEntryByTitle, activeFilePath]);
 
+    // Open the entry an activity-monitor job ran on: resolve the job's recorded file+title against the live title
+    // index (the entry may have moved since the run), falling back to the relation chips' "renamed or removed" toast
+    // for a title that resolves nowhere - never a silent dead click.
+    const handleOpenJobEntry = useCallback(function (target: JobTarget) {
+        const resolved = resolveJobTarget(titleIndex, target);
+        if (resolved === null) {
+            toast(`No entry titled "${target.entryTitle}" found - it may have been renamed or removed.`);
+            return;
+        }
+        openEntryByTitle(resolved.path, resolved.title);
+    }, [titleIndex, openEntryByTitle]);
+
     // Return to the entry at the top of the back stack, popping it. Navigates without pushing, so Back never grows the
     // stack it consumes.
     const handleGoBack = useCallback(function () {
@@ -722,6 +735,7 @@ const App = function () {
                 onCloseTab={handleCloseTab}
                 onSaveAll={onSaveAll}
                 onOpenActivity={openActivity}
+                onOpenJobEntry={handleOpenJobEntry}
                 onOpenMatch={handleOpenMatch}
                 onShowHelp={function () {
                     setShortcutsOpen(true);

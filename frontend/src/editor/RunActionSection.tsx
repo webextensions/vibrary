@@ -22,6 +22,9 @@ const TaskOptionsForm = lazy(async function () {
 
 type RunActionSectionProperties = {
     value: Spec;
+    // The file this entry lives in, recorded on the queued job as its entry target so the activity row can navigate
+    // back here. Null for a not-yet-loaded file, in which case the job simply carries no target.
+    filePath: string | null;
     // Resolved option-form schemas for this file's entries, keyed by formSchemaRef.
     schemas: SchemaMap
 };
@@ -31,7 +34,7 @@ type RunActionSectionProperties = {
 // entry - only spec and task entries have an action. A separate component from SpecCard because its state (per-run
 // task options, seeded from remembered settings; the in-flight/custom-instructions flags) is entirely its own concern,
 // never written back to the entry.
-const RunActionSection = function ({ value, schemas }: RunActionSectionProperties) {
+const RunActionSection = function ({ value, filePath, schemas }: RunActionSectionProperties) {
     const { enqueue } = useActivityQueueActions();
     // State subscription is deliberate here: the button mirrors this entry's live queue status (review the
     // activeJob derivation below), so re-rendering on queue transitions is exactly what it needs.
@@ -159,6 +162,9 @@ const RunActionSection = function ({ value, schemas }: RunActionSectionPropertie
                 kind: runAction.kind,
                 label: value.title,
                 prompt: promptParts.join('\n'),
+                // The entry this job runs on, so its activity row links back here. Untitled entries carry no target:
+                // a title is the only address the editor can navigate to.
+                target: filePath !== null && value.title !== '' ? { filePath, entryTitle: value.title } : undefined,
                 run: function (signal, onEvent) {
                     return runAction.run(runArguments, { signal, onEvent });
                 }

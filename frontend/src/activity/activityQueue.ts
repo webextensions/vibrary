@@ -9,6 +9,11 @@ import { type ClaudeStreamEvent, type TranscriptItem } from './activityStream.ts
 type JobKind = 'run-task' | 'apply-spec' | 'apply-batch' | 'generate';
 type JobStatus = 'queued' | 'running' | 'success' | 'error' | 'aborted';
 
+// The entry a job ran on, so the activity view can navigate back to it. Recording the FILE as well as the title is
+// what makes the link robust: titles resolve folder-wide but are not immortal (a rename or move would otherwise
+// orphan the link, and a duplicate title would resolve to the wrong file's first occurrence).
+type JobTarget = { filePath: string; entryTitle: string };
+
 // A job's worker thunk: performs the api call with the queue's abort signal, forwarding each streamed claude event to
 // `onEvent` (the queue folds these into the job's transcript). Non-streaming jobs (title) simply ignore onEvent.
 type JobRun = (signal: AbortSignal, onEvent: (event: ClaudeStreamEvent) => void) => Promise<string>;
@@ -19,6 +24,7 @@ type JobSpec = {
     kind: JobKind;
     label: string;
     prompt?: string;
+    target?: JobTarget;
     run: JobRun
 };
 
@@ -36,6 +42,9 @@ type Job = {
     // Claude's session id, captured from the run's stream (early, at the init event). Present enables continuing the
     // activity as a chat (via sendMessage); null when the run ended before emitting an init event.
     sessionId: string | null;
+    // The entry this job ran on, so its row can offer "open the entry" - null for jobs with no single entry (a batch
+    // apply, a generate into a file), which render no such affordance rather than a dead one.
+    target: JobTarget | null;
     run: JobRun
 };
 
@@ -115,4 +124,4 @@ const useJobEvents = function (jobId: string): TranscriptItem[] {
     return useSyncExternalStore(subscribe, getSnapshot);
 };
 
-export { type ActivityQueueActions, ActivityQueueActionsContext, type ActivityQueueState, ActivityQueueStateContext, type Job, type JobKind, type JobSpec, type JobStatus, useActivityQueueActions, useActivityQueueState, useJobEvents };
+export { type ActivityQueueActions, ActivityQueueActionsContext, type ActivityQueueState, ActivityQueueStateContext, type Job, type JobKind, type JobSpec, type JobStatus, type JobTarget, useActivityQueueActions, useActivityQueueState, useJobEvents };

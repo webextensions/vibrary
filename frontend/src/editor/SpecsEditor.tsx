@@ -1163,6 +1163,7 @@ const SpecsEditor = function (
                             renderMarkdown={renderMarkdown}
                             hasDuplicateTitle={spec.title !== '' && (duplicateTitles.has(spec.title) || crossFileTitles.has(spec.title))}
                             value={spec}
+                            currentFilePath={currentFilePath}
                             schemas={schemas}
                             allTitles={allTitles}
                             takenTitles={takenTitles}

@@ -2,7 +2,7 @@ import cx from 'classnames';
 import { useEffect, useMemo, useState } from 'react';
 import { Resizable } from 're-resizable';
 
-import { useActivityQueueState } from '../activity/activityQueue.ts';
+import { type JobTarget, useActivityQueueState } from '../activity/activityQueue.ts';
 import { type FileCount } from './useFileCounts.ts';
 import { type TreeNode } from './fileTree.ts';
 import { readStored, writeStored } from '../shared/storage.ts';
@@ -86,6 +86,8 @@ type LeftPanelProperties = {
     onSaveAll: () => void;
     // Activity monitor: open a job's detail editor tab when its row is clicked.
     onOpenActivity: (jobId: string, title: string) => void;
+    // Activity monitor: open the ENTRY a job ran on in the editor (the row's "Open entry" button).
+    onOpenJobEntry: (target: JobTarget) => void;
     // Search: open the file holding a clicked match and ask the editor to scroll to / highlight it.
     onOpenMatch: (name: string, query: string, matchIndex: number) => void;
     // Responsive wrapper state, owned by App: the mobile drawer's open flag and the desktop collapse flag, plus the
@@ -163,7 +165,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
             />}
             {activeView === 'search' && <SearchPanel onOpenMatch={onOpenMatch} />}
             {activeView === 'sourceControl' && <SourceControlPanel />}
-            {activeView === 'activity' && <ActivityPanel onOpenActivity={properties.onOpenActivity} />}
+            {activeView === 'activity' && <ActivityPanel onOpenActivity={properties.onOpenActivity} onOpenEntry={properties.onOpenJobEntry} />}
         </div>
     );
 

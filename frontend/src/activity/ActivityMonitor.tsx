@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 
-import { type Job, type JobKind, type JobStatus, useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
+import { type Job, type JobKind, type JobStatus, type JobTarget, useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
 import { useSettingsActions, useSettingsState } from '../settings/settingsContext.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
-import { ChevronIcon, FilterIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
+import { ChevronIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
 
 import styles from './ActivityMonitor.module.css';
 
@@ -26,6 +26,9 @@ type JobRowProperties = {
     job: Job;
     now: number;
     onOpen: (id: string, label: string) => void;
+    // Open the ENTRY the job ran on in the editor (as opposed to onOpen, which opens the job's own detail tab).
+    // Rendered only for jobs that carry an entry target, so batch/generate rows show no dead affordance.
+    onOpenEntry: (target: JobTarget) => void;
     onAbort: () => void;
     onRemove: (id: string) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
@@ -40,9 +43,11 @@ type JobRowProperties = {
     moveLockedReason: string | null
 };
 
-const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry, canMoveUp, canMoveDown, moveLockedReason }: JobRowProperties) {
+const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onMove, onRetry, canMoveUp, canMoveDown, moveLockedReason }: JobRowProperties) {
     const { label: kindLabel, Icon } = KIND_META[job.kind];
     const canRetry = job.status === 'error' || job.status === 'aborted';
+    // A const so the null check below narrows into the click handler's closure.
+    const entryTarget = job.target;
 
     const elapsed = jobElapsed(job, now);
 
@@ -61,6 +66,11 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry,
             </button>
 
             <div className={styles.jobActions}>
+                {entryTarget !== null && (
+                    <button type="button" className={styles.rowButton} aria-label="Open entry" title={`Open "${entryTarget.entryTitle}" in the editor`} onClick={function () { onOpenEntry(entryTarget); }}>
+                        <GoToIcon />
+                    </button>
+                )}
                 {job.status === 'queued' && (
                     <>
                         <button type="button" className={cx(styles.rowButton, styles.moveUp)} aria-label="Move up" title={moveLockedReason ?? 'Move up'} disabled={moveLockedReason !== null || !canMoveUp} onClick={function () { onMove(job.id, 'up'); }}>
@@ -161,7 +171,7 @@ const NotificationSettingsMenu = function () {
 
 // The "Activity monitor" body: a queue-wide control row over the list of jobs (running first as they sit mid-list,
 // queued after, finished history above). Reads everything from the shared activity queue.
-const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: string, title: string) => void }) {
+const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActivity: (jobId: string, title: string) => void; onOpenEntry: (target: JobTarget) => void }) {
     const { jobs, paused } = useActivityQueueState();
     const { pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished } = useActivityQueueActions();
 
@@ -314,6 +324,7 @@ const ActivityMonitor = function ({ onOpenActivity }: { onOpenActivity: (jobId: 
                             job={job}
                             now={now}
                             onOpen={onOpenActivity}
+                            onOpenEntry={onOpenEntry}
                             onAbort={abortCurrent}
                             onRemove={removeJob}
                             onMove={moveJob}
