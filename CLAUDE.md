@@ -63,8 +63,9 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 - Plain HTTP on a LAN address (phone use) is a supported context: `crypto.randomUUID`/`crypto.subtle` are NOT
   guaranteed to exist - use the guarded helpers in `vibraryXmlCore.js` (e.g. `randomId`).
 - Every agent invocation runs `claude -p ... --dangerously-skip-permissions` (a headless run cannot answer
-  permission prompts); treat prompt text as code. The run recipe lives ONCE in `spawnClaude.js`'s
-  `runStreamedAgentAsync` - change flags/timeout policy there, not per action.
+  permission prompts); treat prompt text as code. The run recipes live ONCE in `spawnClaude.js` -
+  `runStreamedAgentAsync` for streamed runs, `runBufferedAgentAsync` for the quick buffered helpers (title, commit
+  message) - change flags/timeout policy there, not per action.
 - Commits: imperative summary, detailed prose body (wrapped ~72 cols) explaining why and how it was verified.
 
 ## Packaging

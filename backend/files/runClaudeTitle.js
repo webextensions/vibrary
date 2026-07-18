@@ -1,5 +1,5 @@
 import { normalizeTitle } from '../../shared/vibraryXmlCore.js';
-import { spawnClaudeAsync } from '../shared/spawnClaude.js';
+import { runBufferedAgentAsync } from '../shared/spawnClaude.js';
 
 // Deriving a short title is a quick, read-free task; cap it well under the apply/generate budget so a stall fails fast.
 const TITLE_TIMEOUT_MS = 2 * 60 * 1000;
@@ -29,9 +29,9 @@ const slugify = function (output) {
 // Run the headless agent to derive a hyphenated title from spec content. Resolves with the slugified title on a clean
 // exit; rejects with a descriptive Error otherwise (missing CLI, non-zero exit, or timeout).
 const generateTitleAsync = async function ({ cwd, content, signal }) {
-    const stdout = await spawnClaudeAsync({
+    const stdout = await runBufferedAgentAsync({
         cwd,
-        args: ['-p', buildPrompt(content)],
+        prompt: buildPrompt(content),
         timeoutMs: TITLE_TIMEOUT_MS,
         timeoutMessage: 'Deriving the title timed out',
         signal

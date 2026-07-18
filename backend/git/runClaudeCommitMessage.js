@@ -1,4 +1,4 @@
-import { spawnClaudeAsync } from '../shared/spawnClaude.js';
+import { runBufferedAgentAsync } from '../shared/spawnClaude.js';
 
 // Drafting a commit message from a diff is a quick, read-free task; cap it well under the apply/generate budget so a
 // stall fails fast. Mirrors the title call's short ceiling.
@@ -35,9 +35,9 @@ const parseMessage = function (stdout) {
 // Run the headless agent to draft a commit message from a staged diff. Resolves with { summary, body } on a clean exit;
 // rejects with a descriptive Error otherwise (missing CLI, non-zero exit, or timeout).
 const generateCommitMessageAsync = async function ({ cwd, diff, signal }) {
-    const stdout = await spawnClaudeAsync({
+    const stdout = await runBufferedAgentAsync({
         cwd,
-        args: ['-p', buildPrompt(diff)],
+        prompt: buildPrompt(diff),
         timeoutMs: COMMIT_MESSAGE_TIMEOUT_MS,
         timeoutMessage: 'Generating the commit message timed out',
         signal

@@ -234,4 +234,19 @@ const runStreamedAgentAsync = function ({ cwd, prompt, extraArguments = [], time
     });
 };
 
-export { beginShutdown, runStreamedAgentAsync, spawnClaudeAsync, terminateActiveClaudeRunsAsync };
+// The buffered sibling of runStreamedAgentAsync for the quick prompt-only helpers (title, commit message): no
+// stream-json flags, just "claude -p <prompt>" resolved as the full stdout. Runs with --dangerously-skip-permissions
+// for the same reason as the streamed recipe above - these are prompt-only tasks, but if the model decides to read a
+// file anyway (models do explore), a gated tool call would stall until the timeout and hide the real cause behind
+// "timed out". Centralized here so CLAUDE.md's "every agent invocation runs with the flag" stays true in one place.
+const runBufferedAgentAsync = function ({ cwd, prompt, timeoutMs, timeoutMessage, signal }) {
+    return spawnClaudeAsync({
+        cwd,
+        args: ['-p', prompt, '--dangerously-skip-permissions'],
+        timeoutMs,
+        timeoutMessage,
+        signal
+    });
+};
+
+export { beginShutdown, runBufferedAgentAsync, runStreamedAgentAsync, spawnClaudeAsync, terminateActiveClaudeRunsAsync };
