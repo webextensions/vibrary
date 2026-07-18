@@ -75,5 +75,16 @@ export default [
         rules: {
             '@eslint-react/naming-convention-ref-name': 'off'
         }
+    },
+
+    {
+        // New in unicorn 72's recommended set. It demands reordering compound conditions to put the "simple" operand
+        // first, but this codebase orders guard conditions by MEANING (primary condition first, cheap latch/ref checks
+        // where they read best), and the rule's own message concedes each reorder needs manual short-circuit
+        // verification. A pure reordering churn with review burden and no behavior benefit - opt out, like the
+        // ref-name rule above.
+        rules: {
+            'unicorn/prefer-simple-condition-first': 'off'
+        }
     }
 ];
