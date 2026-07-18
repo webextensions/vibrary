@@ -262,6 +262,24 @@
     max-height: 70vh;
 }
 
+/* Per-line diff coloring (see DiffText): the conventional green/red for +/- lines and muted hunk headers. Each line
+   span is display: block so its background stretches the full row, not just the text width. */
+.diff-text span {
+    display: block;
+}
+
+.diff-added {
+    background: #e6ffec;
+}
+
+.diff-removed {
+    background: #ffebe9;
+}
+
+.diff-hunk {
+    color: #656d76;
+}
+
 .file-row:hover {
     background: #f3f4f6;
 }

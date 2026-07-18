@@ -118,6 +118,36 @@ const FileGroup = function (
     );
 };
 
+// The diff dialog's colored body: the standard green/red/hunk coloring via line-prefix classification. git's unified
+// format is well-formed, so the prefix IS the semantics - a diff-rendering library would be a dependency for exactly
+// this classifier. File-header lines (+++/---) are excluded from the add/remove classes so they read as structure,
+// matching every conventional renderer; the untracked branch (full file content, not a diff) keeps a plain <pre>.
+const diffLineClass = function (line: string): string | undefined {
+    if (line.startsWith('+') && !line.startsWith('+++')) {
+        return styles.diffAdded;
+    }
+    if (line.startsWith('-') && !line.startsWith('---')) {
+        return styles.diffRemoved;
+    }
+    if (line.startsWith('@@')) {
+        return styles.diffHunk;
+    }
+    return undefined;
+};
+
+const DiffText = function ({ diff }: { diff: string }) {
+    return (
+        <pre className={styles.diffText}>
+            {diff.split('\n').map(function (line, index) {
+                // The list is static per fetched diff (never reordered or edited), and duplicate lines make the line
+                // text unusable as a key - so the index IS the stable identity here.
+                // eslint-disable-next-line @eslint-react/no-array-index-key
+                return <span key={index} className={diffLineClass(line)}>{line}{'\n'}</span>;
+            })}
+        </pre>
+    );
+};
+
 // The Source Control view: current branch, changed files grouped into Staged / Changes / Untracked (each with per-file
 // and per-group stage / unstage / discard actions), a stash section (save, apply, pop, drop), and a commit box with a
 // "Generate with Claude" drafting button plus Commit, Push and Pull. Loads fresh each time the view is shown (it is
@@ -682,7 +712,9 @@ const SourceControlPanel = function () {
                 {diffView.error === null && diffView.content === null && <p className={styles.message}>Loading...</p>}
                 {diffView.error === null && diffView.content === '' && <p className={styles.message}>No changes.</p>}
                 {diffView.error === null && diffView.content !== null && diffView.content !== '' &&
-                <pre className={styles.diffText}>{diffView.content}</pre>}
+                (diffView.untracked ?
+                    <pre className={styles.diffText}>{diffView.content}</pre> :
+                    <DiffText diff={diffView.content} />)}
             </ResponsiveDialog>}
 
             <StashSection
