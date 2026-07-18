@@ -28,6 +28,23 @@ The server starts on port 3000 and advances to the next free port if it is busy.
 `127.0.0.1` (this machine only); `--host 0.0.0.0` exposes it to the network, which gives everyone on that network
 the same powers the UI has - including agent runs (see below) - so only do it on networks you trust.
 
+### Headless commands
+
+Three subcommands work without a browser (or a `claude` CLI, or an API key - none of them runs an agent), over the
+same `.vibraryinclude`-scoped files and the same rules the app's badges use:
+
+```bash
+vibrary check                      # exit 1 if anything is broken (prints each problem); 0 when clean
+vibrary check --require-approved   # additionally fail on any unapproved or stale entry
+vibrary check --json               # the same report, machine-readable, same exit codes
+vibrary list                       # every included file with its approved/total and broken-reference counts
+vibrary search <query>             # entry matches on stdout (--match-case / --whole-word as in the Search panel)
+```
+
+`vibrary check` finds broken `relatesTo` references, folder-wide duplicate titles, and unparseable files - so a CI
+step like `npx vibrary check --require-approved` can block a pull request on them. A folder with no `.vibraryinclude`
+exits 2 ("unconfigured") rather than passing vacuously.
+
 ## The .vibraryinclude file
 
 A `.vibraryinclude` at the folder root chooses which vibrary files the app lists and edits - nothing is shown (or
