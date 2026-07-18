@@ -52,7 +52,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
         shortcuts: [
             { keys: [MOD, 'Shift', 'T'], description: 'Reopen the last closed tab' },
             { keys: ['Arrow keys'], description: 'Move between tabs (when a tab has focus)' },
-            { keys: ['Home'], description: 'Jump to the first tab (when a tab has focus)' }
+            { keys: ['Home', 'End'], description: 'Jump to the first / last tab (when a tab has focus)' }
         ]
     },
     {
@@ -64,7 +64,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     {
         heading: 'General',
         shortcuts: [
-            { keys: ['Esc'], description: 'Close a dialog, menu, or clear the search box' },
+            { keys: ['Esc'], description: 'Close a dialog or menu; with none open, clear the entry or file selection' },
             { keys: ['?'], description: 'Show this shortcuts help' }
         ]
     }
