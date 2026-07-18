@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { canonicalize } from './canonicalize-vibrary.js';
+import { canonicalize, lineFingerprint } from './canonicalize-vibrary.js';
 
 // Two documents that differ ONLY in meaningless order: entry order, field order within an entry, and item order
 // inside <relatesTo>/<labels>. The diff driver depends on these canonicalizing to identical text.
@@ -70,4 +70,25 @@ test('canonicalize throws on malformed XML (callers fall back to raw bytes, with
     assert.throws(function () {
         canonicalize('<root><entries><entry>unclosed</root>');
     });
+});
+
+// The driver suppresses a diff only when BOTH canonical forms and raw line fingerprints agree. These two cases are
+// the parser's blind spots: each change canonicalizes to identical text (the parser drops/normalizes it away), so
+// only the fingerprint keeps the diff visible.
+
+test('an added unknown element escapes canonicalization but changes the line fingerprint', function () {
+    const withCustom = ORIGINAL.replace('<content>Bee content</content>', '<content>Bee content</content>\n            <custom>SECRET-CHANGE</custom>');
+    assert.equal(canonicalize(ORIGINAL), canonicalize(withCustom)); // the blind spot: parser drops <custom>
+    assert.notEqual(lineFingerprint(ORIGINAL), lineFingerprint(withCustom));
+});
+
+test('an out-of-vocabulary agent change escapes canonicalization but changes the line fingerprint', function () {
+    const withAlice = ORIGINAL.replace('<content>Bee content</content>', '<content>Bee content</content>\n            <createdBy>alice</createdBy>');
+    const withBob = withAlice.replace('<createdBy>alice</createdBy>', '<createdBy>bob</createdBy>');
+    assert.equal(canonicalize(withAlice), canonicalize(withBob)); // both normalize to '' - invisible to canonical form
+    assert.notEqual(lineFingerprint(withAlice), lineFingerprint(withBob));
+});
+
+test('the line fingerprint is invariant under every reordering the driver suppresses', function () {
+    assert.equal(lineFingerprint(ORIGINAL), lineFingerprint(REORDERED));
 });

@@ -9,7 +9,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-import { canonicalize } from './canonicalize-vibrary.js';
+import { canonicalize, lineFingerprint } from './canonicalize-vibrary.js';
 
 const readMaybe = function (file) {
     try {
@@ -36,8 +36,12 @@ const main = function () {
     const oldFile = process.argv[3];
     const newFile = process.argv[6];
 
-    if (toCanonical(readMaybe(oldFile)) === toCanonical(readMaybe(newFile))) {
-        // Semantically identical (pure reordering) - show nothing.
+    const rawOld = readMaybe(oldFile);
+    const rawNew = readMaybe(newFile);
+    // Both checks must agree before suppressing the diff: canonical equality catches semantic sameness, and the raw
+    // line fingerprint catches changes the parser normalizes away (unknown elements, out-of-vocabulary values) that
+    // canonicalization is blind to - "emit nothing" must always mean "pure reordering".
+    if (toCanonical(rawOld) === toCanonical(rawNew) && lineFingerprint(rawOld) === lineFingerprint(rawNew)) {
         return;
     }
 

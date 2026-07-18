@@ -50,6 +50,22 @@ const canonicalize = function (xml) {
     }));
 };
 
+// The RAW text as a sorted multiset of trimmed non-blank lines. Canonical equality alone has a blind spot: it goes
+// through parseVibraryXml, which DROPS unknown child elements and NORMALIZES out-of-vocabulary values, so a change
+// touching only what the parser discards canonicalizes to identical text - and the driver would show NO diff for a
+// file that genuinely changed. Every transformation the driver exists to suppress (reordering entries, fields, or
+// <ref>/<label> items) moves whole lines without changing their content, so this fingerprint is invariant under all
+// of them while any dropped/added/edited line changes it. A false mismatch (a reorder that also re-wraps a line)
+// merely falls through to the raw unified diff - slightly noisy, never wrong.
+const lineFingerprint = function (xml) {
+    return xml
+        .split('\n')
+        .map(function (line) { return line.trim(); })
+        .filter(Boolean)
+        .toSorted(compare)
+        .join('\n');
+};
+
 const main = function () {
     let xml;
     try {
@@ -74,4 +90,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     main();
 }
 
-export { canonicalize };
+export { canonicalize, lineFingerprint };
