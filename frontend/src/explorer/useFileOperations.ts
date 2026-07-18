@@ -180,42 +180,14 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
         return ` ${count} reference${count === 1 ? '' : 's'} from other files will break.`;
     }, [fileSummaries, backlinks]);
 
-    const handleDelete = useCallback(async function (node: TreeNode) {
-        const paths = collectFilePaths(node);
-        const target = node.kind === 'folder' ?
-            `folder "${node.path}" and its ${paths.length} file${paths.length === 1 ? '' : 's'}` :
-            `"${node.path}"`;
+    // The shared delete pipeline behind both entry points below: warn (with the breaking-references count), then
+    // delete `paths` sequentially, closing each file's tab as it goes; stops at the first failure, naming the failing
+    // file (a multi-file delete may have already removed earlier ones, and the raw server message alone does not say
+    // which one stopped the run). Refreshes the listing even after a failure - files deleted before the error are
+    // really gone. Resolves whether the user CONFIRMED, not whether every delete succeeded: a partial delete has
+    // genuinely changed what a selection refers to, so the caller's clear-on-confirm behavior is right either way.
+    const confirmAndDeletePathsAsync = useCallback(async function (paths: string[], target: string): Promise<boolean> {
         const confirmed = await confirmDialog(`Delete ${target}? This cannot be undone.${breakingReferenceWarning(paths)}`, 'Delete');
-        if (!confirmed) {
-            return;
-        }
-        try {
-            for (const path of paths) {
-                try {
-                    await deleteFile(path);
-                } catch (error) {
-                    // Name the failing file: a folder delete may have already removed earlier files, and the raw
-                    // server message alone does not say which one stopped the run.
-                    setLoadError(`Failed to delete "${path}": ${(error as Error).message}`);
-                    return;
-                }
-                closeTab(path);
-            }
-            setLoadError(null);
-        } finally {
-            // Refresh even after a failure: files deleted before the error are really gone.
-            await refreshListing();
-        }
-    }, [breakingReferenceWarning, closeTab, refreshListing]);
-
-    // The Explorer's bulk-select footer Delete button: same warn-then-delete-then-refresh shape as handleDelete above,
-    // but over an arbitrary multi-file selection instead of one node's subtree. Resolves whether the user confirmed, so
-    // the sidebar knows whether to clear its selection (kept intact on cancel).
-    const handleBulkDelete = useCallback(async function (paths: string[]): Promise<boolean> {
-        if (paths.length === 0) {
-            return false;
-        }
-        const confirmed = await confirmDialog(`Delete ${paths.length} file${paths.length === 1 ? '' : 's'}? This cannot be undone.${breakingReferenceWarning(paths)}`, 'Delete');
         if (!confirmed) {
             return false;
         }
@@ -231,11 +203,28 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, onFileOpened 
             }
             setLoadError(null);
         } finally {
-            // Refresh even after a failure: files deleted before the error are really gone.
             await refreshListing();
         }
         return true;
     }, [breakingReferenceWarning, closeTab, refreshListing]);
+
+    const handleDelete = useCallback(async function (node: TreeNode) {
+        const paths = collectFilePaths(node);
+        const target = node.kind === 'folder' ?
+            `folder "${node.path}" and its ${paths.length} file${paths.length === 1 ? '' : 's'}` :
+            `"${node.path}"`;
+        await confirmAndDeletePathsAsync(paths, target);
+    }, [confirmAndDeletePathsAsync]);
+
+    // The Explorer's bulk-select footer Delete button: the same pipeline over an arbitrary multi-file selection
+    // instead of one node's subtree. Resolves whether the user confirmed, so the sidebar knows whether to clear its
+    // selection (kept intact on cancel).
+    const handleBulkDelete = useCallback(function (paths: string[]): Promise<boolean> {
+        if (paths.length === 0) {
+            return Promise.resolve(false);
+        }
+        return confirmAndDeletePathsAsync(paths, `${paths.length} file${paths.length === 1 ? '' : 's'}`);
+    }, [confirmAndDeletePathsAsync]);
 
     // The explorer "More" menu's Rename action. A file renames (or moves - the new name may point into another folder)
     // just itself; a folder renames every file beneath it, since folders have no on-disk entity of their own. Open tabs
