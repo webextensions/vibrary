@@ -344,3 +344,10 @@
     width: 14px;
     height: 14px;
 }
+
+/* Still the infinite refresh spin for users who ask for reduced motion; the disabled button already signals busy. */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-refresh.refreshing svg {
+        animation: none;
+    }
+}

@@ -413,3 +413,12 @@
     border-color: rgba(255, 255, 255, 0.4);
     border-top-color: #fff;
 }
+
+/* Still the infinite spinners for users who ask for reduced motion; the buttons are disabled while busy, so in-flight
+   state stays visible without the rotation. */
+@media (prefers-reduced-motion: reduce) {
+    .icon-button.spinning svg,
+    .spinner {
+        animation: none;
+    }
+}

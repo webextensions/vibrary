@@ -390,3 +390,11 @@
     color: #656d76;
     font-variant-numeric: tabular-nums;
 }
+
+/* Freeze the typing dots for users who ask for reduced motion - they can bounce for the whole length of a streaming
+   reply; the dots stay visible and the bubble's meaning is unchanged. */
+@media (prefers-reduced-motion: reduce) {
+    .typing-dot {
+        animation: none;
+    }
+}

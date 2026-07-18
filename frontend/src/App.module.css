@@ -249,3 +249,12 @@
         display: none;
     }
 }
+
+/* Still the infinite toolbar spinners for users who ask for reduced motion; the buttons are disabled while busy, so
+   in-flight state stays visible without the rotation. */
+@media (prefers-reduced-motion: reduce) {
+    .toolbar .reload.reloading svg,
+    .spinner {
+        animation: none;
+    }
+}
