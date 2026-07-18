@@ -318,9 +318,9 @@ const App = function () {
     // then aborts whatever it was about to do). A 409 means the file changed on disk after this tab loaded it (an agent
     // run, another tab, an outside editor); saving would silently discard that version, so ask first. Shared by the
     // Save button and the pre-generate flush, so neither can regress into a blind write.
-    const saveGuardedAsync = useCallback(async function (path: string, specs: Spec[], baseFileHash: string): Promise<string | null> {
+    const saveContentGuardedAsync = useCallback(async function (path: string, content: string, baseFileHash: string): Promise<string | null> {
         try {
-            return await saveFile(path, serializeVibraryXml(specs), baseFileHash);
+            return await saveFile(path, content, baseFileHash);
         } catch (error) {
             if (error instanceof ApiError && error.status === 409) {
                 const overwrite = await confirmDialog(
@@ -331,11 +331,41 @@ const App = function () {
                 if (!overwrite) {
                     return null;
                 }
-                return await saveFile(path, serializeVibraryXml(specs));
+                return await saveFile(path, content);
             }
             throw error;
         }
     }, []);
+
+    // The model save serializes through the core; the guarded-write core above is shared with the Raw tab's repair
+    // save, which must write the user's bytes VERBATIM (a broken file has no model to serialize).
+    const saveGuardedAsync = useCallback(function (path: string, specs: Spec[], baseFileHash: string): Promise<string | null> {
+        return saveContentGuardedAsync(path, serializeVibraryXml(specs), baseFileHash);
+    }, [saveContentGuardedAsync]);
+
+    // Save the Raw tab's repair text and reload from disk: the only route back from an unparseable file. The reload
+    // re-parses - if the fix took, parseError clears and the Structured tab lights back up (reloadTabFromDisk owns
+    // that whole transition); if the user chose to save still-broken text, the tab simply stays in repair mode. The
+    // baseFileHash guard still applies: a raw fix must not clobber a change written on disk since the load.
+    const handleSaveRaw = useCallback(async function (rawText: string) {
+        if (activeTab === null || activeTab.parseError === null) {
+            return;
+        }
+        const path = activeTab.path;
+        patchTab(path, { status: { kind: 'saving' } });
+        try {
+            const fileHash = await saveContentGuardedAsync(path, rawText, activeTab.fileHash);
+            if (fileHash === null) {
+                patchTab(path, { status: { kind: 'idle' } });
+                return;
+            }
+            announce(`Saved ${path}`);
+            await reloadTabFromDisk(path);
+            void refreshListing();
+        } catch (error) {
+            patchTab(path, { status: { kind: 'error', message: (error as Error).message } });
+        }
+    }, [activeTab, patchTab, saveContentGuardedAsync, reloadTabFromDisk, refreshListing]);
 
     const onSave = useCallback(async function () {
         if (activeTab === null || activeTab.parseError !== null) {
@@ -907,7 +937,7 @@ const App = function () {
                             </div>
 
                             {activeTab.parseError !== null &&
-                            <p className={cx(styles.err, styles.parseError)}>Could not parse XML: {activeTab.parseError}. Fix the file, then reopen it.</p>}
+                            <p className={cx(styles.err, styles.parseError)}>Could not parse XML: {activeTab.parseError}. Fix it in the Raw tab (editable while the file is broken), or edit the file outside the app.</p>}
 
                             {activeTab.innerTab === 'structured' && activeTab.parseError === null ?
                                 (
@@ -953,7 +983,15 @@ const App = function () {
                                     // server, so a spinner would only flash.
                                     <ErrorBoundary>
                                         <Suspense fallback={null}>
-                                            <RawXmlView xml={rawXml} />
+                                            {/* Keyed like the editor so a tab switch or reload reseeds the repair
+                                              * draft rather than carrying another file's text. */}
+                                            <RawXmlView
+                                                key={`${activeTab.path}:${activeTab.reloadNonce}`}
+                                                xml={rawXml}
+                                                parseError={activeTab.parseError}
+                                                saving={activeTab.status.kind === 'saving'}
+                                                onSaveRaw={handleSaveRaw}
+                                            />
                                         </Suspense>
                                     </ErrorBoundary>
                                 )}

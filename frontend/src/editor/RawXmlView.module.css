@@ -38,3 +38,41 @@
     cursor: pointer;
     user-select: none;
 }
+
+/* The live parse verdict beside the repair controls. Takes the leftover header width and truncates long parser
+   messages (the full text is in the element's title-less flow; the head carries the line/position that matters). */
+.parse-status-ok,
+.parse-status-bad {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 12px;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.parse-status-ok {
+    color: #1f883d;
+}
+
+.parse-status-bad {
+    color: #cf222e;
+}
+
+/* The repair textarea, matching the highlighted pane's metrics so toggling between broken and fixed states does not
+   jump. Wrap is driven by the textarea's own wrap attribute. */
+.repair-editor {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid #d4a72c; /* amber: this pane is open because the file is broken */
+    border-radius: 6px;
+    background: #fff;
+    color: #1f2328;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+}

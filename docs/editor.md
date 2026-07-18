@@ -149,8 +149,13 @@ The Raw tab shows the XML for the file, regenerated from the Structured form, as
 copies the whole file's XML to the clipboard, and a **Wrap** toggle (remembered across sessions) controls long-line
 wrapping. To change the content, edit the fields in the Structured tab.
 
-If the file on disk is not valid XML, the editor shows a parse error, the Raw tab displays the original file content so
-you can see it, and saving is disabled until the file is fixed (edit it outside the app, then reopen it).
+If the file on disk is not valid XML, the editor shows a parse error and the Raw tab becomes a repair editor over the
+original file content: a live parse check reports whether the text parses as you type (naming the failure position),
+and its **Save** writes your text to the file verbatim - still guarded against the file having changed on disk since it
+loaded. The moment a save parses, the file reloads and the Structured tab lights back up. Saving text that still does
+not parse is allowed (a partial fix is better than a lost one) but asks first. The Raw tab stays read-only while the
+file parses: a raw edit to a working file would be silently reshaped by the serializer on the next structured save,
+so there is exactly one editable view at a time.
 
 ## Saving
 

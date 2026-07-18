@@ -259,6 +259,21 @@ test('rename allows a case-only change but still refuses a genuinely different e
     assert.equal(collide.status, 409);
 });
 
+test('save writes unparseable content verbatim (the Raw tab\'s repair path)', async function () {
+    // Deliberate: the save route never validates parseability - it is the user's file, and refusing a partial fix
+    // mid-repair would be maddening. The Raw tab's repair editor relies on this (its UI carries the save-anyway
+    // confirm); the summary then reports the file as unparseable rather than lying about it.
+    await sendJsonAsync('/files', { name: 'specs-repair.xml' });
+    const stillBroken = '<root><entries><entry></root>';
+    const saved = await sendJsonAsync('/files/specs-repair.xml', { content: stillBroken }, 'PUT');
+    assert.equal(saved.status, 200);
+    const read = await requestJsonAsync('/files/specs-repair.xml');
+    assert.equal(read.body.output.content, stillBroken);
+    const { body } = await requestJsonAsync('/files-summary');
+    const summary = body.output.files.find(function (file) { return file.name === 'specs-repair.xml'; });
+    assert.equal(summary.total, null);
+});
+
 test('create with a slashed name makes the intermediate folders (the documented folder affordance)', async function () {
     // The "+" dialog now tells users a slash files the new file into a folder, which promotes this mkdir-recursive
     // behavior from implementation detail to documented affordance - so it is pinned here. A slashless include
