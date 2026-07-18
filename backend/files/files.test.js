@@ -259,6 +259,18 @@ test('rename allows a case-only change but still refuses a genuinely different e
     assert.equal(collide.status, 409);
 });
 
+test('create with a slashed name makes the intermediate folders (the documented folder affordance)', async function () {
+    // The "+" dialog now tells users a slash files the new file into a folder, which promotes this mkdir-recursive
+    // behavior from implementation detail to documented affordance - so it is pinned here. A slashless include
+    // pattern (specs*.xml) matches at every depth, so the nested file is included, listed, and readable.
+    const created = await sendJsonAsync('/files', { name: 'docs/api/specs-nested.xml' });
+    assert.equal(created.status, 200);
+    const listed = await requestJsonAsync('/files');
+    assert.ok(listed.body.output.files.includes('docs/api/specs-nested.xml'));
+    const read = await requestJsonAsync(`/files/${encodeURIComponent('docs/api/specs-nested.xml')}`);
+    assert.equal(read.status, 200);
+});
+
 test('create rejects invalid, non-included, and duplicate names with the right statuses', async function () {
     assert.equal((await sendJsonAsync('/files', { name: 'notes.xml' })).status, 400);
     assert.equal((await sendJsonAsync('/files', { name: 'ideas-new.xml' })).status, 400); // not included by the include file

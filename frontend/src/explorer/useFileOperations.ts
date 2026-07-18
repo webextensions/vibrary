@@ -120,10 +120,15 @@ const useFileOperations = function ({ tabs, closeTab, openOrFocus, rekeyTab, onF
     // (<family>.xml or <family>-<name>.xml, where family is reviews/specs/tasks/ideas); the server validates and
     // surfaces any problem (bad name, already exists) as the load-error banner.
     const promptAndCreateFile = useCallback(async function (folderPath?: string) {
+        // The slash hint is the folder-creation affordance: folders have no on-disk entity of their own (only folders
+        // that lead to a file appear in the tree), so there is nothing a "New folder" button could honestly create -
+        // but the create route already mkdir -p's intermediate directories, and this line is what tells people so.
         const name = await promptDialog({
             message: folderPath === undefined ?
-                'New file name (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):' :
-                `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml):`,
+                'New file name (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml). ' +
+                'Use a slash to file it in a folder, e.g. docs/specs-api.xml:' :
+                `New file in "${folderPath}" (e.g. specs.xml, reviews-<name>.xml, tasks-<name>.xml, ideas-<name>.xml). ` +
+                'A slash creates deeper folders:',
             placeholder: 'specs-<name>.xml',
             confirmLabel: 'Create'
         });

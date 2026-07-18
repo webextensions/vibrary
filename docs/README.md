@@ -69,7 +69,9 @@ glance, and shows the selection count instead while files are ticked. Above the 
 file tabs, with a **Save all** action when more than one has unsaved edits.
 
 The header's **+** prompts for a name and creates a new vibrary file (its family taken from the name, e.g.
-`tasks-auth.xml`), a refresh button re-reads the folder, and **Collapse all folders** folds the tree. Each file's
+`tasks-auth.xml`); a slash in the name files it into a folder, creating the directories on the way (`docs/specs-api.xml`
+- folders have no existence of their own, so this is also how a new folder is made). A refresh button re-reads the
+folder, and **Collapse all folders** folds the tree. Each file's
 **More options** menu renames, duplicates, or deletes it: a rename keeps any open tab pointing at the file (unsaved
 edits follow the new name and remain unsaved until you save - it says so first), and a delete asks first and - because `relatesTo` references resolve by title folder-wide -
 warns when entries in other files point at the ones being removed ("2 references from other files will break"), so an
