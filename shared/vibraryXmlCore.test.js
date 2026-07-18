@@ -55,7 +55,7 @@ describe('parseVibraryXml', function () {
         assert.equal(entry.updated, '');
         assert.equal(entry.updatedBy, '');
         // Recomputed from content, not read from a (missing) <contentHash>.
-        assert.equal(entry.contentHash, hashContent({ content: entry.content }));
+        assert.equal(entry.contentHash, hashContent(entry.content));
     });
 
     it('falls back to "spec" for a missing or unrecognized type attribute', function () {
@@ -139,17 +139,17 @@ describe('serializeVibraryXml + parseVibraryXml round-trip', function () {
 
 describe('hashContent', function () {
     it('is deterministic for the same content', function () {
-        assert.equal(hashContent({ content: 'hello world' }), hashContent({ content: 'hello world' }));
+        assert.equal(hashContent('hello world'), hashContent('hello world'));
     });
 
     it('differs for different content', function () {
-        assert.notEqual(hashContent({ content: 'hello' }), hashContent({ content: 'hello!' }));
+        assert.notEqual(hashContent('hello'), hashContent('hello!'));
     });
 
     it('returns a lowercase hex string zero-padded to at least 13 characters', function () {
         // padStart(13, '0') guarantees a floor, not a ceiling - the combined 53-bit value can need up to 14 hex digits.
-        assert.match(hashContent({ content: '' }), /^[0-9a-f]{13,14}$/);
-        assert.match(hashContent({ content: 'some longer content to hash' }), /^[0-9a-f]{13,14}$/);
+        assert.match(hashContent(''), /^[0-9a-f]{13,14}$/);
+        assert.match(hashContent('some longer content to hash'), /^[0-9a-f]{13,14}$/);
     });
 });
 
@@ -192,12 +192,12 @@ describe('approvalState', function () {
     });
 
     it('is "current" when approved matches the content hash', function () {
-        const spec = { content: 'x', approved: hashContent({ content: 'x' }) };
+        const spec = { content: 'x', approved: hashContent('x') };
         assert.equal(approvalState(spec), 'current');
     });
 
     it('is "stale" when approved no longer matches the (since-edited) content', function () {
-        const spec = { content: 'x-edited', approved: hashContent({ content: 'x' }) };
+        const spec = { content: 'x-edited', approved: hashContent('x') };
         assert.equal(approvalState(spec), 'stale');
     });
 
@@ -205,7 +205,7 @@ describe('approvalState', function () {
     // would go stale on the next reload without any edit. hashContent normalizes the same way to keep the invariant.
     it('stays "current" across a save/load round trip for content with edge whitespace or CRLF', function () {
         for (const content of ['approved text\n', '    indented\nend', 'a\r\nb', 'plain']) {
-            const spec = { title: 't', content, approved: hashContent({ content }), contentHash: hashContent({ content }), type: 'spec', createdBy: '', relatesTo: [], notes: '', formSchemaRef: '', labels: [], created: '', updated: '', updatedBy: '' };
+            const spec = { title: 't', content, approved: hashContent(content), contentHash: hashContent(content), type: 'spec', createdBy: '', relatesTo: [], notes: '', formSchemaRef: '', labels: [], created: '', updated: '', updatedBy: '' };
             const [reloaded] = parseVibraryXml(serializeVibraryXml([spec]));
             assert.equal(approvalState(reloaded), 'current', `content ${JSON.stringify(content)} went ${approvalState(reloaded)}`);
         }
@@ -231,8 +231,8 @@ describe('core API shapes the vibraryXml.ts casts promise', function () {
         assert.equal(emptySpec('task').type, 'task');
     });
 
-    it('hashContent and approvalState accept the documented spec-shaped inputs', function () {
-        const hash = hashContent({ content: 'x' });
+    it('hashContent takes the content string and approvalState the documented spec shape', function () {
+        const hash = hashContent('x');
         assert.equal(typeof hash, 'string');
         assert.equal(approvalState({ content: 'x', approved: hash }), 'current');
     });
@@ -241,8 +241,8 @@ describe('core API shapes the vibraryXml.ts casts promise', function () {
 describe('countApprovedSpecs', function () {
     it('counts only entries currently approved, ignoring none/stale ones', function () {
         const none = { content: 'a', approved: '' };
-        const current = { content: 'b', approved: hashContent({ content: 'b' }) };
-        const stale = { content: 'c-edited', approved: hashContent({ content: 'c' }) };
+        const current = { content: 'b', approved: hashContent('b') };
+        const stale = { content: 'c-edited', approved: hashContent('c') };
 
         assert.equal(countApprovedSpecs([none, current, stale]), 1);
     });

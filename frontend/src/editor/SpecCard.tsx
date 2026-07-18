@@ -257,7 +257,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
 
     // Hash of the current content; the human approval stores the hash it was signed off against. A stored hash that no
     // longer matches means the content changed since approval (stale), surfaced as a yellow "Reapprove" button.
-    const currentHash = hashContent(value);
+    const currentHash = hashContent(value.content);
     const humanHash = value.approved;
     const isHumanApproved = humanHash !== '';
     const isHumanStale = isHumanApproved && humanHash !== currentHash;
@@ -501,7 +501,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                                     spellCheck={false}
                                     onChange={function (changeEvent) {
                                         const next = changeEvent.target.value;
-                                        update({ content: next, contentHash: hashContent({ ...value, content: next }) });
+                                        update({ content: next, contentHash: hashContent(next) });
                                     }}
                                 />
                                 <span className={styles.contentMeta}>{countWords(value.content)} words, {value.content.length} chars</span>

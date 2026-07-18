@@ -83,12 +83,12 @@ const toAgent = function (value) {
 // invalidating every previously-stored <contentHash>/<approved> value for such content. Disabled for this function
 // only, not project-wide.
 /* eslint-disable no-bitwise, @stylistic/no-mixed-operators, unicorn/prefer-code-point */
-const hashContent = function (spec) {
+const hashContent = function (content) {
     // Hash the same normalization of the content that survives a save/load round trip: the parser is configured with
     // trimValues (edge whitespace is dropped) and XML text nodes normalize CRLF to LF, so hashing the raw textarea
     // value would make an approval captured against "text\n" go stale on the very next reload. For content without
     // edge whitespace or CRLF this is the identity, so existing stored hashes are unaffected.
-    const text = toText(spec.content).replaceAll('\r\n', '\n').trim();
+    const text = toText(content).replaceAll('\r\n', '\n').trim();
     let h1 = 0xDEADBEEF;
     let h2 = 0x41C6CE57;
     for (let index = 0; index < text.length; index += 1) {
@@ -146,7 +146,7 @@ const emptySpec = function (type = 'spec') {
         createdBy: '',
         approved: '',
         content: '',
-        contentHash: hashContent({ content: '' }),
+        contentHash: hashContent(''),
         relatesTo: [],
         notes: '',
         formSchemaRef: '',
@@ -185,7 +185,7 @@ const parseVibraryXml = function (xml) {
             content: content,
             // Recomputed from content, not read from <contentHash>, so it always reflects the actual text even if the
             // stored value was hand-edited out of sync.
-            contentHash: hashContent({ content: content }),
+            contentHash: hashContent(content),
             relatesTo: toList(raw.relatesTo, 'ref'),
             notes: toText(raw.notes),
             formSchemaRef: toText(raw.formSchemaRef),
@@ -204,7 +204,7 @@ const approvalState = function (spec) {
     if (spec.approved === '') {
         return 'none';
     }
-    return spec.approved === hashContent(spec) ? 'current' : 'stale';
+    return spec.approved === hashContent(spec.content) ? 'current' : 'stale';
 };
 
 // A spec counts as approved once a human has signed off on its current content. An approval whose stored hash no

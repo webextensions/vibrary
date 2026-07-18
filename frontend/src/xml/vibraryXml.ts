@@ -64,7 +64,7 @@ const emptySpec = emptySpecImpl as (type?: EntryType) => Spec;
 const ENTRY_TYPES = ENTRY_TYPESImpl as EntryType[];
 const ENTRY_TYPE_BY_FAMILY = ENTRY_TYPE_BY_FAMILYImpl as Record<string, EntryType>;
 const entryTypeFromName = entryTypeFromNameImpl as (name: string) => EntryType;
-const hashContent = hashContentImpl as (spec: Spec) => string;
+const hashContent = hashContentImpl as (content: string) => string;
 const parseVibraryXml = parseVibraryXmlImpl as (xml: string) => Spec[];
 const serializeVibraryXml = serializeVibraryXmlImpl as (entries: Spec[]) => string;
 

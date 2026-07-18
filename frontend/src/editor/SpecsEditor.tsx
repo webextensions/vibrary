@@ -722,9 +722,9 @@ const SpecsEditor = function (
             const index = specs.findIndex(function (spec) { return spec.id === cardId; });
             // No-op when no card is focused, or the entry is already approved against its current content (approving
             // again would only re-stamp its updated time). Otherwise approve/reapprove, mirroring the header button.
-            if (index !== -1 && specs[index].approved !== hashContent(specs[index])) {
+            if (index !== -1 && specs[index].approved !== hashContent(specs[index].content)) {
                 event.preventDefault();
-                updateAt(index, { ...specs[index], approved: hashContent(specs[index]) });
+                updateAt(index, { ...specs[index], approved: hashContent(specs[index].content) });
             }
             return;
         }
@@ -851,7 +851,7 @@ const SpecsEditor = function (
 
     const handleBulkApprove = function () {
         updateSelected(function (spec) {
-            return { ...spec, approved: hashContent(spec) };
+            return { ...spec, approved: hashContent(spec.content) };
         });
         setOperationsOpen(false);
     };
