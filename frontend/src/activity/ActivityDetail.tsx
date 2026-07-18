@@ -5,7 +5,7 @@ import { Streamdown } from 'streamdown';
 import { useActivityQueueActions, useActivityQueueState, useJobEvents } from './activityQueue.ts';
 import { type TranscriptItem } from './activityStream.ts';
 
-import { formatDuration, STATUS_LABEL } from './activityPresentation.ts';
+import { jobElapsed, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, RefreshIcon, StopIcon } from '../shared/Icons.tsx';
 
 import styles from './ActivityDetail.module.css';
@@ -219,9 +219,7 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
         );
     }
 
-    const elapsed = job.startedAt === null ?
-        null :
-        formatDuration((job.status === 'running' ? now : (job.endedAt ?? now)) - job.startedAt);
+    const elapsed = jobElapsed(job, now);
 
     // The chat composer shows once a session id has been captured (early in the run), so a follow-up can be typed and
     // sent even while a reply is still streaming - it queues and auto-sends when the current turn finishes.

@@ -6,7 +6,7 @@ import Select from 'react-select';
 import { type Job, type JobKind, type JobStatus, useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
 import { useSettings } from '../settings/settingsContext.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
-import { FINISHED_STATUSES, formatDuration, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
+import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, FilterIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
 
 import styles from './ActivityMonitor.module.css';
@@ -44,10 +44,7 @@ const JobRow = function ({ job, now, onOpen, onAbort, onRemove, onMove, onRetry,
     const { label: kindLabel, Icon } = KIND_META[job.kind];
     const canRetry = job.status === 'error' || job.status === 'aborted';
 
-    // Elapsed: from start to now while running, start to end once finished.
-    const elapsed = job.startedAt === null ?
-        null :
-        formatDuration((job.status === 'running' ? now : (job.endedAt ?? now)) - job.startedAt);
+    const elapsed = jobElapsed(job, now);
 
     return (
         <li className={styles.job}>

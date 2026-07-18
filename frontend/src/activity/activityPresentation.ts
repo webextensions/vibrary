@@ -27,7 +27,8 @@ const STATUS_LABEL: Record<JobStatus, string> = {
     aborted: 'Aborted'
 };
 
-// formatDuration lives in its own module (kept there so it stays node-testable, free of the icon imports above) but is
-// re-exported here so existing importers keep getting it from this shared presentation vocabulary.
-export { formatDuration } from './formatDuration.ts';
+// formatDuration and jobElapsed live in their own module (kept there so they stay node-testable, free of the icon
+// imports above) but are re-exported here so existing importers keep getting them from this shared presentation
+// vocabulary.
+export { formatDuration, jobElapsed } from './formatDuration.ts';
 export { FINISHED_STATUSES, KIND_META, STATUS_LABEL };
