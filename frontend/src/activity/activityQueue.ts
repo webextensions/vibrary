@@ -6,7 +6,7 @@ import { type ClaudeStreamEvent, type TranscriptItem } from './activityStream.ts
 // kept separate so each file exports only one kind of thing (hooks/context here, a component there) and React Fast
 // Refresh stays happy.
 
-type JobKind = 'run-task' | 'apply-spec' | 'apply-batch' | 'generate' | 'title';
+type JobKind = 'run-task' | 'apply-spec' | 'apply-batch' | 'generate';
 type JobStatus = 'queued' | 'running' | 'success' | 'error' | 'aborted';
 
 // A job's worker thunk: performs the api call with the queue's abort signal, forwarding each streamed claude event to

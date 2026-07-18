@@ -14,13 +14,11 @@ type AppSettings = {
     taskOptions: Record<string, FormData>
 };
 
-// Every kind notifies by default except `title` (the derive-title helper is a fast background action - noisy to toast).
 const DEFAULT_NOTIFICATIONS: NotificationSettings = {
     'run-task': true,
     'apply-spec': true,
     'apply-batch': true,
-    'generate': true,
-    'title': false
+    'generate': true
 };
 
 const isRecord = function (value: unknown): value is Record<string, unknown> {

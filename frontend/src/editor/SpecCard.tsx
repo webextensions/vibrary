@@ -1,12 +1,11 @@
 import cx from 'classnames';
-import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { MultiValue } from 'react-select';
 import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'react-toastify';
 
-import { useActivityQueueActions } from '../activity/activityQueue.ts';
 import { type BacklinkSource, populateTitle } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
@@ -174,8 +173,14 @@ const Chips = function (
 
 const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, schemas, allTitles, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
-    const { enqueue } = useActivityQueueActions();
     const [populating, setPopulating] = useState(false);
+    // Abort an in-flight Populate when the card unmounts - there is no field left to drop the title into.
+    const populateControllerReference = useRef<AbortController | null>(null);
+    useEffect(function () {
+        return function () {
+            populateControllerReference.current?.abort();
+        };
+    }, []);
 
     // Clamp a long entry's review-mode content to a preview so one wall-of-text entry cannot dominate the list, with a
     // "Show more" toggle to reveal the rest. Short entries never fill the clamp, so they render unchanged and get no
@@ -217,26 +222,30 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
     };
 
     // Derive the hyphenated-title from the content below by asking the backend's headless "claude -p" agent, then drop
-    // the result into the title field. Uses the in-memory content (current edits), so no save is needed first.
+    // the result into the title field. Uses the in-memory content (current edits), so no save is needed first. Calls
+    // the API directly - NOT through the serial activity queue - mirroring the commit-message twin: the backend
+    // deliberately exempts the quick buffered /title helper from its one-agent-at-a-time guard so it can run alongside
+    // a queued job, and queueing it here left Populate spinning behind an hour-long task with no hint why.
     const handlePopulate = async function () {
         if (populating || value.content.trim() === '') {
             return;
         }
+        const controller = new AbortController();
+        populateControllerReference.current = controller;
         setPopulating(true);
         try {
-            const title = await enqueue({
-                kind: 'title',
-                label: value.title || 'derive title',
-                run: function (signal) {
-                    return populateTitle(value.content, signal);
-                }
-            });
+            const title = await populateTitle(value.content, controller.signal);
             if (title !== '') {
                 update({ title });
             }
         } catch (error) {
-            console.error(`[vibrary] failed to derive title for "${value.title || value.id}":`, error);
+            // An unmount abort is not a failure; and there is no card left to report it on anyway.
+            if (!controller.signal.aborted) {
+                toast.error('Could not derive a title');
+                console.error(`[vibrary] failed to derive title for "${value.title || value.id}":`, error);
+            }
         } finally {
+            populateControllerReference.current = null;
             setPopulating(false);
         }
     };
