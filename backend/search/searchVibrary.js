@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 
 import { parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { listVibraryFiles } from '../files/vibraryFiles.js';
+import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 
 // Bound the response so a broad query against a large folder cannot return an unbounded payload; the UI notes when a
 // result set was truncated.
@@ -119,9 +119,15 @@ const searchVibrary = async function (cwd, query, options = {}) {
             isTruncated = true;
             break;
         }
+        // The names are glob-derived today, but the shared defense-in-depth guard is applied before ANY filesystem
+        // access - the same treatment /files-summary gives this very listing (see resolveWithinCwd.js).
+        const target = resolveWithinCwd(cwd, name);
+        if (target === null) {
+            continue;
+        }
         let entries;
         try {
-            entries = parseVibraryXml(await readFile(path.join(cwd, name), 'utf8'));
+            entries = parseVibraryXml(await readFile(target, 'utf8'));
         } catch {
             continue;
         }
