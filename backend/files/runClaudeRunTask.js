@@ -1,5 +1,5 @@
-import { rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { rm } from 'node:fs/promises';
+import path from 'node:path';
 import { runStreamedAgentAsync } from '../shared/spawnClaude.js';
 
 // Give the headless agent room to read the codebase and edit files - and, when the Ralph loop is on, to iterate across
@@ -8,7 +8,7 @@ const RUN_TASK_TIMEOUT_MS = 60 * 60 * 1000;
 
 // The ralph-loop plugin's per-project state file (relative to the run's cwd). It normally removes this itself on a
 // clean finish or when --max-iterations is hit; we only clear any copy left behind by an abort/timeout mid-loop.
-const RALPH_STATE_FILE = join('.claude', 'ralph-loop.local.md');
+const RALPH_STATE_FILE = path.join('.claude', 'ralph-loop.local.md');
 
 // The instruction handed to "claude -p". It carries out a single task against the project, editing files on disk as
 // needed. The <notes> line is omitted when the task has none. `options` carries the directive block derived from the
@@ -68,7 +68,13 @@ const runTaskAsync = async function ({ cwd, title, content, notes, options, inst
     } finally {
         // Clear any ralph-loop state file the run left behind (abort/timeout mid-loop) so it can't disrupt a later run.
         if (isRalphLoopEnabled) {
-            rmSync(join(cwd, RALPH_STATE_FILE), { force: true });
+            try {
+                await rm(path.join(cwd, RALPH_STATE_FILE), { force: true });
+            } catch (error) {
+                // A cleanup failure (e.g. EACCES on a read-only .claude/) must never REPLACE the run's real outcome -
+                // a throw out of finally would swallow the original error, e.g. a timeout's descriptive message.
+                console.error('Failed to remove the ralph-loop state file:', error);
+            }
         }
     }
 };
