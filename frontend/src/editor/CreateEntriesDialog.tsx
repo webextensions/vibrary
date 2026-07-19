@@ -4,6 +4,7 @@ import { type FormEvent, useState } from 'react';
 import { MAX_GENERATE_COUNT } from '../../../shared/apiLimits.js';
 import { ENTRY_TYPE_BY_FAMILY, type EntryType } from '../xml/vibraryXml.ts';
 
+import { PromptTemplatePicker } from '../settings/PromptTemplatePicker.tsx';
 import { ResponsiveDialog } from '../shared/ResponsiveDialog.tsx';
 
 import styles from './SpecsEditor.module.css';
@@ -95,6 +96,7 @@ const CreateEntriesDialog = function ({ onClose, defaultEntryType, onGenerate }:
                 </label>
                 <label className={cx(styles.aiField, styles.aiFieldColumn)} htmlFor="ai-instructions">
                     Custom instructions (optional):
+                    <PromptTemplatePicker disabled={generating} onPick={setInstructions} />
                     <textarea
                         id="ai-instructions"
                         rows={3}

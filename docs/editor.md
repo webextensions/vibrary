@@ -79,7 +79,9 @@ The floating **+** button offers two ways to add entries: **Create manually** ap
 own type family (specs.xml adds a spec, tasks.xml a task, and so on - the type stays editable afterward), and **Create
 entries with AI** opens a dialog where you pick what to create (specs / reviews / tasks / ideas - defaulting to the
 open file's name family), how many, and optional custom instructions for the run; a headless agent then appends that
-many entries of the chosen type to the file. **Duplicate** on a card clones it (a fresh entry with the same content,
+many entries of the chosen type to the file. When saved prompt templates exist (managed in the activity monitor's
+Settings popover), an **Insert saved template** picker above the instructions box fills it with a template's text -
+still editable for the run. **Duplicate** on a card clones it (a fresh entry with the same content,
 notes, labels and relations, but its own id, timestamps, an unapproved state, and a unique `-copy` title) as a
 starting point for a similar one. **Remove** on a card deletes that entry (with a brief **Undo** toast to restore it). The stacked up/down control at the start of a card's actions moves the
 entry one position in the file (disabled at the ends, and hidden while a filter or a non-default sort is active, since

@@ -5,6 +5,7 @@ import Select from 'react-select';
 
 import { type Job, type JobKind, type JobStatus, type JobTarget, useActivityQueueActions, useActivityQueueState } from './activityQueue.ts';
 import { useSettingsActions, useSettingsState } from '../settings/settingsContext.ts';
+import { randomId } from '../xml/vibraryXml.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
 import { ChevronIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
@@ -143,6 +144,103 @@ const CompetitionPromptEditor = function () {
     );
 };
 
+// The saved prompt-template library, managed in place: a list of the templates (click a name to load it into the
+// form for editing, or delete it) over an add/edit form. Saved templates surface as an "Insert saved template"
+// picker beside the agent actions' instruction boxes (PromptTemplatePicker).
+const PromptTemplateManager = function () {
+    const { promptTemplates } = useSettingsState();
+    const { savePromptTemplate, deletePromptTemplate } = useSettingsActions();
+    // null while adding a new template; a template id while editing that one (the form doubles for both).
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [name, setName] = useState('');
+    const [text, setText] = useState('');
+
+    const resetForm = function () {
+        setEditingId(null);
+        setName('');
+        setText('');
+    };
+
+    return (
+        <>
+            <p className={cx(styles.settingsHeading, styles.settingsSectionHeading)}>Prompt templates</p>
+            <p className={styles.settingsHint}>
+                Saved templates appear as an &quot;Insert saved template&quot; picker on the AI actions&apos;
+                instruction boxes.
+            </p>
+            {promptTemplates.map(function (template) {
+                return (
+                    <div key={template.id} className={styles.settingsTemplateRow}>
+                        <button
+                            type="button"
+                            className={styles.settingsTemplateName}
+                            title={`Edit "${template.name}"`}
+                            onClick={function () {
+                                setEditingId(template.id);
+                                setName(template.name);
+                                setText(template.text);
+                            }}
+                        >
+                            {template.name}
+                        </button>
+                        <button
+                            type="button"
+                            className={styles.settingsTemplateDelete}
+                            aria-label={`Delete template "${template.name}"`}
+                            title="Delete this template"
+                            onClick={function () {
+                                deletePromptTemplate(template.id);
+                                if (editingId === template.id) {
+                                    resetForm();
+                                }
+                            }}
+                        >
+                            <RemoveIcon />
+                        </button>
+                    </div>
+                );
+            })}
+            <input
+                type="text"
+                className={styles.settingsTextInput}
+                placeholder="Template name"
+                aria-label="Template name"
+                value={name}
+                onChange={function (event) {
+                    setName(event.target.value);
+                }}
+            />
+            <textarea
+                className={styles.settingsTextarea}
+                rows={3}
+                placeholder="Template text (inserted into the instructions box)"
+                aria-label="Template text"
+                value={text}
+                onChange={function (event) {
+                    setText(event.target.value);
+                }}
+            />
+            <div className={styles.settingsTemplateActions}>
+                <button
+                    type="button"
+                    className={styles.settingsReset}
+                    disabled={name.trim() === ''}
+                    onClick={function () {
+                        savePromptTemplate({ id: editingId ?? randomId(), name: name.trim(), text });
+                        resetForm();
+                    }}
+                >
+                    {editingId === null ? 'Add template' : 'Save changes'}
+                </button>
+                {editingId !== null &&
+                <button type="button" className={styles.settingsReset} onClick={resetForm}>
+                    Cancel edit
+                </button>}
+            </div>
+        </>
+    );
+};
+
 // Gear button + popover for the per-project settings: which activity kinds pop start/finish notifications (the
 // toast itself is fired by ActivityNotifier), plus a bulk reset for every task's remembered run options and the
 // competition judge's prompt template. Closes on an outside click or Escape, matching every other popup in the app
@@ -205,6 +303,8 @@ const NotificationSettingsMenu = function () {
                 </button>
 
                 <CompetitionPromptEditor />
+
+                <PromptTemplateManager />
             </div>}
         </div>
     );
