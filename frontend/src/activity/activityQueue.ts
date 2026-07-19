@@ -70,7 +70,9 @@ type ActivityQueueActions = {
     abortCurrent: () => void;
     removeJob: (id: string) => void;
     moveJob: (id: string, direction: 'up' | 'down') => void;
-    retryJob: (id: string) => void;
+    // Re-run a failed/aborted job as a fresh entry; `runAfter` (epoch ms) defers the re-run - the "Retry in 5m"
+    // affordance a rate-limited failure offers.
+    retryJob: (id: string, options?: { runAfter?: number }) => void;
     // Defer a queued job: it must not start before `runAfter` (epoch ms); later jobs may overtake it meanwhile.
     // Clearing makes it immediately eligible again. Both no-ops unless the job is currently queued.
     deferJob: (id: string, runAfter: number) => void;

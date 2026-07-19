@@ -10,6 +10,7 @@ import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
 import { TranscriptHistory } from './TranscriptHistory.tsx';
 import { ChevronIcon, ClockIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
+import { isRateLimitError } from './rateLimit.ts';
 import { promptDialog } from '../shared/promptDialog.ts';
 
 import styles from './ActivityMonitor.module.css';
@@ -39,6 +40,8 @@ type JobRowProperties = {
     // Ask for and set a run-after deferral on a queued job / clear it back to run-at-its-turn.
     onDefer: (id: string) => void;
     onClearDeferral: (id: string) => void;
+    // Re-run a rate-limited failure after a cool-off (rides retryJob's runAfter option).
+    onRetryLater: (id: string) => void;
     // Whether a queued neighbor actually exists in each direction (computed against the FULL queue) - the buttons
     // mirror moveJob's own guards instead of rendering enabled no-ops at the queue's edges.
     canMoveUp: boolean;
@@ -49,9 +52,12 @@ type JobRowProperties = {
     moveLockedReason: string | null
 };
 
-const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onMove, onRetry, onDefer, onClearDeferral, canMoveUp, canMoveDown, moveLockedReason }: JobRowProperties) {
+const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onMove, onRetry, onDefer, onClearDeferral, onRetryLater, canMoveUp, canMoveDown, moveLockedReason }: JobRowProperties) {
     const { label: kindLabel, Icon } = KIND_META[job.kind];
     const canRetry = job.status === 'error' || job.status === 'aborted';
+    // A failure that reads as a rate/usage limit gets a distinctive chip and a delayed-retry affordance: retrying
+    // such a run immediately usually just burns another request into the same wall.
+    const isRateLimited = job.status === 'error' && isRateLimitError(job.error);
     // A const so the null check below narrows into the click handler's closure.
     const entryTarget = job.target;
 
@@ -69,6 +75,8 @@ const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onM
                 <span className={cx(styles.kindIcon, styles[job.status])}><Icon /></span>
                 <span className={styles.jobLabel}>{job.label || kindLabel}</span>
                 <span className={cx(styles.status, styles[job.status])}>{STATUS_LABEL[job.status]}</span>
+                {isRateLimited &&
+                <span className={styles.rateLimited} title={job.error ?? undefined}>rate limited</span>}
                 {isJobDeferred && job.runAfter !== null &&
                 <span className={styles.elapsed} title={`Starts no earlier than ${new Date(job.runAfter).toLocaleTimeString()}`}>
                     {`>= ${new Date(job.runAfter).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
@@ -114,6 +122,11 @@ const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onM
                 {canRetry && (
                     <button type="button" className={styles.rowButton} aria-label="Retry" title="Retry" onClick={function () { onRetry(job.id); }}>
                         <RefreshIcon />
+                    </button>
+                )}
+                {isRateLimited && (
+                    <button type="button" className={styles.rowButton} aria-label="Retry in 5 minutes" title="Queue a retry that starts no earlier than 5 minutes from now" onClick={function () { onRetryLater(job.id); }}>
+                        <ClockIcon />
                     </button>
                 )}
                 {job.status !== 'queued' && job.status !== 'running' && (
@@ -511,6 +524,7 @@ const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActiv
                             onRetry={retryJob}
                             onDefer={function (id) { void handleDefer(id); }}
                             onClearDeferral={clearDeferral}
+                            onRetryLater={function (id) { retryJob(id, { runAfter: Date.now() + (5 * 60 * 1000) }); }}
                             canMoveUp={jobs[fullIndex - 1]?.status === 'queued'}
                             canMoveDown={jobs[fullIndex + 1]?.status === 'queued'}
                             moveLockedReason={hasActiveFilter ? 'Reordering is disabled while a filter is active' : null}

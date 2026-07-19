@@ -345,9 +345,10 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         pump();
     };
 
-    // Re-run a finished failed/aborted job as a fresh queue entry. The retried job's promise is unobserved here, so it
-    // is awaited in a swallowing try/catch to avoid an unhandled-rejection warning.
-    const retryJob = async function (id: string) {
+    // Re-run a finished failed/aborted job as a fresh queue entry, optionally deferred (the rate-limited "Retry in
+    // 5m" path rides the ordinary runAfter mechanism). The retried job's promise is unobserved here, so it is
+    // awaited in a swallowing try/catch to avoid an unhandled-rejection warning.
+    const retryJob = async function (id: string, options?: { runAfter?: number }) {
         const target = jobsReference.current.find(function (candidate) {
             return candidate.id === id;
         });
@@ -357,7 +358,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         try {
             // Pass the original prompt and entry target through so the retried row's fresh transcript seeds the same
             // initial bubble and keeps its open-the-entry link.
-            await enqueue({ kind: target.kind, label: target.label, prompt: target.prompt ?? undefined, target: target.target ?? undefined, run: target.run });
+            await enqueue({ kind: target.kind, label: target.label, prompt: target.prompt ?? undefined, target: target.target ?? undefined, runAfter: options?.runAfter, run: target.run });
         } catch {
             // The re-run's result is shown on its own row; nothing here consumes it.
         }

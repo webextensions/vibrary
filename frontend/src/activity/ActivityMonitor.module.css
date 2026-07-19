@@ -171,6 +171,17 @@
     line-height: 1.5;
 }
 
+/* The rate-limited chip on a failed row: the amber "needs attention, not broken" family. */
+.rate-limited {
+    flex: none;
+    padding: 0 5px;
+    border-radius: 8px;
+    background: #fff8c5;
+    color: #9a6700;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
 /* The clock button while a deferral is armed: tinted so an on-hold job reads at a glance. */
 .row-button.defer-active {
     background: #ddf4ff;
