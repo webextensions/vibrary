@@ -5,6 +5,7 @@ import Select from 'react-select';
 import { toast } from 'react-toastify';
 
 import { useActivityQueueActions } from '../activity/activityQueue.ts';
+import { useSettingsState } from '../settings/settingsContext.ts';
 import { announce } from '../shared/announcer.ts';
 import { MenuPanel } from '../shared/MenuPanel.tsx';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
@@ -206,6 +207,8 @@ const SpecsEditor = function (
     });
 
     const { enqueue } = useActivityQueueActions();
+    // Saved prompt templates, offered as the insert select on the batch Apply's custom-instructions prompt.
+    const { promptTemplates } = useSettingsState();
     // Elo ratings from the Rankings view's recorded matches, for the card badges and the rating sort; empty (and
     // both features dormant) until the folder has recorded results.
     const ratings = useRatings();
@@ -672,7 +675,7 @@ const SpecsEditor = function (
         let instructions = '';
         if (useCustomInstructions) {
             setApplyingBatch(true);
-            const entered = await promptForCustomInstructions('Apply changes');
+            const entered = await promptForCustomInstructions('Apply changes', promptTemplates);
             setApplyingBatch(false);
             if (entered === null) {
                 return;

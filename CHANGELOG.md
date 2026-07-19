@@ -8,8 +8,9 @@ All notable changes to this project are documented here. The format loosely foll
 ### Added
 
 - A saved **prompt-template library**: name and keep reusable prompt texts (managed in the activity monitor's
-  Settings popover), then insert them into the "Create entries with AI" dialog's instructions box from an
-  **Insert saved template** picker - the inserted text stays editable per run.
+  Settings popover), then insert them from an **Insert saved template** picker on the "Create entries with AI"
+  dialog's instructions box and on the custom one-time-instructions prompts of "Apply this spec", "Run this task",
+  and the batch "Apply changes" - the inserted text stays editable per run.
 - A **Rankings** view (trophy icon in the navigation rail) that Elo-ranks the folder's idea entries from recorded
   head-to-head results: a standings table (rating, wins-losses, games) whose rows jump to their entries in the
   editor, and a **Compare** mode that presents two entries at a time (the least-compared pair first) - click a

@@ -4,15 +4,21 @@ import { closeAndRemoveDialog } from './dialogTeardown.ts';
 
 import styles from './promptDialog.module.css';
 
+// One choice a prompt can offer to insert into its input (e.g. a saved prompt template): picking it replaces the
+// input's value with `value`, still editable before submitting.
+type PromptInsertOption = { label: string; value: string };
+
 // A single-line text prompt, built on helpmate's alert-only `alertDialog` the same way `confirmDialog` is: we hand it
 // our own label + input + Cancel/Confirm buttons and resolve with the trimmed text, or null when the user cancels or
 // dismisses via the backdrop - null unambiguously means "cancelled". Submitting a required prompt empty keeps the
 // dialog open with a native validity message (the affirmative button must never silently behave as Cancel); with
 // `allowEmpty`, an empty submit instead resolves with '' (e.g. a stash message). `initialValue` prefills and selects
-// the input for edit-in-place prompts like rename.
+// the input for edit-in-place prompts like rename. `insertOptions`, when non-empty, renders an insert-style select
+// above the input (the PromptTemplatePicker behavior in imperative form): picking an option fills the input and the
+// select snaps back to its placeholder row.
 const promptDialog = function (
-    { message, placeholder, confirmLabel, allowEmpty, initialValue }:
-    { message: string; placeholder?: string; confirmLabel: string; allowEmpty?: boolean; initialValue?: string }
+    { message, placeholder, confirmLabel, allowEmpty, initialValue, insertOptions }:
+    { message: string; placeholder?: string; confirmLabel: string; allowEmpty?: boolean; initialValue?: string; insertOptions?: PromptInsertOption[] }
 ): Promise<string | null> {
     return new Promise(function (resolve) {
         const container = document.createElement('div');
@@ -48,7 +54,35 @@ const promptDialog = function (
         confirmButton.textContent = confirmLabel;
 
         actions.append(cancelButton, confirmButton);
-        container.append(text, input, actions);
+        if (insertOptions !== undefined && insertOptions.length > 0) {
+            const insertSelect = document.createElement('select');
+            insertSelect.className = styles.promptInsertSelect;
+            insertSelect.setAttribute('aria-label', 'Insert a saved prompt template');
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.disabled = true;
+            placeholderOption.selected = true;
+            placeholderOption.textContent = 'Insert saved template...';
+            insertSelect.append(placeholderOption);
+            for (const [index, option] of insertOptions.entries()) {
+                const element = document.createElement('option');
+                element.value = String(index);
+                element.textContent = option.label;
+                insertSelect.append(element);
+            }
+            insertSelect.addEventListener('change', function () {
+                const chosen = insertOptions[Number(insertSelect.value)];
+                if (chosen !== undefined) {
+                    input.value = chosen.value;
+                }
+                // Snap back to the placeholder so the select reads as an insert action, not a held selection.
+                insertSelect.value = '';
+                input.focus();
+            });
+            container.append(text, insertSelect, input, actions);
+        } else {
+            container.append(text, input, actions);
+        }
 
         let isSettled = false;
         const finish = function (value: string | null) {

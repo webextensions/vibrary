@@ -42,7 +42,7 @@ const RunActionSection = function ({ value, filePath, schemas }: RunActionSectio
     // State supplies only `loaded` (whose identity holds through task-options keystrokes - see settingsContext.ts);
     // the option readers/writers come from the stable actions bundle, so typing in one card's form re-renders no
     // other card's run section.
-    const { loaded: settingsLoaded } = useSettingsState();
+    const { loaded: settingsLoaded, promptTemplates } = useSettingsState();
     const { getTaskOptions, setTaskOptions, resetTaskOptions } = useSettingsActions();
     // True only while the custom-instructions prompt is open - NOT while the run itself executes (the card hands the
     // job to the activity monitor and returns); the button's queued/running state is derived from the queue below.
@@ -133,7 +133,7 @@ const RunActionSection = function ({ value, filePath, schemas }: RunActionSectio
         let instructions = '';
         if (useCustomInstructions) {
             setPrompting(true);
-            const entered = await promptForCustomInstructions(runAction.label);
+            const entered = await promptForCustomInstructions(runAction.label, promptTemplates);
             setPrompting(false);
             if (entered === null) {
                 return;
