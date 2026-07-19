@@ -6,6 +6,8 @@ Vibrary is a small, globally-installable web app for browsing and editing vibrar
 
 - [vibrary-file-format.md](vibrary-file-format.md) - the XML schema for a vibrary file and what each field means.
 - [editor.md](editor.md) - the editor UI: the Structured and Raw tabs and how each field is edited.
+- [rankings.md](rankings.md) - the Rankings view: Elo-ranking entries from your own head-to-head verdicts and
+  AI-judged competitions.
 
 ## Prerequisites
 
@@ -101,6 +103,13 @@ reorder what is still queued, and filter the list by kind or status. A job that 
 spec" / "Run this task") also has an **Open entry** button that jumps to that entry in the editor - or explains that it
 was renamed or removed since the run. A run that ends in a chat takes free-text
 follow-up messages (Ctrl/Cmd+Enter to send), continuing the same agent session.
+
+## Rankings
+
+The Rankings view (the trophy icon) Elo-ranks the folder's entries from recorded head-to-head results - your own
+comparisons (a click-or-arrow-keys Compare mode) and AI-judged competition batches run through the activity queue.
+Standings are always replayed from the kept records, so any result can be discarded (one, several, or all) with the
+board recomputed exactly, and the AI judge's prompt is customizable per project. See [rankings.md](rankings.md).
 
 ## Source control
 

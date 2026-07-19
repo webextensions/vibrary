@@ -95,6 +95,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
 const GUIDE_PAGES = [
     { name: 'README.md', label: 'Overview' },
     { name: 'editor.md', label: 'Editor guide' },
+    { name: 'rankings.md', label: 'Rankings' },
     { name: 'vibrary-file-format.md', label: 'File format' }
 ];
 

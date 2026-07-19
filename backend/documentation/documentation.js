@@ -14,7 +14,7 @@ const documentationDirectory = path.join(path.dirname(fileURLToPath(import.meta.
 
 // The manual pages the Help dialog's Guide tab can request - the package ships only these (package.json's files list
 // includes "docs/*.md", deliberately excluding the internal docs/specs tree).
-const DOC_NAMES = new Set(['README.md', 'editor.md', 'vibrary-file-format.md']);
+const DOC_NAMES = new Set(['README.md', 'editor.md', 'rankings.md', 'vibrary-file-format.md']);
 
 const createDocumentationRouter = function () {
     const router = Router();

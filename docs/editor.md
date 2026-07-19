@@ -13,7 +13,8 @@ get saved, and the Raw tab is generated from this form.
 Each entry is shown as a card. A card opens in review mode (fields read-only); **Edit** switches it to edit mode, and
 a freshly added or duplicated entry opens in edit mode directly. Collapsed, a card shows its selection checkbox, type
 icon, title, header actions (Remove / Edit / Copy / Duplicate / Approve) and content; the chevron at its top-left
-expands the remaining fields and the run action. When another entry - in this file or any other file in the folder -
+expands the remaining fields and the run action. An entry ranked in the Rankings view also carries its Elo rating as
+a small chip beside the title (see [rankings.md](rankings.md)). When another entry - in this file or any other file in the folder -
 has the same title (which makes `relatesTo` references, resolved by exact title folder-wide, ambiguous) a **duplicate
 title** warning appears next to it, with a **Make unique** action that appends the first free numeric suffix. The
 controls:
@@ -91,8 +92,10 @@ with **Select all** / **Deselect all** links (Select all only ticks the entries 
 filter) and Escape clears the selection. The footer also shows a small approval progress meter (how many of the file's
 entries are currently approved), an **Expand all** / **Collapse all** link that opens or closes the extra-fields
 section of every shown entry at once, and a **Sort** control that reorders the list view - by file order (the
-default, and the only one in which the up/down reorder is available), title, most-recently-updated, or approval
-status. The sort is view-only and never changes the saved file, and your choice is remembered across reloads. A
+default, and the only one in which the up/down reorder is available), title, most-recently-updated, approval
+status, or Elo rating (highest first, entries without a recorded rating last - see [rankings.md](rankings.md); in a
+folder with no recorded results this sort keeps the file order). The sort is view-only and never changes the saved
+file, and your choice is remembered across reloads. A
 **Markdown** checkbox renders each entry's content and notes as
 formatted Markdown in review mode (headings, emphasis, code, lists, quotes) instead of plain text; it is off by default
 (remembered across reloads), and while it is on the long-content clamp and the Search-match emphasis (which work on the
