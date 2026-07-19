@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- A muted **large-entry hint** on expanded spec/task cards whose content crosses generous size thresholds (about
+  2,500 characters or more than 10 bullet points), suggesting a split - one focused entry per agent run keeps the
+  diff reviewable. Purely advisory and computed locally; review/idea entries are never flagged.
 - A **Plan first** action on spec cards - the plan-review checkpoint: a read-only agent run researches the codebase
   and writes a concise implementation plan (approach, files to touch, risks) into the entry's notes under an
   "Implementation plan" heading, where it can be reviewed and corrected like any note text before code changes.

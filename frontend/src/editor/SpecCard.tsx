@@ -9,6 +9,7 @@ import { type BacklinkSource, populateTitle } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
 import { danglingRelations } from './danglingRelations.ts';
+import { describeOversize } from './specSizing.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { repairCandidates } from './repairReference.ts';
 import { specToMarkdown } from './specMarkdown.ts';
@@ -778,6 +779,8 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                         <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
 
+                    {describeOversize(value) !== null &&
+                    <p className={styles.oversizeHint}>{describeOversize(value)}</p>}
                     <RunActionSection value={value} filePath={currentFilePath} schemas={schemas} onPlanReady={onPlanReady} />
                 </div>}
             </div>

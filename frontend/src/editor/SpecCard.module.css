@@ -369,6 +369,14 @@
     color: #656d76;
 }
 
+/* The scoping heuristic's muted nudge above the run action: advisory only, so it whispers rather than warns. */
+.oversize-hint {
+    margin: 2px 0 0;
+    color: #8c959f;
+    font-size: 12px;
+    font-style: italic;
+}
+
 /* The plan-review checkpoint's entry point beside Apply: same shape, quieter color - it changes no code. */
 .spec-card .plan-first {
     align-self: flex-start;

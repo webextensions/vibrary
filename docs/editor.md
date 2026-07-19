@@ -79,8 +79,10 @@ controls:
   before any code changes. Once a plan is present the apply button reads **Apply with plan** - the notes ride the
   apply prompt, so the reviewed plan steers the run - and Plan first becomes **Re-plan**, which replaces the old
   plan section while keeping any hand-written notes above it. The plan run is instructed not to edit files, but like
-  every agent action it executes unsandboxed - see "Agent runs and permissions" in [README.md](README.md). Like every agent action, the run executes with permission prompts
-  disabled - see "Agent runs and permissions" in [README.md](README.md).
+  every agent action it executes with permission prompts disabled - see "Agent runs and permissions" in
+  [README.md](README.md). A spec or task whose content is unusually large (roughly 2,500+ characters or more than 10
+  bullet points) shows a muted hint above the run action suggesting a split: one focused entry per agent run keeps
+  each diff reviewable.
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry of the file's
 own type family (specs.xml adds a spec, tasks.xml a task, and so on - the type stays editable afterward), and **Create
