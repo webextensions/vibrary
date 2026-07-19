@@ -99,7 +99,10 @@ Agent runs are queued and executed one at a time; the activity view (the pulse i
 running job, the ones waiting behind it, and finished ones. A job's row opens its live transcript (the agent's output
 as it streams), and the initial bubble's **Full** view shows the exact prompt that was sent. From the queue you can
 pause and resume it, abort the running job, retry one that failed or was aborted, remove a queued or finished job,
-reorder what is still queued, and filter the list by kind or status. A job that ran on a single entry ("Apply this
+reorder what is still queued, and filter the list by kind or status. A collapsible **History** section below the
+queue lists the persisted transcripts of past runs - every settled run (finished, failed, or aborted) is written to
+`.vibrary/transcripts/` in the served folder (newest 200 kept, machine-local), so run history survives server
+restarts; a row opens a read-only replay of the run, and rows can be deleted singly or all at once. A job that ran on a single entry ("Apply this
 spec" / "Run this task") also has an **Open entry** button that jumps to that entry in the editor - or explains that it
 was renamed or removed since the run. A run that ends in a chat takes free-text
 follow-up messages (Ctrl/Cmd+Enter to send), continuing the same agent session.

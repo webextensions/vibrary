@@ -415,6 +415,30 @@ const generateCommitMessage = function (signal?: AbortSignal): Promise<{ summary
     return request<{ summary: string; body: string }>('/api/git/generate-message', { method: 'POST', signal });
 };
 
+// One persisted agent-run transcript in the history list; `name` doubles as the record's id for read/delete.
+type TranscriptSummary = { name: string; startedAt: string; outcome: 'success' | 'error' | 'aborted'; route: string };
+// A full stored record: the run's raw NDJSON lines plus its outcome metadata, replayable through the same reducer
+// the live transcript uses.
+type StoredTranscript = { route: string; startedAt: string; endedAt: string; outcome: string; error: string | null; truncated: boolean; lines: string[] };
+
+const listTranscripts = async function (): Promise<TranscriptSummary[]> {
+    const output = await request<{ transcripts: TranscriptSummary[] }>('/api/transcripts');
+    return output.transcripts;
+};
+
+const getTranscript = async function (name: string): Promise<StoredTranscript> {
+    const output = await request<{ transcript: StoredTranscript }>(`/api/transcripts/${encodeURIComponent(name)}`);
+    return output.transcript;
+};
+
+const deleteTranscript = async function (name: string): Promise<void> {
+    await request<Record<string, never>>(`/api/transcripts/${encodeURIComponent(name)}`, { method: 'DELETE' });
+};
+
+const clearTranscripts = async function (): Promise<void> {
+    await request<Record<string, never>>('/api/transcripts', { method: 'DELETE' });
+};
+
 // One row of the Elo standings: the entry's title plus its replayed rating and record.
 type RankingRow = { title: string; rating: number; wins: number; losses: number; games: number };
 // One recorded comparison. `orphanedTitles` names any contender that no longer resolves to an entry (renamed or
@@ -469,4 +493,4 @@ const runCompetitions = function (body: { count: number; instructions: string; s
     return streamClaude('/api/rankings/competitions', { ...rest, ...scopeToParameters(scope) }, options);
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SplitPart, splitSpec, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, clearTranscripts, commitChanges, createFile, createVibraryInclude, deleteFile, deleteTranscript, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getTranscript, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, listTranscripts, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SplitPart, splitSpec, stagePaths, stashAction, stashChanges, type StoredTranscript, type TitleIndexEntry, type TranscriptSummary, unstagePaths };

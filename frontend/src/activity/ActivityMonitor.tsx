@@ -8,6 +8,7 @@ import { useSettingsActions, useSettingsState } from '../settings/settingsContex
 import { randomId } from '../xml/vibraryXml.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
+import { TranscriptHistory } from './TranscriptHistory.tsx';
 import { ChevronIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
 
 import styles from './ActivityMonitor.module.css';
@@ -477,6 +478,8 @@ const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActiv
                     );
                 })}
             </ul>}
+
+            <TranscriptHistory />
         </div>
     );
 };
