@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -150,4 +150,30 @@ test('plan-spec validates, streams the plan-only prompt, and finishes clean', as
     assert.match(lines[0].text, /Notes: small/);
     assert.match(lines[0].text, /instructions for this plan:\nskip tests/);
     assert.deepEqual(lines.at(-1), { type: '_exit', code: 0, error: null });
+});
+
+test('a settled run persists its transcript under .vibrary/transcripts', async function () {
+    await streamLinesAsync('/apply-batch', { entries: [{ title: 'demo', content: 'persist me please' }] });
+    // The save is deliberately fire-and-forget (the response settles first), so poll briefly for the file.
+    const transcriptsDirectory = path.join(cwd, '.vibrary', 'transcripts');
+    let found = null;
+    for (let attempt = 0; attempt < 20 && found === null; attempt += 1) {
+        await delay(50);
+        try {
+            const names = readdirSync(transcriptsDirectory);
+            const matches = function (name) {
+                const filePath = path.join(transcriptsDirectory, name);
+                return readFileSync(filePath, 'utf8').includes('persist me please');
+            };
+            found = names.find(function (name) { return matches(name); }) ?? null;
+        } catch {
+            // Directory not created yet; keep polling.
+        }
+    }
+    assert.notEqual(found, null);
+    const foundPath = path.join(transcriptsDirectory, String(found));
+    const stored = JSON.parse(readFileSync(foundPath, 'utf8'));
+    assert.equal(stored.outcome, 'success');
+    assert.equal(stored.route, '/api/apply-batch');
+    assert.ok(stored.lines.length >= 2);
 });

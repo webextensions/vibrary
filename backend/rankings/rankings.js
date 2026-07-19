@@ -220,7 +220,7 @@ const createRankingsRouter = function ({ cwd }) {
                 played.push(record);
                 onLine(JSON.stringify({ type: 'competition_result', index: index + 1, count, match: record }));
             }
-        });
+        }, cwd);
     });
 
     // Discards match results by id - one, several, or the whole log - and answers with the recomputed picture, so

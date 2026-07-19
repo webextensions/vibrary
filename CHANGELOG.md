@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- Every agent run's transcript is now **persisted** as a JSON record under `.vibrary/transcripts/` in the served
+  folder (newest 200 kept, machine-local like the settings file), so finished runs survive server restarts and
+  outlive the Claude CLI's own 30-day session cleanup. A history browser over these lands next.
 - A muted **large-entry hint** on expanded spec/task cards whose content crosses generous size thresholds (about
   2,500 characters or more than 10 bullet points), suggesting a split - one focused entry per agent run keeps the
   diff reviewable. Purely advisory and computed locally; review/idea entries are never flagged. Its

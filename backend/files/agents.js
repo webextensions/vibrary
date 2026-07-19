@@ -59,7 +59,7 @@ const createAgentsRouter = function ({ cwd }) {
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
             return generateSpecsAsync({ cwd, name, type, count, instructions: typeof instructions === 'string' ? instructions : '', existingLabels, signal, onLine });
-        });
+        }, cwd);
     });
 
     // Run a headless "claude -p" agent that carries out a single task. Like /apply-batch, not file-name scoped:
@@ -87,7 +87,7 @@ const createAgentsRouter = function ({ cwd }) {
                 signal,
                 onLine
             });
-        });
+        }, cwd);
     });
 
     // Draft an implementation plan for a single spec WITHOUT editing files (the plan-review checkpoint's first
@@ -112,7 +112,7 @@ const createAgentsRouter = function ({ cwd }) {
                 signal,
                 onLine
             });
-        });
+        }, cwd);
     });
 
     // Continue a finished activity as a chat: resume its claude session with a follow-up message. Not file-name scoped;
@@ -131,7 +131,7 @@ const createAgentsRouter = function ({ cwd }) {
 
         return streamClaudeRoute(request, response, function ({ signal, onLine }) {
             return runChatAsync({ cwd, message, sessionId, signal, onLine });
-        });
+        }, cwd);
     });
 
     // Run a headless "claude -p" agent that makes the codebase conform to the selected specs in a single run - the
@@ -174,7 +174,7 @@ const createAgentsRouter = function ({ cwd }) {
                 signal,
                 onLine
             });
-        });
+        }, cwd);
     });
 
     return router;

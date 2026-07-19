@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer';
 
 import { abortOnDisconnect } from './abortOnDisconnect.js';
 import { sendErrorResponse } from './sendResponse.js';
+import { MAX_TRANSCRIPT_LINES, saveTranscriptAsync } from './transcriptStore.js';
 
 // The assembled prompt is handed to claude as a SINGLE argv argument, and the OS caps one argument's byte length
 // (Linux's MAX_ARG_STRLEN is 128 KiB). Oversized user text would otherwise fail the spawn with an opaque E2BIG only
@@ -35,11 +36,19 @@ const singleFlight = { isAgentRunActive: false };
 // the agent. Cache-Control: no-transform makes the compression middleware pass the body through unbuffered so lines
 // reach the browser as they arrive. On an abort the client is already gone, so we just stop writing. Every route
 // funnels through here AFTER its validation, so only requests that actually start a run contend for the one slot.
-const streamClaudeRoute = async function (request, response, runner) {
+// When `cwd` is given, the run's whole line stream is also persisted as a transcript record under
+// .vibrary/transcripts/ once it settles (any outcome - success, error, or abort: aborted history is still history),
+// so finished runs survive a server restart.
+const streamClaudeRoute = async function (request, response, runner, cwd = undefined) {
     if (singleFlight.isAgentRunActive) {
         return sendErrorResponse(response, 409, 'Another agent run is already in progress');
     }
     singleFlight.isAgentRunActive = true;
+    const startedAt = new Date().toISOString();
+    const lines = [];
+    let isTruncated = false;
+    let outcome = 'success';
+    let failureMessage = null;
     // Everything after the flag is set lives inside this try so the finally ALWAYS releases the slot. The header
     // prologue (flushHeaders on a socket that just went away) can throw, and if that escaped before the try the
     // flag would stay stuck true and answer every future run 409 forever - a permanent denial of the app's core
@@ -50,6 +59,13 @@ const streamClaudeRoute = async function (request, response, runner) {
         response.setHeader('Cache-Control', 'no-transform');
         response.flushHeaders();
         const writeLine = function (line) {
+            // Recorded even when the response can no longer be written (the client aborted): what the agent did
+            // before dying is exactly what the persisted transcript is for.
+            if (lines.length < MAX_TRANSCRIPT_LINES) {
+                lines.push(line);
+            } else {
+                isTruncated = true;
+            }
             if (response.writableEnded) {
                 return;
             }
@@ -62,7 +78,11 @@ const streamClaudeRoute = async function (request, response, runner) {
             await runner({ signal: controller.signal, onLine: writeLine });
             writeLine(JSON.stringify({ type: '_exit', code: 0, error: null }));
         } catch (error) {
-            if (!controller.signal.aborted) {
+            if (controller.signal.aborted) {
+                outcome = 'aborted';
+            } else {
+                outcome = 'error';
+                failureMessage = error.message;
                 writeLine(JSON.stringify({ type: '_exit', code: 1, error: error.message }));
             }
         }
@@ -70,6 +90,19 @@ const streamClaudeRoute = async function (request, response, runner) {
         singleFlight.isAgentRunActive = false;
         if (!response.writableEnded) {
             response.end();
+        }
+        if (cwd !== undefined) {
+            // Fire-and-forget by design (the store logs its own failures): the response is already settled, and a
+            // transcript-disk problem must never delay or fail the next queued run.
+            void saveTranscriptAsync(cwd, {
+                route: request.originalUrl,
+                startedAt,
+                endedAt: new Date().toISOString(),
+                outcome,
+                error: failureMessage,
+                truncated: isTruncated,
+                lines
+            });
         }
     }
 };
