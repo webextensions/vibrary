@@ -21,14 +21,21 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
 
 - `bin/` - `vibrary` (commander CLI, `backend/cli.js`) and `vibrary-server` (starts `backend/server.js` directly).
 - `backend/` - plain-JS ESM Express app (`app.js`); grouped by feature, each folder bundling its `{ cwd }`-factory
-  router, its workers, and its tests: `files/` (CRUD router `files.js`, the streaming agent router `agents.js` with
-  the NDJSON `streamClaudeRoute` helper, one `runClaude*.js` per agent action (prompt builder + timeout each), and
+  router, its workers, and its tests: `files/` (CRUD router `files.js`, the streaming agent router `agents.js`,
+  one `runClaude*.js` per agent action (prompt builder + timeout each), and
   `vibraryFiles.js` - name validation, the path-traversal defense, and `.vibraryinclude` gating), `git/` (router,
-  `runGit.js` simple-git wrappers, `runClaudeCommitMessage.js`), `search/` (router plus `searchVibrary.js` -
-  entry-aware: matches parsed title/content/notes and returns per-entry indexes that the editor's highlight
-  addresses directly as `specs[entryIndex]` - keep the two sides parsing the same file), `settings/` (router).
+  `runGit.js` simple-git wrappers, `runClaudeCommitMessage.js`), `rankings/` (the Elo feature: match records in
+  `vibrary-rankings.json` at the folder root are the SOURCE OF TRUTH - ratings are never stored, standings are
+  replayed from the kept records, which is what makes discard-and-recompute exact), `search/` (router plus
+  `searchVibrary.js` - entry-aware: matches parsed title/content/notes and returns per-entry indexes that the
+  editor's highlight addresses directly as `specs[entryIndex]` - keep the two sides parsing the same file; an
+  `in:transcripts` query retargets it at the persisted transcripts), `settings/` (router + `settingsStore.js`, the
+  tolerant read the competition judge's template lookup shares), `transcripts/` (history router over the persisted
+  run records - listing metadata is encoded in the file NAMES so a list costs no file reads).
   `shared/` holds the cross-feature plumbing: `spawnClaude.js` (process lifecycle: stream-json flags, timeouts,
-  abort -> process-group kill), `sendResponse.js` (the `{ status, output|errorMessage }` envelope),
+  abort -> process-group kill), `streamClaudeRoute.js` (the NDJSON streaming route helper, the cross-router
+  one-agent-at-a-time flag, and transcript capture into `.vibrary/transcripts/`), `transcriptStore.js`,
+  `sendResponse.js` (the `{ status, output|errorMessage }` envelope),
   `abortOnDisconnect.js`, `resolveWithinCwd.js`, and the route test harness `testHelpers.js`.
 - `frontend/` - React 19 + TypeScript + Vite + CSS modules, `src/` grouped by feature (components, CSS, hooks, and
   tests colocated): `xml/` (the type layer `vibraryXml.ts`), `activity/` (`ActivityQueueProvider.tsx` owns the
@@ -36,8 +43,11 @@ JSON API; "AI" actions shell out to the `claude` CLI headlessly. See [docs/READM
   `useSyncExternalStore` so token streams re-render only the open detail tab; the context is split into a volatile
   state half and a referentially-stable actions half - consume the narrowest one, and any NEW queue action must read
   live state through the refs, never captured state variables: the actions bundle freezes first-render closures),
-  `editor/` (SpecsEditor/SpecCard and the spec-run UI), `explorer/` (LeftPanel/Sidebar plus `useFileOperations.ts` -
-  the listing/summary, every explorer file mutation, and the error banner), `git/` (source control panel), `tabs/`
+  `board/` (`boardModel.ts` - the pure entry-to-column mapping; the board is a view of the saved files, drags only
+  ever approve/unapprove), `editor/` (SpecsEditor/SpecCard and the spec-run UI), `explorer/` (LeftPanel/Sidebar plus
+  `useFileOperations.ts` -
+  the listing/summary, every explorer file mutation, and the error banner), `git/` (source control panel),
+  `rankings/` (the Rankings view; standings always come from the API, never computed client-side), `tabs/`
   (`useOpenTabs.ts` - tab state, per-tab unsaved edits survive switching - and `useSessionRestore.ts`, per-folder
   which-tabs-were-open persistence), `settings/`, and `shared/` (dialogs, icons, generic hooks). At the root,
   `App.tsx` composes the layout and `api.ts` is the fetch layer (JSON envelope + NDJSON streaming).
