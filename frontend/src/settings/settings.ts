@@ -7,6 +7,11 @@ import { type FormData } from '../editor/taskOptions.ts';
 
 type NotificationSettings = Record<JobKind, boolean>;
 
+// One saved, named prompt template for the agent actions' instruction fields (the "Create entries with AI" dialog
+// and the per-run custom instructions). Plain text - templates are inserted client-side into the instructions box,
+// still editable per run, so there is no placeholder vocabulary to enforce here.
+type PromptTemplate = { id: string; name: string; text: string };
+
 type AppSettings = {
     notifications: NotificationSettings;
     // Keyed by formSchemaRef (e.g. "tasks.xml.schemas.json#update-npm-packages-options"); each value is the remembered
@@ -14,7 +19,9 @@ type AppSettings = {
     taskOptions: Record<string, FormData>;
     // The AI competition judge's prompt template ({{entryA}}/{{entryB}}/{{instructions}} placeholders, consumed by
     // the backend's competitions route). Empty means the built-in judge prompt.
-    competitionPrompt: string
+    competitionPrompt: string;
+    // The saved prompt-template library, in the user's saved order.
+    promptTemplates: PromptTemplate[]
 };
 
 const DEFAULT_NOTIFICATIONS: NotificationSettings = {
@@ -52,7 +59,18 @@ const normalizeSettings = function (raw: unknown): AppSettings {
 
     const competitionPrompt = typeof source.competitionPrompt === 'string' ? source.competitionPrompt : '';
 
-    return { notifications, taskOptions, competitionPrompt };
+    // Templates keep only fully-valid records (non-empty string id and name, string text): the file is hand-editable,
+    // and a half-record would render as a broken row in the picker or, worse, insert `undefined` into a prompt.
+    const storedTemplates = Array.isArray(source.promptTemplates) ? source.promptTemplates : [];
+    const promptTemplates: PromptTemplate[] = [];
+    for (const record of storedTemplates) {
+        if (isRecord(record) && typeof record.id === 'string' && record.id !== '' &&
+        typeof record.name === 'string' && record.name !== '' && typeof record.text === 'string') {
+            promptTemplates.push({ id: record.id, name: record.name, text: record.text });
+        }
+    }
+
+    return { notifications, taskOptions, competitionPrompt, promptTemplates };
 };
 
-export { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings, type NotificationSettings };
+export { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings, type NotificationSettings, type PromptTemplate };

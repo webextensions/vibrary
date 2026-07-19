@@ -3,7 +3,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { type JobKind } from '../activity/activityQueue.ts';
 import { getSettings, saveSettings } from '../api.ts';
 import { type FormData } from '../editor/taskOptions.ts';
-import { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings } from './settings.ts';
+import { type AppSettings, DEFAULT_NOTIFICATIONS, normalizeSettings, type PromptTemplate } from './settings.ts';
 import { type SettingsActions, SettingsActionsContext, SettingsStateContext } from './settingsContext.ts';
 
 // Holds the per-project settings (activity-start notification toggles, remembered task options) loaded once from
@@ -139,6 +139,24 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
                 persist(function (previous) {
                     return { ...previous, competitionPrompt: template };
                 });
+            },
+            savePromptTemplate: function (template: PromptTemplate): void {
+                persist(function (previous) {
+                    const existing = previous.promptTemplates.findIndex(function (candidate) {
+                        return candidate.id === template.id;
+                    });
+                    const promptTemplates = existing === -1 ?
+                        [...previous.promptTemplates, template] :
+                        previous.promptTemplates.map(function (candidate, index) {
+                            return index === existing ? template : candidate;
+                        });
+                    return { ...previous, promptTemplates };
+                });
+            },
+            deletePromptTemplate: function (id: string): void {
+                persist(function (previous) {
+                    return { ...previous, promptTemplates: previous.promptTemplates.filter(function (candidate) { return candidate.id !== id; }) };
+                });
             }
         };
     });
@@ -154,9 +172,10 @@ const SettingsProvider = function ({ children }: { children: ReactNode }) {
                 return settings.notifications[kind];
             },
             hasStoredTaskOptions,
+            promptTemplates: settings.promptTemplates,
             saveError
         };
-    }, [settings.notifications, hasStoredTaskOptions, loaded, saveError]);
+    }, [settings.notifications, hasStoredTaskOptions, settings.promptTemplates, loaded, saveError]);
 
     return (
         <SettingsStateContext value={state}>

@@ -9,7 +9,7 @@ import { DEFAULT_NOTIFICATIONS, normalizeSettings } from './settings.ts';
 
 test('garbage in yields complete defaults out', function () {
     for (const raw of [undefined, null, 42, 'nope', [], { notifications: 'x', taskOptions: 7 }]) {
-        assert.deepEqual(normalizeSettings(raw), { notifications: { ...DEFAULT_NOTIFICATIONS }, taskOptions: {}, competitionPrompt: '' });
+        assert.deepEqual(normalizeSettings(raw), { notifications: { ...DEFAULT_NOTIFICATIONS }, taskOptions: {}, competitionPrompt: '', promptTemplates: [] });
     }
 });
 
@@ -39,4 +39,22 @@ test('the competition prompt keeps a stored string and defaults everything else 
     assert.equal(normalizeSettings({ competitionPrompt: 'Pick the bolder bet: {{entryA}} vs {{entryB}}' }).competitionPrompt, 'Pick the bolder bet: {{entryA}} vs {{entryB}}');
     assert.equal(normalizeSettings({}).competitionPrompt, '');
     assert.equal(normalizeSettings({ competitionPrompt: 42 }).competitionPrompt, '');
+});
+
+test('prompt templates keep only fully-valid records, in stored order', function () {
+    const normalized = normalizeSettings({
+        promptTemplates: [
+            { id: 't1', name: 'Quick wins', text: 'favor quick wins' },
+            { id: 't2', name: 'Empty text is fine', text: '' },
+            { id: '', name: 'missing id', text: 'x' },
+            { id: 't3', name: '', text: 'missing name' },
+            { id: 't4', name: 'bad text', text: 42 },
+            'not-a-record'
+        ]
+    });
+    assert.deepEqual(normalized.promptTemplates, [
+        { id: 't1', name: 'Quick wins', text: 'favor quick wins' },
+        { id: 't2', name: 'Empty text is fine', text: '' }
+    ]);
+    assert.deepEqual(normalizeSettings({ promptTemplates: 'nope' }).promptTemplates, []);
 });

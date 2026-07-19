@@ -2,6 +2,7 @@ import { createContext, use } from 'react';
 
 import { type JobKind } from '../activity/activityQueue.ts';
 import { type FormData } from '../editor/taskOptions.ts';
+import { type PromptTemplate } from './settings.ts';
 
 // Context and accessors for the per-project settings store. The stateful provider lives in SettingsProvider.tsx; kept
 // separate (like activityQueue.ts) so each file exports one kind of thing and React Fast Refresh stays happy.
@@ -20,6 +21,10 @@ type SettingsState = {
     // Whether any task has remembered options at all, so a "reset all" entry point can hide/disable itself when
     // there is nothing to reset.
     hasStoredTaskOptions: boolean;
+    // The saved prompt-template library, in saved order. Lives in the STATE bundle (unlike taskOptions) because its
+    // consumers are pickers that must re-render when the library changes - and it changes at management-UI cadence,
+    // not per keystroke, so the re-render cost the taskOptions exclusion avoids does not arise here.
+    promptTemplates: PromptTemplate[];
     // The debounced write-to-disk's error message, or null once a write has since succeeded (or none has failed yet).
     // Every other feature that persists user intent (SourceControlPanel's actions, ActivityQueue jobs) surfaces a
     // visible error on failure; a toggled notification preference or remembered task-options form should too, rather
@@ -43,7 +48,11 @@ type SettingsActions = {
     // The AI competition judge's prompt template (empty = the built-in prompt). Read from the live ref like
     // getTaskOptions - callers seed a local editor from it once, gated on `loaded`, not as a subscription.
     getCompetitionPrompt: () => string;
-    setCompetitionPrompt: (template: string) => void
+    setCompetitionPrompt: (template: string) => void;
+    // The saved prompt-template library. Save upserts by id (a fresh id appends, an existing one updates in place);
+    // pickers subscribe through the STATE bundle's promptTemplates, these mutate.
+    savePromptTemplate: (template: PromptTemplate) => void;
+    deletePromptTemplate: (id: string) => void
 };
 
 const SettingsStateContext = createContext<SettingsState | null>(null);
