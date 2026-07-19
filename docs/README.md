@@ -98,7 +98,8 @@ is visible in the Activity monitor via the initial bubble's "Full" view.
 
 Agent runs are queued and executed one at a time; the activity view (the pulse icon in the navigation rail) shows the
 running job, the ones waiting behind it, and finished ones. A job's row opens its live transcript (the agent's output
-as it streams), and the initial bubble's **Full** view shows the exact prompt that was sent. From the queue you can
+as it streams), and the initial bubble's **Full** view shows the exact prompt that was sent. A finished run's closing
+summary carries its stats: duration, turns, tool calls, tokens in/out, and cost (when the CLI reports them). From the queue you can
 pause and resume it, abort the running job, retry one that failed or was aborted, remove a queued or finished job,
 reorder what is still queued, and filter the list by kind or status. A collapsible **History** section below the
 queue lists the persisted transcripts of past runs - every settled run (finished, failed, or aborted) is written to

@@ -1,5 +1,5 @@
 import cx from 'classnames';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Streamdown } from 'streamdown';
 
 import { useActivityQueueActions, useActivityQueueState, useJobEvents } from './activityQueue.ts';
@@ -80,7 +80,12 @@ const ToolResult = function ({ content, isError }: { content: string; isError: b
     );
 };
 
-const ResultSummary = function ({ item }: { item: Extract<TranscriptItem, { kind: 'result' }> }) {
+// Compact thousands formatting for the token tallies: 12,345 -> "12.3k" keeps the stats row one glanceable line.
+const formatTokens = function (count: number): string {
+    return count >= 10000 ? `${(count / 1000).toFixed(1)}k` : String(count);
+};
+
+const ResultSummary = function ({ item, toolCallCount }: { item: Extract<TranscriptItem, { kind: 'result' }>; toolCallCount: number }) {
     return (
         <div className={cx(styles.result, item.isError && styles.resultError)}>
             <div className={styles.resultHead}>{item.isError ? 'Finished with an error' : 'Finished'}</div>
@@ -88,6 +93,11 @@ const ResultSummary = function ({ item }: { item: Extract<TranscriptItem, { kind
             <div className={styles.resultMeta}>
                 {item.durationMs !== undefined && <span>{Math.round(item.durationMs / 1000)}s</span>}
                 {item.numTurns !== undefined && <span>{item.numTurns} turns</span>}
+                {toolCallCount > 0 && <span>{toolCallCount} tool {toolCallCount === 1 ? 'call' : 'calls'}</span>}
+                {item.inputTokens !== undefined && item.outputTokens !== undefined &&
+                <span title={`${item.inputTokens} tokens in, ${item.outputTokens} tokens out`}>
+                    {formatTokens(item.inputTokens)} in / {formatTokens(item.outputTokens)} out
+                </span>}
                 {item.costUsd !== undefined && <span>${item.costUsd.toFixed(4)}</span>}
             </div>
         </div>
@@ -146,7 +156,7 @@ const TypingIndicator = function () {
     );
 };
 
-const TranscriptBlock = function ({ item, isPending, onCancel }: { item: TranscriptItem; isPending: boolean; onCancel: () => void }) {
+const TranscriptBlock = function ({ item, isPending, onCancel, toolCallCount }: { item: TranscriptItem; isPending: boolean; onCancel: () => void; toolCallCount: number }) {
     switch (item.kind) {
         case 'user': {
             return <UserMessage text={item.text} fullText={item.fullText} isPending={isPending} onCancel={onCancel} />;
@@ -174,7 +184,7 @@ const TranscriptBlock = function ({ item, isPending, onCancel }: { item: Transcr
             return <ToolResult content={item.content} isError={item.isError} />;
         }
         case 'result': {
-            return <ResultSummary item={item} />;
+            return <ResultSummary item={item} toolCallCount={toolCallCount} />;
         }
         default: {
             return null;
@@ -190,6 +200,11 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
     const { abortCurrent, retryJob, sendMessage, cancelPendingMessage, isMessagePending, getDraft, setDraft: storeDraft } = useActivityQueueActions();
     const job = jobs.find(function (candidate) { return candidate.id === jobId; }) ?? null;
     const items = useJobEvents(jobId);
+    // How many tool calls the run made, shown in the result's stats row (the CLI's result event reports tokens and
+    // cost but not this; the transcript itself is the authority on tool use).
+    const toolCallCount = useMemo(function () {
+        return items.filter(function (item) { return item.kind === 'tool_use'; }).length;
+    }, [items]);
 
     // Seeded from the provider-held draft and mirrored back on every change: only the active tab is mounted, so local
     // state alone would silently discard a half-typed follow-up on a tab switch - the one piece of user-typed input
@@ -285,6 +300,7 @@ const ActivityDetail = function ({ jobId }: { jobId: string }) {
                                 item={item}
                                 isPending={item.kind === 'user' && isMessagePending(job.id, item.id)}
                                 onCancel={function () { cancelPendingMessage(job.id, item.id); }}
+                                toolCallCount={toolCallCount}
                             />
                         );
                     })}

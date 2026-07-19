@@ -24,7 +24,7 @@ type ClaudeStreamEvent =
 | { type: 'system'; subtype?: string; model?: string; tools?: unknown[]; session_id?: string } |
 { type: 'assistant'; message?: ClaudeMessage } |
 { type: 'user'; message?: ClaudeMessage } |
-{ type: 'result'; subtype?: string; is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number; session_id?: string } |
+{ type: 'result'; subtype?: string; is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number; session_id?: string; usage?: { input_tokens?: number; output_tokens?: number } } |
 { type: 'stream_event'; event: StreamSubEvent } |
 { type: 'user_prompt'; text?: string } |
 { type: 'competition_start'; index?: number; count?: number; firstTitle?: string; secondTitle?: string; prompt?: string } |
@@ -39,7 +39,7 @@ type TranscriptItem =
 { kind: 'thinking'; id: string; text: string } |
 { kind: 'tool_use'; id: string; toolUseId: string; name: string; input: string } |
 { kind: 'tool_result'; id: string; toolUseId: string; content: string; isError: boolean } |
-{ kind: 'result'; id: string; isError: boolean; text: string; durationMs?: number; costUsd?: number; numTurns?: number };
+{ kind: 'result'; id: string; isError: boolean; text: string; durationMs?: number; costUsd?: number; numTurns?: number; inputTokens?: number; outputTokens?: number };
 
 // items is what the tab renders; currentMessageId keys the in-flight assistant message's blocks so deltas and the later
 // consolidated message land on the same items. sessionId is claude's session id captured from the stream, used to resume
@@ -242,7 +242,7 @@ const reduceTranscript = function (state: TranscriptState, event: ClaudeStreamEv
             return reduceUser(state, (event as { message?: ClaudeMessage }).message);
         }
         case 'result': {
-            const summary = event as { is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number; session_id?: string };
+            const summary = event as { is_error?: boolean; result?: string; duration_ms?: number; total_cost_usd?: number; num_turns?: number; session_id?: string; usage?: { input_tokens?: number; output_tokens?: number } };
             // Key the result per turn (off the turn's message id) so a chat continuation's later result appends as its own
             // item rather than colliding with the prior turn's on the fixed 'result' key.
             const item: TranscriptItem = {
@@ -252,7 +252,11 @@ const reduceTranscript = function (state: TranscriptState, event: ClaudeStreamEv
                 text: typeof summary.result === 'string' ? summary.result : '',
                 durationMs: summary.duration_ms,
                 costUsd: summary.total_cost_usd,
-                numTurns: summary.num_turns
+                numTurns: summary.num_turns,
+                // The CLI's result event carries the run's token usage; kept per result item (not aggregated) so a
+                // chat continuation's turns each report their own figures.
+                inputTokens: typeof summary.usage?.input_tokens === 'number' ? summary.usage.input_tokens : undefined,
+                outputTokens: typeof summary.usage?.output_tokens === 'number' ? summary.usage.output_tokens : undefined
             };
             const sessionId = typeof summary.session_id === 'string' && summary.session_id !== '' ? summary.session_id : state.sessionId;
             return { ...state, sessionId, items: [...state.items, item] };

@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- A finished run's closing summary in the activity transcript now shows a compact **stats row**: duration, turns,
+  tool-call count, tokens in/out, and cost - whichever of them the CLI reported for that run.
 - Every agent run's transcript is now **persisted** as a JSON record under `.vibrary/transcripts/` in the served
   folder (newest 200 kept, machine-local like the settings file), so finished runs survive server restarts and
   outlive the Claude CLI's own 30-day session cleanup. The Activity monitor gains a collapsible **History** section

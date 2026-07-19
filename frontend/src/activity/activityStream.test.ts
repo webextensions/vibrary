@@ -140,3 +140,25 @@ test('competition events fold into a prompt bubble per pairing and a verdict tex
         { kind: 'text', id: 'competition-result:1', text: 'Winner: idea-b\n\nmore leverage' }
     ]);
 });
+
+test('the result event captures token usage alongside duration, cost, and turns', function () {
+    const state = reduceAll([
+        messageStart('m1'),
+        { type: 'result', result: 'done', duration_ms: 4200, total_cost_usd: 0.0123, num_turns: 3, usage: { input_tokens: 15000, output_tokens: 800 } }
+    ]);
+    assert.deepEqual(state.items.at(-1), {
+        kind: 'result',
+        id: 'result:m1',
+        isError: false,
+        text: 'done',
+        durationMs: 4200,
+        costUsd: 0.0123,
+        numTurns: 3,
+        inputTokens: 15000,
+        outputTokens: 800
+    });
+    // A result without usage leaves the token fields undefined rather than fabricating zeros.
+    const bare = reduceAll([messageStart('m2'), { type: 'result', result: 'done' }]);
+    const item = bare.items.at(-1);
+    assert.equal(item?.kind === 'result' ? item.inputTokens : 'wrong', undefined);
+});
