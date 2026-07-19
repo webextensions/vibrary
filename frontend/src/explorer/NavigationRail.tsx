@@ -1,17 +1,18 @@
 import cx from 'classnames';
 import type { ReactNode } from 'react';
 
-import { ActivityIcon, CloseIcon, ExplorerIcon, HelpIcon, SearchIcon, SourceControlIcon, TrophyIcon } from '../shared/Icons.tsx';
+import { ActivityIcon, BoardIcon, CloseIcon, ExplorerIcon, HelpIcon, SearchIcon, SourceControlIcon, TrophyIcon } from '../shared/Icons.tsx';
 
 import styles from './NavigationRail.module.css';
 
 // Which view the left panel currently shows. Owned by LeftPanel; the rail selects it.
-type LeftView = 'explorer' | 'search' | 'rankings' | 'sourceControl' | 'activity';
+type LeftView = 'explorer' | 'search' | 'rankings' | 'board' | 'sourceControl' | 'activity';
 
 const RAIL_ITEMS: { view: LeftView; label: string; Icon: () => ReactNode }[] = [
     { view: 'explorer', label: 'Explorer', Icon: ExplorerIcon },
     { view: 'search', label: 'Search', Icon: SearchIcon },
     { view: 'rankings', label: 'Rankings', Icon: TrophyIcon },
+    { view: 'board', label: 'Board', Icon: BoardIcon },
     { view: 'sourceControl', label: 'Source Control', Icon: SourceControlIcon },
     { view: 'activity', label: 'Activity monitor', Icon: ActivityIcon }
 ];

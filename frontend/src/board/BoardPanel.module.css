@@ -1,0 +1,131 @@
+.board-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.heading {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #57606a;
+}
+
+.icon-button {
+    display: inline-flex;
+    padding: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: #57606a;
+    cursor: pointer;
+}
+
+.icon-button:hover {
+    background: #f3f4f6;
+}
+
+.error-text {
+    margin: 0;
+    color: #cf222e;
+    font-size: 12px;
+}
+
+.empty-state {
+    margin: 0;
+    color: #656d76;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.column-heading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: #57606a;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.column-count {
+    padding: 0 6px;
+    border-radius: 8px;
+    background: #eaeef2;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.card-list,
+.card-list-active {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 22px;
+    margin: 0;
+    padding: 4px;
+    border: 1px dashed transparent;
+    border-radius: 6px;
+    list-style: none;
+}
+
+/* The drop target under a hovering drag: visible so the user sees where the card would land. */
+.card-list-active {
+    border-color: #54aeff;
+    background: #ddf4ff;
+}
+
+.card {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.card:hover {
+    border-color: #54aeff;
+}
+
+.card-type {
+    display: inline-flex;
+    flex: none;
+    color: #656d76;
+}
+
+.card-title {
+    overflow: hidden;
+    flex: 1;
+    color: #1f2328;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-file {
+    flex: none;
+    color: #8c959f;
+    font-size: 10px;
+}

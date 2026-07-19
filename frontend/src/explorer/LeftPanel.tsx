@@ -9,6 +9,7 @@ import { readStored, writeStored } from '../shared/storage.ts';
 import { useMediaQuery } from '../shared/useMediaQuery.ts';
 import { ActivityPanel } from '../activity/ActivityPanel.tsx';
 import { type LeftView, NavigationRail } from './NavigationRail.tsx';
+import { BoardPanel } from '../board/BoardPanel.tsx';
 import { RankingsPanel } from '../rankings/RankingsPanel.tsx';
 import { SearchPanel } from './SearchPanel.tsx';
 import { Sidebar } from './Sidebar.tsx';
@@ -166,6 +167,7 @@ const LeftPanel = function (properties: LeftPanelProperties) {
             />}
             {activeView === 'search' && <SearchPanel onOpenMatch={onOpenMatch} />}
             {activeView === 'rankings' && <RankingsPanel onOpenEntry={onOpenMatch} />}
+            {activeView === 'board' && <BoardPanel onOpenEntry={onOpenMatch} />}
             {activeView === 'sourceControl' && <SourceControlPanel />}
             {activeView === 'activity' && <ActivityPanel onOpenActivity={properties.onOpenActivity} onOpenEntry={properties.onOpenJobEntry} />}
         </div>

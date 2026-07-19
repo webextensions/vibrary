@@ -66,6 +66,19 @@ const SourceControlIcon = function () {
     );
 };
 
+// Kanban-columns glyph for the navigation rail's Board view.
+const BoardIcon = function () {
+    return (
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+            <g stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinejoin="round">
+                <rect x="3" y="3.5" width="3.6" height="13" rx="1" />
+                <rect x="8.2" y="3.5" width="3.6" height="9" rx="1" />
+                <rect x="13.4" y="3.5" width="3.6" height="6" rx="1" />
+            </g>
+        </svg>
+    );
+};
+
 // Trophy glyph for the navigation rail's Rankings view.
 const TrophyIcon = function () {
     return (
@@ -479,6 +492,7 @@ export {
     ActivityIcon,
     AiIcon,
     ApproveIcon,
+    BoardIcon,
     ChevronIcon,
     ClickIcon,
     ClockIcon,

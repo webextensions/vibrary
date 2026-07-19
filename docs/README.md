@@ -115,6 +115,17 @@ spec" / "Run this task") also has an **Open entry** button that jumps to that en
 was renamed or removed since the run. A run that ends in a chat takes free-text
 follow-up messages (Ctrl/Cmd+Enter to send), continuing the same agent session.
 
+## Board
+
+The Board view (the columns icon) lays the folder's entries out as a workflow board - **Ideas** (every idea-typed
+entry), **Draft** (unapproved), **Approved**, and **Stale approval** (content changed since sign-off) - derived
+purely from fields entries already have, so the board is a view of the saved files, never a second store. Cards
+click through to their entry in the editor. Dragging a card performs the legal transition only: into **Approved**
+approves (a stale card re-signs against the current content, like the editor's Reapprove), into **Draft** removes
+the approval (confirmed first); any other drag snaps back with an explanation, and ideas move columns via the
+editor's Type dropdown, not by drag. Transitions write the file through the same save path and conflict detection
+the editor uses.
+
 ## Rankings
 
 The Rankings view (the trophy icon) Elo-ranks the folder's entries from recorded head-to-head results - your own

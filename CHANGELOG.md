@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- A **Board** view (columns icon in the navigation rail): the folder's entries as a workflow board - Ideas, Draft,
+  Approved, and Stale approval - derived purely from existing fields. Cards click through to the editor; dragging
+  into Approved approves (re-signing a stale card like Reapprove) and into Draft removes the approval (confirmed),
+  writing through the editor's own save path and conflict detection; illegal drags snap back with an explanation.
 - A **Quick run** action in the Activity monitor's control row: a one-off free-text agent job whose prompt goes to
   the agent verbatim (a saved prompt template can pre-fill it) - the lightweight path for changes too small to
   deserve a spec, with the same queueing, transcript, and persistence as every other run.
