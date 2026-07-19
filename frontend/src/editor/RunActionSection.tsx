@@ -2,8 +2,9 @@ import type { RJSFSchema } from '@rjsf/utils';
 import { lazy, Suspense, useMemo, useState } from 'react';
 
 import { useActivityQueueActions, useActivityQueueState } from '../activity/activityQueue.ts';
-import { applySpecs, runTask } from '../api.ts';
+import { applySpecs, planSpec, runTask } from '../api.ts';
 import { promptForCustomInstructions } from './customInstructions.ts';
+import { hasPlan } from './planNotes.ts';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { useSettingsActions, useSettingsState } from '../settings/settingsContext.ts';
 import { type Spec } from '../xml/vibraryXml.ts';
@@ -26,7 +27,10 @@ type RunActionSectionProperties = {
     // back here. Null for a not-yet-loaded file, in which case the job simply carries no target.
     filePath: string | null;
     // Resolved option-form schemas for this file's entries, keyed by formSchemaRef.
-    schemas: SchemaMap
+    schemas: SchemaMap;
+    // Called with the drafted implementation plan when a Plan first run finishes; the editor folds it into THIS
+    // entry's notes by id (reading its live state, since minutes pass between click and plan).
+    onPlanReady: (plan: string) => void
 };
 
 // The card's one headless-agent action, whose meaning depends on the entry type: a spec is "applied" (the codebase is
@@ -34,7 +38,7 @@ type RunActionSectionProperties = {
 // entry - only spec and task entries have an action. A separate component from SpecCard because its state (per-run
 // task options, seeded from remembered settings; the in-flight/custom-instructions flags) is entirely its own concern,
 // never written back to the entry.
-const RunActionSection = function ({ value, filePath, schemas }: RunActionSectionProperties) {
+const RunActionSection = function ({ value, filePath, schemas, onPlanReady }: RunActionSectionProperties) {
     const { enqueue } = useActivityQueueActions();
     // State subscription is deliberate here: the button mirrors this entry's live queue status (review the
     // activeJob derivation below), so re-rendering on queue transitions is exactly what it needs.
@@ -107,17 +111,21 @@ const RunActionSection = function ({ value, filePath, schemas }: RunActionSectio
     const applyOne = function (spec: { title: string; content: string; notes: string; instructions: string }, streamOptions: Parameters<typeof applySpecs>[2]) {
         return applySpecs([{ title: spec.title, content: spec.content, notes: spec.notes }], spec.instructions, streamOptions);
     };
+    // A spec whose notes already hold a drafted plan applies WITH it - the notes ride the apply prompt - so the
+    // button says as much: the plan-review checkpoint's promise is visible at the moment of applying.
+    const planReviewed = value.type === 'spec' && hasPlan(value.notes);
     const runAction = value.type === 'task' ?
         { label: 'Run this task', kind: 'run-task' as const, busyLabel: 'Running...', run: runTask } :
-        { label: 'Apply this spec', kind: 'apply-spec' as const, busyLabel: 'Applying...', run: applyOne };
+        { label: planReviewed ? 'Apply with plan' : 'Apply this spec', kind: 'apply-spec' as const, busyLabel: 'Applying...', run: applyOne };
 
     // A queued or running job for this same entry (matched by kind plus label, which enqueue sets to the entry's
-    // title). While one exists the button reports it and refuses to queue a duplicate - an impatient double-click
+    // title). While one exists the buttons report it and refuse to queue a duplicate - an impatient double-click
     // otherwise silently queued the same agent run twice, i.e. two agents editing the working tree back to back.
     // Untitled entries share the '' label, so two entries with no title can shadow each other; a rare state worth
-    // that simplicity. Re-running AFTER a job finishes stays possible: finished statuses do not match here.
+    // that simplicity. Re-running AFTER a job finishes stays possible: finished statuses do not match here. The
+    // plan job counts too: planning and applying the same entry concurrently would race the notes the plan lands in.
     const activeJob = jobs.find(function (job) {
-        return job.kind === runAction.kind && job.label === value.title && (job.status === 'queued' || job.status === 'running');
+        return (job.kind === runAction.kind || job.kind === 'plan-spec') && job.label === value.title && (job.status === 'queued' || job.status === 'running');
     });
 
     // Queue the headless agent for this entry on the activity monitor (one job runs at a time). Uses the in-memory value
@@ -174,6 +182,46 @@ const RunActionSection = function ({ value, filePath, schemas }: RunActionSectio
         }
     };
 
+    // Queue the plan-only run (the plan-review checkpoint's first half): the agent researches the codebase without
+    // editing and the plan resolves as the job's result text, which onPlanReady folds into this entry's notes for
+    // review - and, once reviewed, into the apply prompt via the notes. Shares the custom-instructions checkbox
+    // with Apply: guidance given here shapes the plan.
+    const handlePlan = async function () {
+        if (prompting || activeJob !== undefined) {
+            return;
+        }
+        let instructions = '';
+        if (useCustomInstructions) {
+            setPrompting(true);
+            const entered = await promptForCustomInstructions('Plan first', promptTemplates);
+            setPrompting(false);
+            if (entered === null) {
+                return;
+            }
+            instructions = entered;
+        }
+        const promptParts = ['Draft an implementation plan for:', value.content];
+        if (instructions !== '') {
+            promptParts.push('', 'Instructions:', instructions);
+        }
+        try {
+            const plan = await enqueue({
+                kind: 'plan-spec',
+                label: value.title,
+                prompt: promptParts.join('\n'),
+                target: filePath !== null && value.title !== '' ? { filePath, entryTitle: value.title } : undefined,
+                run: function (signal, onEvent) {
+                    return planSpec({ title: value.title, content: value.content, notes: value.notes, instructions }, { signal, onEvent });
+                }
+            });
+            if (plan.trim() !== '') {
+                onPlanReady(plan);
+            }
+        } catch {
+            // The monitor already shows the failure.
+        }
+    };
+
     const fieldId = function (name: string) {
         return `spec-${value.id}-${name}`;
     };
@@ -202,8 +250,26 @@ const RunActionSection = function ({ value, filePath, schemas }: RunActionSectio
                 onClick={handleApply}
             >
                 {activeJob !== undefined && <span className={styles.spinner} aria-hidden="true" />}
-                {activeJob === undefined ? runAction.label : (activeJob.status === 'running' ? runAction.busyLabel : 'Queued...')}
+                {(function () {
+                    if (activeJob === undefined) {
+                        return runAction.label;
+                    }
+                    if (activeJob.status !== 'running') {
+                        return 'Queued...';
+                    }
+                    return activeJob.kind === 'plan-spec' ? 'Planning...' : runAction.busyLabel;
+                })()}
             </button>
+            {value.type === 'spec' &&
+            <button
+                type="button"
+                className={styles.planFirst}
+                disabled={prompting || activeJob !== undefined}
+                title="Draft an implementation plan into this entry's notes for review - no code is changed"
+                onClick={handlePlan}
+            >
+                {planReviewed ? 'Re-plan' : 'Plan first'}
+            </button>}
             <label className={formStyles.checkbox} htmlFor={fieldId('custom-instructions')}>
                 <input
                     id={fieldId('custom-instructions')}

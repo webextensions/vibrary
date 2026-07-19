@@ -7,6 +7,11 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- A **Plan first** action on spec cards - the plan-review checkpoint: a read-only agent run researches the codebase
+  and writes a concise implementation plan (approach, files to touch, risks) into the entry's notes under an
+  "Implementation plan" heading, where it can be reviewed and corrected like any note text before code changes.
+  With a plan present, the apply button reads **Apply with plan** (the notes ride the apply prompt, so the reviewed
+  plan steers the run) and **Re-plan** redrafts in place without touching hand-written notes above the heading.
 - A saved **prompt-template library**: name and keep reusable prompt texts (managed in the activity monitor's
   Settings popover), then insert them from an **Insert saved template** picker on the "Create entries with AI"
   dialog's instructions box and on the custom one-time-instructions prompts of "Apply this spec", "Run this task",

@@ -369,6 +369,24 @@
     color: #656d76;
 }
 
+/* The plan-review checkpoint's entry point beside Apply: same shape, quieter color - it changes no code. */
+.spec-card .plan-first {
+    align-self: flex-start;
+    margin-top: 2px;
+    padding: 4px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    color: #57606a;
+    cursor: pointer;
+    font: inherit;
+}
+
+.spec-card .plan-first:disabled {
+    cursor: default;
+    color: #8c959f;
+}
+
 .spinner {
     width: 12px;
     height: 12px;

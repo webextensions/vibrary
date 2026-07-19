@@ -29,7 +29,8 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
     'apply-spec': true,
     'apply-batch': true,
     'generate': true,
-    'competitions': true
+    'competitions': true,
+    'plan-spec': true
 };
 
 const isRecord = function (value: unknown): value is Record<string, unknown> {

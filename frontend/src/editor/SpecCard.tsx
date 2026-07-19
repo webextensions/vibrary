@@ -53,6 +53,9 @@ type SpecCardProperties = {
     // The entry's Elo rating from the Rankings view's recorded matches; undefined (no badge) when the folder has no
     // recorded results or this entry is outside the ranked scope.
     rating?: number;
+    // Called with the drafted implementation plan when this entry's Plan first run finishes; the editor folds it
+    // into the entry's notes by id.
+    onPlanReady: (plan: string) => void;
     // The file this card's entry lives in, forwarded to the run section so a queued job records its entry target.
     currentFilePath: string | null;
     schemas: SchemaMap;
@@ -188,7 +191,7 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, rating, currentFilePath, schemas, allTitles, labelSuggestions, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, rating, onPlanReady, currentFilePath, schemas, allTitles, labelSuggestions, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const [populating, setPopulating] = useState(false);
     // Abort an in-flight Populate when the card unmounts - there is no field left to drop the title into.
@@ -775,7 +778,7 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                         <span className={styles.muted}>{orDash(value.updatedBy)}</span>
                     </Row>
 
-                    <RunActionSection value={value} filePath={currentFilePath} schemas={schemas} />
+                    <RunActionSection value={value} filePath={currentFilePath} schemas={schemas} onPlanReady={onPlanReady} />
                 </div>}
             </div>
         </fieldset>

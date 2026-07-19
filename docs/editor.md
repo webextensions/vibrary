@@ -73,7 +73,13 @@ controls:
   shown only on `spec`/`task` entries (see above). A **Provide custom one time instructions** checkbox reveals a
   prompt for free-text guidance specific to that one run (for example "focus on the backend only"), folded into the
   agent's prompt alongside the entry's own content; when saved prompt templates exist, the prompt offers an
-  **Insert saved template** select that fills the field (still editable for the run). Like every agent action, the run executes with permission prompts
+  **Insert saved template** select that fills the field (still editable for the run). A spec additionally offers
+  **Plan first**: a read-only agent run that researches the codebase and writes a concise implementation plan into
+  the entry's notes under an "Implementation plan" heading, for review (and correction - it is ordinary note text)
+  before any code changes. Once a plan is present the apply button reads **Apply with plan** - the notes ride the
+  apply prompt, so the reviewed plan steers the run - and Plan first becomes **Re-plan**, which replaces the old
+  plan section while keeping any hand-written notes above it. The plan run is instructed not to edit files, but like
+  every agent action it executes unsandboxed - see "Agent runs and permissions" in [README.md](README.md). Like every agent action, the run executes with permission prompts
   disabled - see "Agent runs and permissions" in [README.md](README.md).
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry of the file's

@@ -22,6 +22,7 @@ import { countReplaceable, replaceInEntries } from './replaceInEntries.ts';
 import { labelOptions } from './labelOptions.ts';
 import { restoreEntries } from './restoreEntries.ts';
 import { useRatings } from '../rankings/useRatings.ts';
+import { withPlan } from './planNotes.ts';
 import { specToMarkdown } from './specMarkdown.ts';
 import { uniqueTitle } from './uniqueTitle.ts';
 import { approvalState, type ApprovalState, countApprovedSpecs, emptySpec, ENTRY_TYPES, type EntryType, hashContent, nowTimestamp, randomId, type Spec } from '../xml/vibraryXml.ts';
@@ -365,6 +366,21 @@ const SpecsEditor = function (
             }
             return next;
         });
+    };
+
+    // Fold a Plan first run's drafted plan into its entry's notes. Minutes pass between queueing a plan and its
+    // result, so the entry is addressed by ID against the LIVE specs (specsReference above, the same ref the
+    // bulk-delete Undo reads for the same reason), never a click-time snapshot - and an entry removed in the
+    // meantime makes this a silent no-op (the plan still sits in the activity's result view). Stamped AI: the agent
+    // authored the notes change.
+    const appendPlanToEntry = function (id: string, plan: string) {
+        const current = specsReference.current;
+        if (current.every(function (spec) { return spec.id !== id; })) {
+            return;
+        }
+        onChange(current.map(function (spec) {
+            return spec.id === id ? { ...spec, notes: withPlan(spec.notes, plan), updated: nowTimestamp(), updatedBy: 'AI' as const } : spec;
+        }));
     };
 
     const updateAt = function (index: number, next: Spec) {
@@ -1209,6 +1225,9 @@ const SpecsEditor = function (
                             currentFilePath={currentFilePath}
                             schemas={schemas}
                             rating={ratings.get(spec.title)}
+                            onPlanReady={function (plan) {
+                                appendPlanToEntry(spec.id, plan);
+                            }}
                             allTitles={allTitles}
                             labelSuggestions={labelSuggestions}
                             takenTitles={takenTitles}

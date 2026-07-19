@@ -489,6 +489,7 @@ export {
     PlusIcon,
     RefreshIcon,
     RemoveIcon,
+    ReviewIcon,
     SaveIcon,
     SearchIcon,
     SettingsIcon,
