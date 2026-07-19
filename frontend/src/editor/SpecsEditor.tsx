@@ -383,6 +383,32 @@ const SpecsEditor = function (
         }));
     };
 
+    // Insert a confirmed split's parts right after their source entry: fresh unapproved entries of the source's own
+    // type, each relating back to it (so the provenance survives even if the original is later trimmed away), AI as
+    // creator. Addressed by id against the live specs like appendPlanToEntry, since the preview dialog may sit open
+    // while the user edits elsewhere.
+    const insertSplitParts = function (id: string, parts: { title: string; content: string; notes: string }[]) {
+        const current = specsReference.current;
+        const sourceIndex = current.findIndex(function (spec) { return spec.id === id; });
+        if (sourceIndex === -1) {
+            return;
+        }
+        const source = current[sourceIndex];
+        const created = parts.map(function (part) {
+            return {
+                ...emptySpec(source.type),
+                title: part.title,
+                content: part.content,
+                contentHash: hashContent(part.content),
+                notes: part.notes,
+                relatesTo: source.title === '' ? [] : [source.title],
+                createdBy: 'AI' as const
+            };
+        });
+        onChange([...current.slice(0, sourceIndex + 1), ...created, ...current.slice(sourceIndex + 1)]);
+        announce(`Inserted ${created.length} split ${created.length === 1 ? 'entry' : 'entries'}`);
+    };
+
     const updateAt = function (index: number, next: Spec) {
         // Any edit to an existing spec flows through here, so stamp the update time and updater in one place. The
         // editor UI is only ever driven by a human, so the updater is Human; AI stamps itself when editing the file.
@@ -1227,6 +1253,9 @@ const SpecsEditor = function (
                             rating={ratings.get(spec.title)}
                             onPlanReady={function (plan) {
                                 appendPlanToEntry(spec.id, plan);
+                            }}
+                            onSplitParts={function (parts) {
+                                insertSplitParts(spec.id, parts);
                             }}
                             allTitles={allTitles}
                             labelSuggestions={labelSuggestions}

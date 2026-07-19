@@ -267,6 +267,16 @@ const chatContinue = function (body: { message: string; sessionId: string }, opt
     return streamClaude('/api/chat', body, options);
 };
 
+// One proposed part of a split entry, as validated by the backend (normalized non-empty title, non-empty content).
+type SplitPart = { title: string; content: string; notes: string };
+
+// Runs the backend's buffered agent to propose 2-4 focused entries out of one oversized spec/task. Nothing is
+// written; the caller previews the parts and inserts only what the user confirms.
+const splitSpec = async function (entry: { title: string; content: string; notes: string }, signal?: AbortSignal): Promise<SplitPart[]> {
+    const output = await requestJson<{ parts: SplitPart[] }>('/api/split-spec', 'POST', entry, { signal });
+    return output.parts;
+};
+
 // Runs the backend's headless AI agent to derive a hyphenated title from a spec's content, backing the editor's
 // "Populate" button. Resolves with the slugified title the agent produced.
 const populateTitle = async function (content: string, signal?: AbortSignal): Promise<string> {
@@ -459,4 +469,4 @@ const runCompetitions = function (body: { count: number; instructions: string; s
     return streamClaude('/api/rankings/competitions', { ...rest, ...scopeToParameters(scope) }, options);
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, commitChanges, createFile, createVibraryInclude, deleteFile, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SplitPart, splitSpec, stagePaths, stashAction, stashChanges, type TitleIndexEntry, unstagePaths };

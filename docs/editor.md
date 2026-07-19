@@ -82,7 +82,9 @@ controls:
   every agent action it executes with permission prompts disabled - see "Agent runs and permissions" in
   [README.md](README.md). A spec or task whose content is unusually large (roughly 2,500+ characters or more than 10
   bullet points) shows a muted hint above the run action suggesting a split: one focused entry per agent run keeps
-  each diff reviewable.
+  each diff reviewable. The hint's **Split with AI...** action asks the agent to propose 2-4 focused entries out of
+  the oversized one, previewed in a dialog (tick the parts you want) and inserted right after the original as new
+  unapproved entries, each relating back to it; the original stays for you to trim or remove.
 
 The floating **+** button offers two ways to add entries: **Create manually** appends a new empty entry of the file's
 own type family (specs.xml adds a spec, tasks.xml a task, and so on - the type stays editable afterward), and **Create

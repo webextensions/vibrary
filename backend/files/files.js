@@ -11,6 +11,7 @@ import { isValidSchemasName, isValidVibraryName, isVibraryNameIncluded, listVibr
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { generateTitleAsync } from './runClaudeTitle.js';
 import { sendErrorResponse, sendSuccessResponse } from '../shared/sendResponse.js';
+import { splitSpecAsync } from './runClaudeSplit.js';
 
 // The starter .vibraryinclude the empty state's one-click bootstrap writes: gitignore-style patterns (a pattern
 // without a slash matches at every depth, so these cover nested folders too), showing every vibrary family. Users
@@ -563,6 +564,33 @@ const createFilesRouter = function ({ cwd }) {
         try {
             const title = await generateTitleAsync({ cwd, content, signal: controller.signal });
             return sendSuccessResponse(response, { title });
+        } catch (error) {
+            if (controller.signal.aborted) {
+                return undefined;
+            }
+            return sendErrorResponse(response, 500, error.message);
+        }
+    });
+
+    // Propose 2-4 focused entries out of one oversized spec/task (the scoping guardrails' agent half). Buffered and
+    // unguarded like /title - a prompt-only reasoning task the dialog awaits with a spinner; nothing is written, the
+    // editor inserts the parts only after the user confirms the preview.
+    router.post('/split-spec', async function (request, response) {
+        const { title, content, notes } = request.body || {};
+        if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
+            return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
+        }
+
+        const controller = abortOnDisconnect(request, response);
+        try {
+            const parts = await splitSpecAsync({
+                cwd,
+                title,
+                content,
+                notes: typeof notes === 'string' ? notes : '',
+                signal: controller.signal
+            });
+            return sendSuccessResponse(response, { parts });
         } catch (error) {
             if (controller.signal.aborted) {
                 return undefined;

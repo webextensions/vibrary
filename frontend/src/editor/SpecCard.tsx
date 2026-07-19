@@ -5,11 +5,12 @@ import Select from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'react-toastify';
 
-import { type BacklinkSource, populateTitle } from '../api.ts';
+import { type BacklinkSource, populateTitle, type SplitPart } from '../api.ts';
 import { confirmDialog } from '../shared/confirmDialog.ts';
 import { copyText } from '../shared/copyText.ts';
 import { danglingRelations } from './danglingRelations.ts';
 import { describeOversize } from './specSizing.ts';
+import { SplitSpecDialog } from './SplitSpecDialog.tsx';
 import { type SchemaMap } from './loadVibraryFile.ts';
 import { repairCandidates } from './repairReference.ts';
 import { specToMarkdown } from './specMarkdown.ts';
@@ -57,6 +58,8 @@ type SpecCardProperties = {
     // Called with the drafted implementation plan when this entry's Plan first run finishes; the editor folds it
     // into the entry's notes by id.
     onPlanReady: (plan: string) => void;
+    // Called with the confirmed split parts; the editor inserts them as new entries right after this one.
+    onSplitParts: (parts: SplitPart[]) => void;
     // The file this card's entry lives in, forwarded to the run section so a queued job records its entry target.
     currentFilePath: string | null;
     schemas: SchemaMap;
@@ -192,9 +195,12 @@ const Chips = function (
     );
 };
 
-const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, rating, onPlanReady, currentFilePath, schemas, allTitles, labelSuggestions, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
+const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery, renderMarkdown = false, hasDuplicateTitle = false, rating, onPlanReady, onSplitParts, currentFilePath, schemas, allTitles, labelSuggestions, takenTitles, referencedBy, onOpenRelated, onOpenBacklink, onLabelClick, onChange, onToggleMode, onRemove, onDuplicate, selected, onToggleSelect, expanded, onToggleExpand, reorderable, canMoveUp, canMoveDown, onMoveUp, onMoveDown }: SpecCardProperties) {
     const isEditing = mode === 'edit';
     const [populating, setPopulating] = useState(false);
+    // The Split preview dialog (opened from the oversize hint); mounts only while open so its request state starts
+    // fresh each time.
+    const [splitOpen, setSplitOpen] = useState(false);
     // Abort an in-flight Populate when the card unmounts - there is no field left to drop the title into.
     const populateControllerReference = useRef<AbortController | null>(null);
     useEffect(function () {
@@ -780,7 +786,30 @@ const SpecCard = function ({ value, index, mode, highlighted = false, matchQuery
                     </Row>
 
                     {describeOversize(value) !== null &&
-                    <p className={styles.oversizeHint}>{describeOversize(value)}</p>}
+                    <p className={styles.oversizeHint}>
+                        {describeOversize(value)}
+                        <button
+                            type="button"
+                            className={styles.splitLink}
+                            title="Ask the AI to propose 2-4 focused entries out of this one; you preview and confirm before anything is inserted"
+                            onClick={function () {
+                                setSplitOpen(true);
+                            }}
+                        >
+                            Split with AI...
+                        </button>
+                    </p>}
+                    {splitOpen &&
+                    <SplitSpecDialog
+                        entry={{ title: value.title, content: value.content, notes: value.notes }}
+                        onClose={function () {
+                            setSplitOpen(false);
+                        }}
+                        onInsert={function (parts) {
+                            setSplitOpen(false);
+                            onSplitParts(parts);
+                        }}
+                    />}
                     <RunActionSection value={value} filePath={currentFilePath} schemas={schemas} onPlanReady={onPlanReady} />
                 </div>}
             </div>
