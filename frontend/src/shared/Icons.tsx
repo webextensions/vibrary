@@ -330,6 +330,16 @@ const ClickIcon = function () {
     );
 };
 
+// Clock glyph for the queue's defer-until control.
+const ClockIcon = function () {
+    return (
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.4" fill="none" />
+            <path d="M8 4.5V8l2.5 1.5" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        </svg>
+    );
+};
+
 const CloseIcon = function () {
     return (
         <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
@@ -471,6 +481,7 @@ export {
     ApproveIcon,
     ChevronIcon,
     ClickIcon,
+    ClockIcon,
     CloseIcon,
     CodeIcon,
     CopyIcon,

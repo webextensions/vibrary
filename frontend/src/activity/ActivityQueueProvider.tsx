@@ -3,6 +3,7 @@ import { type ReactNode, useMemo, useRef, useState } from 'react';
 import { chatContinue } from '../api.ts';
 import { type ActivityQueueActions, ActivityQueueActionsContext, type ActivityQueueState, ActivityQueueStateContext, type Job, type JobSpec, type JobStatus } from './activityQueue.ts';
 import { appendUserMessage, type ClaudeStreamEvent, emptyTranscript, reduceTranscript, removeItem, type TranscriptItem, type TranscriptState } from './activityStream.ts';
+import { earliestDeferredWake, selectRunnableJob } from './queueScheduling.ts';
 import { randomId } from '../xml/vibraryXml.ts';
 
 // In-memory job queue for every "claude -p" action triggered from the UI (run task, apply spec, apply a batch,
@@ -46,6 +47,9 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
     // Unsent chat-composer drafts per job id (see ActivityQueue.getDraft): survives the detail tab's unmount on a tab
     // switch, mirroring how file tabs keep their unsaved edits.
     const draftsReference = useRef(new Map<string, string>());
+    // The pump's wake-up alarm for deferred jobs: rescheduled on every pump to the earliest maturity, so a stale
+    // timer at worst fires a no-op pump. One timer, not one per job - the pump recomputes everything anyway.
+    const wakeTimerReference = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const updateJobs = function (updater: (previous: Job[]) => Job[]) {
         const next = updater(jobsReference.current);
@@ -165,7 +169,8 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
         settlersReference.current.set(jobId, { resolve() {}, reject() {} });
         updateJobs(function (previous) {
             return previous.map(function (candidate) {
-                return candidate.id === jobId ? { ...candidate, status: 'queued', run, endedAt: null, error: null } : candidate;
+                // runAfter resets: a chat turn is the user talking NOW, so an old deferral must not gate the reply.
+                return candidate.id === jobId ? { ...candidate, status: 'queued', run, endedAt: null, error: null, runAfter: null } : candidate;
             });
         });
         pump();
@@ -173,15 +178,27 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
 
     // Start the next queued job when the queue is idle and not paused: claim the running slot, mark it running, run its
     // thunk, then settle and pump again. A no-op when busy or paused, so it is safe to call after every enqueue, resume
-    // and completion.
+    // and completion. A deferred job (runAfter in the future) is skipped - later jobs may overtake it - and the wake
+    // timer re-pumps when the earliest deferral matures, so a deferred-only queue starts by itself.
     function pump() {
+        if (wakeTimerReference.current !== null) {
+            clearTimeout(wakeTimerReference.current);
+            wakeTimerReference.current = null;
+        }
         if (controllerReference.current || pausedReference.current) {
             return;
         }
-        const job = jobsReference.current.find(function (candidate) {
-            return candidate.status === 'queued';
-        });
+        const now = Date.now();
+        const job = selectRunnableJob(jobsReference.current, now);
         if (!job) {
+            const wakeAt = earliestDeferredWake(jobsReference.current, now);
+            if (wakeAt !== null) {
+                // +50ms so the re-pump lands safely past the maturity instant rather than a hair before it.
+                wakeTimerReference.current = setTimeout(function () {
+                    wakeTimerReference.current = null;
+                    pump();
+                }, (wakeAt - now) + 50);
+            }
             return;
         }
 
@@ -233,6 +250,7 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             prompt: spec.prompt !== undefined && spec.prompt !== '' ? spec.prompt : null,
             sessionId: null,
             target: spec.target ?? null,
+            runAfter: spec.runAfter ?? null,
             run: spec.run
         };
         const promise = new Promise<string>(function (resolve, reject) {
@@ -305,6 +323,26 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             next[target] = moved;
             return next;
         });
+    };
+
+    // Defer a queued job to `runAfter` (epoch ms) or clear its deferral; both read the live jobs through updateJobs
+    // and re-pump - deferring the head job may unblock the one behind it, and clearing may start the queue at once.
+    const deferJob = function (id: string, runAfter: number) {
+        updateJobs(function (previous) {
+            return previous.map(function (candidate) {
+                return candidate.id === id && candidate.status === 'queued' ? { ...candidate, runAfter } : candidate;
+            });
+        });
+        pump();
+    };
+
+    const clearDeferral = function (id: string) {
+        updateJobs(function (previous) {
+            return previous.map(function (candidate) {
+                return candidate.id === id && candidate.status === 'queued' ? { ...candidate, runAfter: null } : candidate;
+            });
+        });
+        pump();
     };
 
     // Re-run a finished failed/aborted job as a fresh queue entry. The retried job's promise is unobserved here, so it
@@ -436,6 +474,8 @@ const ActivityQueueProvider = function ({ children }: { children: ReactNode }) {
             removeJob,
             moveJob,
             retryJob,
+            deferJob,
+            clearDeferral,
             retryAllFailed,
             sendMessage,
             cancelPendingMessage,

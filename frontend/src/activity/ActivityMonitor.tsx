@@ -9,7 +9,8 @@ import { randomId } from '../xml/vibraryXml.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
 import { TranscriptHistory } from './TranscriptHistory.tsx';
-import { ChevronIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
+import { ChevronIcon, ClockIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
+import { promptDialog } from '../shared/promptDialog.ts';
 
 import styles from './ActivityMonitor.module.css';
 
@@ -35,6 +36,9 @@ type JobRowProperties = {
     onRemove: (id: string) => void;
     onMove: (id: string, direction: 'up' | 'down') => void;
     onRetry: (id: string) => void;
+    // Ask for and set a run-after deferral on a queued job / clear it back to run-at-its-turn.
+    onDefer: (id: string) => void;
+    onClearDeferral: (id: string) => void;
     // Whether a queued neighbor actually exists in each direction (computed against the FULL queue) - the buttons
     // mirror moveJob's own guards instead of rendering enabled no-ops at the queue's edges.
     canMoveUp: boolean;
@@ -45,13 +49,14 @@ type JobRowProperties = {
     moveLockedReason: string | null
 };
 
-const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onMove, onRetry, canMoveUp, canMoveDown, moveLockedReason }: JobRowProperties) {
+const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onMove, onRetry, onDefer, onClearDeferral, canMoveUp, canMoveDown, moveLockedReason }: JobRowProperties) {
     const { label: kindLabel, Icon } = KIND_META[job.kind];
     const canRetry = job.status === 'error' || job.status === 'aborted';
     // A const so the null check below narrows into the click handler's closure.
     const entryTarget = job.target;
 
     const elapsed = jobElapsed(job, now);
+    const isJobDeferred = job.status === 'queued' && job.runAfter !== null && job.runAfter > now;
 
     return (
         <li className={styles.job}>
@@ -64,6 +69,10 @@ const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onM
                 <span className={cx(styles.kindIcon, styles[job.status])}><Icon /></span>
                 <span className={styles.jobLabel}>{job.label || kindLabel}</span>
                 <span className={cx(styles.status, styles[job.status])}>{STATUS_LABEL[job.status]}</span>
+                {isJobDeferred && job.runAfter !== null &&
+                <span className={styles.elapsed} title={`Starts no earlier than ${new Date(job.runAfter).toLocaleTimeString()}`}>
+                    {`>= ${new Date(job.runAfter).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                </span>}
                 {elapsed !== null && <span className={styles.elapsed}>{elapsed}</span>}
             </button>
 
@@ -75,6 +84,17 @@ const JobRow = function ({ job, now, onOpen, onOpenEntry, onAbort, onRemove, onM
                 )}
                 {job.status === 'queued' && (
                     <>
+                        {isJobDeferred ?
+                            (
+                                <button type="button" className={cx(styles.rowButton, styles.deferActive)} aria-label="Clear the deferral" title="Deferred - click to let it run at its turn again" onClick={function () { onClearDeferral(job.id); }}>
+                                    <ClockIcon />
+                                </button>
+                            ) :
+                            (
+                                <button type="button" className={styles.rowButton} aria-label="Defer this job" title="Start no earlier than... (later jobs may overtake it)" onClick={function () { onDefer(job.id); }}>
+                                    <ClockIcon />
+                                </button>
+                            )}
                         <button type="button" className={cx(styles.rowButton, styles.moveUp)} aria-label="Move up" title={moveLockedReason ?? 'Move up'} disabled={moveLockedReason !== null || !canMoveUp} onClick={function () { onMove(job.id, 'up'); }}>
                             <ChevronIcon />
                         </button>
@@ -315,7 +335,25 @@ const NotificationSettingsMenu = function () {
 // queued after, finished history above). Reads everything from the shared activity queue.
 const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActivity: (jobId: string, title: string) => void; onOpenEntry: (target: JobTarget) => void }) {
     const { jobs, paused } = useActivityQueueState();
-    const { pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished } = useActivityQueueActions();
+    const { pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished, deferJob, clearDeferral } = useActivityQueueActions();
+
+    // Ask how long to hold a queued job back, in minutes - a plain number prompt rather than a datetime picker: the
+    // deferral's whole use is "give me an hour" / "wait for the rate limit window", not calendar scheduling.
+    const handleDefer = async function (id: string) {
+        const entered = await promptDialog({
+            message: 'Start this job no earlier than (minutes from now):',
+            placeholder: 'e.g. 30',
+            confirmLabel: 'Defer'
+        });
+        if (entered === null) {
+            return;
+        }
+        const minutes = Number(entered);
+        if (!Number.isFinite(minutes) || minutes <= 0) {
+            return;
+        }
+        deferJob(id, Date.now() + Math.round(minutes * 60 * 1000));
+    };
 
     // Kind/status filters for the job list, mirroring SpecsEditor's own filter row - useful once the queue's history
     // accumulates every run/apply/generate/chat-continuation job across a session. An empty selection filters nothing,
@@ -471,6 +509,8 @@ const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActiv
                             onRemove={removeJob}
                             onMove={moveJob}
                             onRetry={retryJob}
+                            onDefer={function (id) { void handleDefer(id); }}
+                            onClearDeferral={clearDeferral}
                             canMoveUp={jobs[fullIndex - 1]?.status === 'queued'}
                             canMoveDown={jobs[fullIndex + 1]?.status === 'queued'}
                             moveLockedReason={hasActiveFilter ? 'Reordering is disabled while a filter is active' : null}

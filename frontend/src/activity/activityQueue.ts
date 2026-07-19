@@ -25,6 +25,8 @@ type JobSpec = {
     label: string;
     prompt?: string;
     target?: JobTarget;
+    // Epoch ms before which the job must not start (see Job.runAfter); omitted means run as soon as its turn comes.
+    runAfter?: number;
     run: JobRun
 };
 
@@ -45,6 +47,9 @@ type Job = {
     // The entry this job ran on, so its row can offer "open the entry" - null for jobs with no single entry (a batch
     // apply, a generate into a file), which render no such affordance rather than a dead one.
     target: JobTarget | null;
+    // Epoch ms before which a QUEUED job must not start - "start no earlier than", not a queue position: later jobs
+    // may overtake a deferred one. Null (the default) means run as soon as its turn comes; ignored once running.
+    runAfter: number | null;
     run: JobRun
 };
 
@@ -66,6 +71,10 @@ type ActivityQueueActions = {
     removeJob: (id: string) => void;
     moveJob: (id: string, direction: 'up' | 'down') => void;
     retryJob: (id: string) => void;
+    // Defer a queued job: it must not start before `runAfter` (epoch ms); later jobs may overtake it meanwhile.
+    // Clearing makes it immediately eligible again. Both no-ops unless the job is currently queued.
+    deferJob: (id: string, runAfter: number) => void;
+    clearDeferral: (id: string) => void;
     // Re-enqueue every failed/aborted job, the bulk counterpart of retryJob - mirrors clearFinished acting on the whole
     // finished-job set instead of one row at a time. `scope`, when given, restricts this to just those job ids (the
     // Activity monitor passes its currently filtered/shown ids so this respects an active Kind/Status filter).

@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- Queued jobs can be **deferred**: a clock button on the queue row holds the job back ("start no earlier than N
+  minutes from now") while later jobs overtake it; the queue starts it by itself once the time arrives, the row
+  shows the hold time, and one click clears it.
 - A finished run's closing summary in the activity transcript now shows a compact **stats row**: duration, turns,
   tool-call count, tokens in/out, and cost - whichever of them the CLI reported for that run.
 - Every agent run's transcript is now **persisted** as a JSON record under `.vibrary/transcripts/` in the served

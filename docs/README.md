@@ -101,7 +101,9 @@ running job, the ones waiting behind it, and finished ones. A job's row opens it
 as it streams), and the initial bubble's **Full** view shows the exact prompt that was sent. A finished run's closing
 summary carries its stats: duration, turns, tool calls, tokens in/out, and cost (when the CLI reports them). From the queue you can
 pause and resume it, abort the running job, retry one that failed or was aborted, remove a queued or finished job,
-reorder what is still queued, and filter the list by kind or status. A collapsible **History** section below the
+reorder what is still queued, and filter the list by kind or status. A queued job's clock button defers it - "start
+no earlier than N minutes from now": later jobs may overtake it meanwhile, the queue starts it by itself once the
+time arrives, and clicking the (tinted) clock again clears the hold. A collapsible **History** section below the
 queue lists the persisted transcripts of past runs - every settled run (finished, failed, or aborted) is written to
 `.vibrary/transcripts/` in the served folder (newest 200 kept, machine-local), so run history survives server
 restarts; a row opens a read-only replay of the run, and rows can be deleted singly or all at once. A job that ran on a single entry ("Apply this
