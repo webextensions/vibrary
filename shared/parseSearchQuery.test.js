@@ -33,3 +33,10 @@ test('a value keeps everything after the first colon, raw', function () {
 test('a field with an empty value is not a constraint', function () {
     assert.deepEqual(parseSearchQuery('type:'), { needle: 'type:', constraints: [] });
 });
+
+test('the in: scope operator is a known field', function () {
+    assert.deepEqual(parseSearchQuery('in:transcripts needle'), {
+        needle: 'needle',
+        constraints: [{ field: 'in', value: 'transcripts', negated: false }]
+    });
+});

@@ -338,7 +338,10 @@ type GitStashResult = { status: GitStatus; stashes: GitStash[] };
 // editor to highlight), its title, the field the match was found in, and a trimmed, length-capped snippet line.
 type SearchMatch = { entryIndex: number; type: EntryType; title: string; field: 'title' | 'content' | 'notes' | 'labels'; snippet: string };
 type SearchFileResult = { path: string; matches: SearchMatch[] };
-type SearchResult = { results: SearchFileResult[]; truncated: boolean };
+// One persisted-transcript match (the in:transcripts scope): the record's listing metadata plus the first matching
+// line's snippet. Present (possibly empty) exactly when the query carried the transcript scope.
+type TranscriptSearchMatch = TranscriptSummary & { snippet: string };
+type SearchResult = { results: SearchFileResult[]; truncated: boolean; transcripts?: TranscriptSearchMatch[] };
 
 // Full-text search across the included vibrary files (the same set the Explorer lists). The backend caps the result
 // set and flags `truncated` when it does. An optional `files` list narrows the search to just those file names; an
@@ -493,4 +496,4 @@ const runCompetitions = function (body: { count: number; instructions: string; s
     return streamClaude('/api/rankings/competitions', { ...rest, ...scopeToParameters(scope) }, options);
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, clearTranscripts, commitChanges, createFile, createVibraryInclude, deleteFile, deleteTranscript, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getTranscript, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, listTranscripts, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SplitPart, splitSpec, stagePaths, stashAction, stashChanges, type StoredTranscript, type TitleIndexEntry, type TranscriptSummary, unstagePaths };
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, clearTranscripts, commitChanges, createFile, createVibraryInclude, deleteFile, deleteTranscript, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getTranscript, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, listTranscripts, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SplitPart, splitSpec, stagePaths, stashAction, stashChanges, type StoredTranscript, type TitleIndexEntry, type TranscriptSearchMatch, type TranscriptSummary, unstagePaths };

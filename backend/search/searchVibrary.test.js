@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { searchVibrary } from './searchVibrary.js';
+import { saveTranscriptAsync } from '../shared/transcriptStore.js';
 
 // A scratch workspace with an include file and one vibrary file: entry 0 mentions the needle twice in its content,
 // entry 1 not at all, entry 2 once in its notes. Entry granularity and entry indexes are the contract the editor's
@@ -194,4 +195,30 @@ test('operators gate entries and a constraint-only query is valid with an empty 
 
     // A query with neither a viable needle nor any constraint still answers nothing (the floor's remaining job).
     assert.deepEqual(await searchVibrary(directory, 'x'), { results: [], truncated: false });
+});
+
+test('in:transcripts retargets the search at the persisted run transcripts', async function () {
+    const workspace = makeWorkspace();
+    await saveTranscriptAsync(workspace, {
+        route: '/api/run-task',
+        startedAt: '2026-06-01T10:00:00.000Z',
+        endedAt: '2026-06-01T10:01:00.000Z',
+        outcome: 'success',
+        error: null,
+        truncated: false,
+        lines: ['{"type":"user_prompt","text":"find the sekrit token"}']
+    });
+    const scoped = await searchVibrary(workspace, 'in:transcripts sekrit');
+    // Entry results stay empty in transcript scope; the transcript match carries its listing metadata + snippet.
+    assert.deepEqual(scoped.results, []);
+    assert.equal(scoped.transcripts.length, 1);
+    assert.equal(scoped.transcripts[0].route, 'run-task');
+    assert.match(scoped.transcripts[0].snippet, /sekrit/);
+    // The same needle without the scope operator still searches entries only (and finds nothing here).
+    const unscoped = await searchVibrary(workspace, 'sekrit');
+    assert.equal(unscoped.transcripts, undefined);
+    assert.deepEqual(unscoped.results, []);
+    // The needle floor applies in transcript scope too.
+    const tooShort = await searchVibrary(workspace, 'in:transcripts s');
+    assert.deepEqual(tooShort.transcripts, []);
 });

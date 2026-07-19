@@ -44,7 +44,8 @@ vibrary check --require-approved   # additionally fail on any unapproved or stal
 vibrary check --json               # the same report, machine-readable, same exit codes
 vibrary list                       # every included file with its approved/total and broken-reference counts
 vibrary search <query>             # entry matches on stdout (--match-case / --whole-word and the type:/label:/
-                                   # approved:/by:/file: operators, as in the Search panel)
+                                   # approved:/by:/file:/in: operators, as in the Search panel; in:transcripts
+                                   # searches the persisted agent-run transcripts instead of the entries)
 ```
 
 `vibrary check` finds broken `relatesTo` references, folder-wide duplicate titles, and unparseable files - so a CI

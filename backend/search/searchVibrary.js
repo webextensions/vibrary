@@ -7,6 +7,7 @@ import { parseSearchQuery } from '../../shared/parseSearchQuery.js';
 import { approvalState, parseVibraryXml } from '../../shared/vibraryXmlCore.js';
 import { listVibraryFiles } from '../files/vibraryFiles.js';
 import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
+import { listTranscriptsAsync, readTranscriptAsync } from '../shared/transcriptStore.js';
 
 // Bound the response so a broad query against a large folder cannot return an unbounded payload; the UI notes when a
 // result set was truncated.
@@ -166,6 +167,46 @@ const collectMatchesInFile = function (entries, needle, limit, precision, constr
     return { matches, hitLimit: false };
 };
 
+// How many transcript matches a search returns at most - one match per transcript (its first matching line), so
+// this caps how many of the potentially-hundreds of stored records the response carries.
+const MAX_TRANSCRIPT_MATCHES = 50;
+
+// Search the persisted run transcripts (the in:transcripts scope): newest first, one match per record - its first
+// line containing the needle, windowed into a snippet. The scan runs over the RAW stored NDJSON lines, so it finds
+// text anywhere in the run (prompts, assistant output, tool results) at the cost of an occasional JSON-flavored
+// snippet; for reading back what a run did, recall beats snippet polish.
+// The first line of one record containing the needle, windowed into a snippet - or null when the record misses.
+const firstMatchingLine = function (lines, needle, precision) {
+    for (const line of lines) {
+        const snippet = typeof line === 'string' ? buildSnippet(line, needle, precision) : null;
+        if (snippet !== null) {
+            return snippet;
+        }
+    }
+    return null;
+};
+
+const searchTranscriptsAsync = async function (cwd, needle, precision) {
+    const summaries = await listTranscriptsAsync(cwd);
+    const transcripts = [];
+    let isTruncated = false;
+    for (const summary of summaries) {
+        if (transcripts.length >= MAX_TRANSCRIPT_MATCHES) {
+            isTruncated = true;
+            break;
+        }
+        const record = await readTranscriptAsync(cwd, summary.name);
+        if (record === null || !Array.isArray(record.lines)) {
+            continue;
+        }
+        const snippet = firstMatchingLine(record.lines, needle, precision);
+        if (snippet !== null) {
+            transcripts.push({ ...summary, snippet });
+        }
+    }
+    return { results: [], truncated: isTruncated, transcripts };
+};
+
 // ENTRY search across exactly the files the Explorer lists (the .vibraryinclude-scoped vibrary files), so Search and
 // Explorer always agree on scope. A match is an entry whose title/content/notes/labels contain
 // the query - one match per entry, however many times the query occurs - and carries the entry's index within its file,
@@ -186,6 +227,18 @@ const searchVibrary = async function (cwd, query, options = {}) {
     // MAX_TOTAL_MATCHES / MAX_MATCHES_PER_FILE caps bound the cost of such a match-everything scan instead.
     const { needle: rawNeedle, constraints } = parseSearchQuery(typeof query === 'string' ? query : '');
     const needle = precision.matchCase ? rawNeedle : rawNeedle.toLowerCase();
+    // "in:transcripts" retargets the whole search at the persisted run transcripts instead of the entries. A
+    // negated or other value ("-in:transcripts", "in:entries") keeps the default entry scope, and the other
+    // operators (type:, label:, ...) have no meaning against a transcript, so a transcript search is needle-only.
+    const isTranscriptScope = constraints.some(function ({ field, value, negated }) {
+        return field === 'in' && value.toLowerCase() === 'transcripts' && !negated;
+    });
+    if (isTranscriptScope) {
+        if (needle.length < MIN_QUERY_LENGTH) {
+            return { results: [], truncated: false, transcripts: [] };
+        }
+        return searchTranscriptsAsync(cwd, needle, precision);
+    }
     if (constraints.length === 0 && needle.length < MIN_QUERY_LENGTH) {
         return { results: [], truncated: false };
     }

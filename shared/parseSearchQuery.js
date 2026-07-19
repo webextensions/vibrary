@@ -8,7 +8,7 @@
 // Shared (and listed in package.json "files") because both stacks need the same split: the backend evaluates the
 // constraints, and the Search panel must parse identically to know that a constraint-only query is valid with an
 // empty needle - two parsers would drift on exactly the tokens users type.
-const KNOWN_FIELDS = new Set(['type', 'label', 'approved', 'by', 'file']);
+const KNOWN_FIELDS = new Set(['type', 'label', 'approved', 'by', 'file', 'in']);
 
 const parseSearchQuery = function (raw) {
     const constraints = [];

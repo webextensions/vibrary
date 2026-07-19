@@ -141,7 +141,19 @@ const buildProgram = function () {
                 reportUnconfigured();
                 return;
             }
-            const { results } = await searchVibrary(process.cwd(), query, { matchCase: options.matchCase, wholeWord: options.wholeWord });
+            const { results, transcripts } = await searchVibrary(process.cwd(), query, { matchCase: options.matchCase, wholeWord: options.wholeWord });
+            // The in:transcripts scope answers with transcript matches instead of entry matches; print those rows
+            // in their own shape (a transcript has no title or entry type to show).
+            if (Array.isArray(transcripts)) {
+                if (transcripts.length === 0) {
+                    console.log('No matches.');
+                    return;
+                }
+                for (const match of transcripts) {
+                    console.log(`${match.startedAt} [${match.route}, ${match.outcome}]  ${match.snippet}`);
+                }
+                return;
+            }
             if (results.length === 0) {
                 console.log('No matches.');
                 return;

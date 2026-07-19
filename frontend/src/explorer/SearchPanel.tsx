@@ -6,9 +6,11 @@ import Select from 'react-select';
 import { MIN_QUERY_LENGTH } from '../../../shared/apiLimits.js';
 import { parseSearchQuery } from '../../../shared/parseSearchQuery.js';
 import { announce } from '../shared/announcer.ts';
-import { listFiles, searchFiles, type SearchFileResult } from '../api.ts';
+import { getTranscript, listFiles, searchFiles, type SearchFileResult, type StoredTranscript, type TranscriptSearchMatch } from '../api.ts';
 import { highlightText } from '../shared/highlightText.tsx';
 import { RemoveIcon, SearchIcon, TypeIcon } from '../shared/Icons.tsx';
+import { ResponsiveDialog } from '../shared/ResponsiveDialog.tsx';
+import { TranscriptReplay } from '../activity/TranscriptReplay.tsx';
 
 import styles from './SearchPanel.module.css';
 
@@ -24,6 +26,11 @@ const DEBOUNCE_MS = 250;
 const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, query: string, matchIndex: number) => void }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchFileResult[]>([]);
+    // Transcript matches (the in:transcripts scope): null while the query is entry-scoped, so "no transcript
+    // section" and "transcript scope with zero hits" render differently.
+    const [transcriptResults, setTranscriptResults] = useState<TranscriptSearchMatch[] | null>(null);
+    // The persisted record opened from a transcript result row, replayed read-only in a dialog.
+    const [openTranscript, setOpenTranscript] = useState<{ summary: TranscriptSearchMatch; record: StoredTranscript } | null>(null);
     const [truncated, setTruncated] = useState(false);
     const [searching, setSearching] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -128,6 +135,7 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             if (constraints.length === 0 && needle.length < MIN_QUERY_LENGTH) {
                 if (!isCancelled) {
                     setResults([]);
+                    setTranscriptResults(null);
                     setTruncated(false);
                     setSearching(false);
                     setError(null);
@@ -145,16 +153,22 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
                     return;
                 }
                 setResults(output.results);
+                setTranscriptResults(output.transcripts ?? null);
                 setTruncated(output.truncated);
                 setSearchedQuery(trimmed);
                 setSearchedNeedle(needle);
                 setError(null);
                 // The visible summary below is render-only; a screen reader hears nothing when results land, so
                 // speak the same tally through the app's live region.
-                const total = output.results.reduce(function (sum, file) { return sum + file.matches.length; }, 0);
-                announce(total === 0 ?
-                    'No matches.' :
-                    `${total} ${total === 1 ? 'match' : 'matches'} in ${output.results.length} ${output.results.length === 1 ? 'file' : 'files'}`);
+                if (output.transcripts !== undefined) {
+                    const found = output.transcripts.length;
+                    announce(found === 0 ? 'No matches.' : `${found} transcript ${found === 1 ? 'match' : 'matches'}`);
+                } else {
+                    const total = output.results.reduce(function (sum, file) { return sum + file.matches.length; }, 0);
+                    announce(total === 0 ?
+                        'No matches.' :
+                        `${total} ${total === 1 ? 'match' : 'matches'} in ${output.results.length} ${output.results.length === 1 ? 'file' : 'files'}`);
+                }
             } catch (caught) {
                 if (!isCancelled) {
                     setError((caught as Error).message);
@@ -286,7 +300,57 @@ const SearchPanel = function ({ onOpenMatch }: { onOpenMatch: (name: string, que
             <p className={styles.message} role="status">Searching...</p>}
 
             {error === null && searchedQuery !== '' && results.length === 0 && !searching &&
+            (transcriptResults === null || transcriptResults.length === 0) &&
             <p className={styles.message}>No matches.</p>}
+
+            {transcriptResults !== null && transcriptResults.length > 0 &&
+            <>
+                <p className={styles.summary}>
+                    {transcriptResults.length} transcript {transcriptResults.length === 1 ? 'match' : 'matches'}
+                    {truncated && ' (showing the first results)'}
+                </p>
+                <ul className={cx(styles.resultList, searching && styles.resultListStale)}>
+                    {transcriptResults.map(function (match) {
+                        return (
+                            <li key={match.name}>
+                                <button
+                                    type="button"
+                                    className={styles.matchRow}
+                                    title="Open this run's persisted transcript"
+                                    onClick={function () {
+                                        void (async function () {
+                                            try {
+                                                setOpenTranscript({ summary: match, record: await getTranscript(match.name) });
+                                            } catch (openError) {
+                                                setError((openError as Error).message);
+                                            }
+                                        })();
+                                    }}
+                                >
+                                    <span className={styles.matchEntryTitle}>
+                                        {match.route} - {match.outcome} - {new Date(match.startedAt).toLocaleString()}
+                                    </span>
+                                    <span className={styles.matchText}>{highlightText(match.snippet, searchedNeedle, styles.mark)}</span>
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </>}
+
+            {openTranscript !== null &&
+            <ResponsiveDialog
+                open
+                onClose={function () {
+                    setOpenTranscript(null);
+                }}
+                title={`${openTranscript.summary.route} - ${new Date(openTranscript.summary.startedAt).toLocaleString()}`}
+                closable
+                draggable
+                noPrimaryButton
+            >
+                <TranscriptReplay record={openTranscript.record} />
+            </ResponsiveDialog>}
 
             {results.length > 0 &&
             <p className={styles.summary}>
