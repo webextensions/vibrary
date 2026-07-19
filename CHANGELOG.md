@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format loosely foll
 
 ### Added
 
+- A **Quick run** action in the Activity monitor's control row: a one-off free-text agent job whose prompt goes to
+  the agent verbatim (a saved prompt template can pre-fill it) - the lightweight path for changes too small to
+  deserve a spec, with the same queueing, transcript, and persistence as every other run.
 - Queued jobs can be **deferred**: a clock button on the queue row holds the job back ("start no earlier than N
   minutes from now") while later jobs overtake it; the queue starts it by itself once the time arrives, the row
   shows the hold time, and one click clears it. A failure that reads as a rate/usage limit is chipped

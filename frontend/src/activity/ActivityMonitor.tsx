@@ -9,8 +9,10 @@ import { randomId } from '../xml/vibraryXml.ts';
 import { useDismissablePopup } from '../shared/useDismissablePopup.ts';
 import { FINISHED_STATUSES, jobElapsed, KIND_META, STATUS_LABEL } from './activityPresentation.ts';
 import { TranscriptHistory } from './TranscriptHistory.tsx';
-import { ChevronIcon, ClockIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
+import { ChevronIcon, ClickIcon, ClockIcon, FilterIcon, GoToIcon, PauseIcon, PlayIcon, RefreshIcon, RemoveIcon, SettingsIcon, StopIcon } from '../shared/Icons.tsx';
 import { isRateLimitError } from './rateLimit.ts';
+import { QuickRunDialog } from './QuickRunDialog.tsx';
+import { runQuick } from '../api.ts';
 import { promptDialog } from '../shared/promptDialog.ts';
 
 import styles from './ActivityMonitor.module.css';
@@ -348,7 +350,25 @@ const NotificationSettingsMenu = function () {
 // queued after, finished history above). Reads everything from the shared activity queue.
 const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActivity: (jobId: string, title: string) => void; onOpenEntry: (target: JobTarget) => void }) {
     const { jobs, paused } = useActivityQueueState();
-    const { pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished, deferJob, clearDeferral } = useActivityQueueActions();
+    const { pause, resume, abortCurrent, removeJob, moveJob, retryJob, retryAllFailed, clearFinished, deferJob, clearDeferral, enqueue } = useActivityQueueActions();
+    const [quickRunOpen, setQuickRunOpen] = useState(false);
+
+    // Queue the free-prompt one-off job. The label is the prompt's head so the row reads as what it does; the full
+    // prompt seeds the transcript bubble like every other run.
+    const handleQuickRun = function (prompt: string) {
+        const promise = enqueue({
+            kind: 'quick-run',
+            label: prompt.length > 48 ? `${prompt.slice(0, 48)}...` : prompt,
+            prompt,
+            run: function (signal, onEvent) {
+                return runQuick(prompt, { signal, onEvent });
+            }
+        });
+        setQuickRunOpen(false);
+        void promise.catch(function () {
+            // The failure is already recorded on the job's row.
+        });
+    };
 
     // Ask how long to hold a queued job back, in minutes - a plain number prompt rather than a datetime picker: the
     // deferral's whole use is "give me an hour" / "wait for the rate limit window", not calendar scheduling.
@@ -453,6 +473,17 @@ const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActiv
                     <RefreshIcon />
                     Retry all
                 </button>
+                <button
+                    type="button"
+                    className={styles.control}
+                    title="Run a one-off free-text agent job - for changes too small to deserve a spec"
+                    onClick={function () {
+                        setQuickRunOpen(true);
+                    }}
+                >
+                    <ClickIcon />
+                    Quick run
+                </button>
                 {jobs.length > 0 &&
                 <button
                     type="button"
@@ -534,6 +565,8 @@ const ActivityMonitor = function ({ onOpenActivity, onOpenEntry }: { onOpenActiv
             </ul>}
 
             <TranscriptHistory />
+
+            {quickRunOpen && <QuickRunDialog onClose={function () { setQuickRunOpen(false); }} onRun={handleQuickRun} />}
         </div>
     );
 };

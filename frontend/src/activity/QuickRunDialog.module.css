@@ -1,0 +1,50 @@
+.quick-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 280px;
+    max-width: 480px;
+}
+
+.quick-hint {
+    margin: 0;
+    color: #656d76;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.quick-prompt {
+    padding: 6px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.quick-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.quick-actions button {
+    padding: 3px 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+}
+
+.quick-actions .quick-submit {
+    border-color: #1f883d;
+    background: #2da44e;
+    color: #fff;
+}
+
+.quick-actions .quick-submit:disabled {
+    opacity: 0.6;
+    cursor: default;
+}

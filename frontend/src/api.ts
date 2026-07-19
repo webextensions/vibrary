@@ -260,6 +260,12 @@ const planSpec = function (entry: { title: string; content: string; notes: strin
     return streamClaude('/api/plan-spec', entry, options);
 };
 
+// Runs a free-prompt one-off agent job - the text goes to the agent verbatim, for changes too small to deserve a
+// spec - streaming its activity through `options.onEvent` like every other run.
+const runQuick = function (prompt: string, options: StreamOptions): Promise<string> {
+    return streamClaude('/api/quick-run', { prompt }, options);
+};
+
 // Continues a finished activity as a chat by resuming its claude session with a follow-up message, streaming the reply
 // through `options.onEvent`. `sessionId` is the id captured from the original run's stream. Resolves with the reply's
 // final result text.
@@ -496,4 +502,4 @@ const runCompetitions = function (body: { count: number; instructions: string; s
     return streamClaude('/api/rankings/competitions', { ...rest, ...scopeToParameters(scope) }, options);
 };
 
-export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, clearTranscripts, commitChanges, createFile, createVibraryInclude, deleteFile, deleteTranscript, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getTranscript, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, listTranscripts, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SplitPart, splitSpec, stagePaths, stashAction, stashChanges, type StoredTranscript, type TitleIndexEntry, type TranscriptSearchMatch, type TranscriptSummary, unstagePaths };
+export { ApiError, applySpecs, type Backlinks, type BacklinkSource, chatContinue, clearTranscripts, commitChanges, createFile, createVibraryInclude, deleteFile, deleteTranscript, discardMatches, discardPaths, duplicateFile, type FileSummary, generateCommitMessage, generateSpecs, getFile, getFilesSummary, getGitDiff, getGitStatus, getManualPage, getRankings, getSchemaFile, getSettings, getTranscript, getVersion, getWorkspace, type GitFileStatus, type GitStash, type GitStashResult, type GitStatus, listFiles, listStashes, listTranscripts, moveEntries, planSpec, populateTitle, pullChanges, pushChanges, type RankingRow, type RankingsMatch, type RankingsPayload, type RankingsScope, recordManualMatch, renameFile, runCompetitions, runQuick, runTask, saveFile, saveSettings, searchFiles, type SearchFileResult, type SplitPart, splitSpec, stagePaths, stashAction, stashChanges, type StoredTranscript, type TitleIndexEntry, type TranscriptSearchMatch, type TranscriptSummary, unstagePaths };

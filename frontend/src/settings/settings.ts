@@ -30,7 +30,8 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
     'apply-batch': true,
     'generate': true,
     'competitions': true,
-    'plan-spec': true
+    'plan-spec': true,
+    'quick-run': true
 };
 
 const isRecord = function (value: unknown): value is Record<string, unknown> {

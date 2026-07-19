@@ -177,3 +177,14 @@ test('a settled run persists its transcript under .vibrary/transcripts', async f
     assert.equal(stored.route, '/api/apply-batch');
     assert.ok(stored.lines.length >= 2);
 });
+
+test('quick-run validates and streams the prompt verbatim', async function () {
+    const rejected = await sendJsonAsync('/quick-run', { prompt: ' '.repeat(3) });
+    assert.equal(rejected.status, 400);
+
+    const lines = await streamLinesAsync('/quick-run', { prompt: 'bump the year in the README' });
+    assert.equal(lines[0].type, 'user_prompt');
+    // No template around the user's text: what they typed is exactly what runs.
+    assert.equal(lines[0].text, 'bump the year in the README');
+    assert.deepEqual(lines.at(-1), { type: '_exit', code: 0, error: null });
+});

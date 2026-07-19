@@ -9,6 +9,7 @@ import { collectFolderLabelsAsync } from './folderLabels.js';
 import { generateSpecsAsync } from './runClaudeGenerate.js';
 import { planSpecAsync } from './runClaudePlan.js';
 import { runChatAsync } from './runClaudeChat.js';
+import { runQuickAsync } from './runClaudeQuickRun.js';
 import { runTaskAsync } from './runClaudeRunTask.js';
 import { sendErrorResponse } from '../shared/sendResponse.js';
 import { MAX_PROMPT_BYTES, PROMPT_TOO_LARGE_MESSAGE, promptBytes, streamClaudeRoute } from '../shared/streamClaudeRoute.js';
@@ -112,6 +113,22 @@ const createAgentsRouter = function ({ cwd }) {
                 signal,
                 onLine
             });
+        }, cwd);
+    });
+
+    // A free-prompt one-off run: the user's text goes to the agent verbatim, for changes too small to deserve a
+    // spec. Same streaming, single-flight, and transcript-persistence treatment as every other run.
+    router.post('/quick-run', function (request, response) {
+        const { prompt } = request.body || {};
+        if (typeof prompt !== 'string' || prompt.trim() === '') {
+            return sendErrorResponse(response, 400, 'Expected a non-empty "prompt"');
+        }
+        if (promptBytes(prompt) > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
+        }
+
+        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
+            return runQuickAsync({ cwd, prompt, signal, onLine });
         }, cwd);
     });
 

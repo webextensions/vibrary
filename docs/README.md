@@ -105,7 +105,9 @@ reorder what is still queued, and filter the list by kind or status. A queued jo
 no earlier than N minutes from now": later jobs may overtake it meanwhile, the queue starts it by itself once the
 time arrives, and clicking the (tinted) clock again clears the hold. A failure that reads as a rate/usage limit is
 chipped **rate limited** and offers, beside the plain Retry, a clock action that queues the retry to start no
-earlier than 5 minutes from now - an immediate retry usually just burns another request into the same wall. A collapsible **History** section below the
+earlier than 5 minutes from now - an immediate retry usually just burns another request into the same wall.
+**Quick run** in the control row queues a one-off free-text agent job - the entered text (a saved prompt template
+can pre-fill it) goes to the agent verbatim, for changes too small to deserve a spec. A collapsible **History** section below the
 queue lists the persisted transcripts of past runs - every settled run (finished, failed, or aborted) is written to
 `.vibrary/transcripts/` in the served folder (newest 200 kept, machine-local), so run history survives server
 restarts; a row opens a read-only replay of the run, and rows can be deleted singly or all at once. A job that ran on a single entry ("Apply this
