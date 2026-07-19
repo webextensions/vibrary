@@ -7,6 +7,7 @@ import { resolveWithinCwd } from '../shared/resolveWithinCwd.js';
 import { applySpecsAsync } from './runClaudeApplyBatch.js';
 import { collectFolderLabelsAsync } from './folderLabels.js';
 import { generateSpecsAsync } from './runClaudeGenerate.js';
+import { planSpecAsync } from './runClaudePlan.js';
 import { runChatAsync } from './runClaudeChat.js';
 import { runTaskAsync } from './runClaudeRunTask.js';
 import { sendErrorResponse } from '../shared/sendResponse.js';
@@ -83,6 +84,31 @@ const createAgentsRouter = function ({ cwd }) {
                 // The structured Ralph-loop opt-in (the frontend derives it from the options form's `useRalphLoop`
                 // property key); anything but an explicit true stays off.
                 isRalphLoopEnabled: useRalphLoop === true,
+                signal,
+                onLine
+            });
+        });
+    });
+
+    // Draft an implementation plan for a single spec WITHOUT editing files (the plan-review checkpoint's first
+    // half). Project-scoped like /apply-batch: the entry's text arrives in the body, the agent researches cwd, and
+    // the plan comes back as the stream's result text for the frontend to place into the entry's notes.
+    router.post('/plan-spec', function (request, response) {
+        const { title, content, notes, instructions } = request.body || {};
+        if (typeof title !== 'string' || typeof content !== 'string' || content.trim() === '') {
+            return sendErrorResponse(response, 400, 'Expected string "title" and a non-empty "content"');
+        }
+        if (promptBytes(title, content, notes, instructions) > MAX_PROMPT_BYTES) {
+            return sendErrorResponse(response, 413, PROMPT_TOO_LARGE_MESSAGE);
+        }
+
+        return streamClaudeRoute(request, response, function ({ signal, onLine }) {
+            return planSpecAsync({
+                cwd,
+                title,
+                content,
+                notes: typeof notes === 'string' ? notes : '',
+                instructions: typeof instructions === 'string' ? instructions : '',
                 signal,
                 onLine
             });

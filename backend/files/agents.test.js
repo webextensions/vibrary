@@ -136,3 +136,18 @@ test('validation failures answer the plain JSON envelope, not a stream', async f
 
     assert.equal((await requestJsonAsync('/nope')).status, 404);
 });
+
+test('plan-spec validates, streams the plan-only prompt, and finishes clean', async function () {
+    const rejected = await sendJsonAsync('/plan-spec', { title: 'demo', content: '' });
+    assert.equal(rejected.status, 400);
+
+    const lines = await streamLinesAsync('/plan-spec', { title: 'demo-spec', content: 'do the thing', notes: 'small', instructions: 'skip tests' });
+    assert.equal(lines[0].type, 'user_prompt');
+    // The prompt is the checkpoint's guardrail: it must carry the entry, the no-edits rule, and the guidance.
+    assert.match(lines[0].text, /implementation plan/);
+    assert.match(lines[0].text, /Do NOT edit, create, or delete/);
+    assert.match(lines[0].text, /Title: demo-spec/);
+    assert.match(lines[0].text, /Notes: small/);
+    assert.match(lines[0].text, /instructions for this plan:\nskip tests/);
+    assert.deepEqual(lines.at(-1), { type: '_exit', code: 0, error: null });
+});
