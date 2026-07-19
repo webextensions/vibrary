@@ -12,10 +12,17 @@ import globals from 'globals';
 
 // eslint-disable-next-line import-x/no-default-export
 export default defineConfig([
+    // NOTE: Prefer editing this ignores list in the "abstract-javascript-project" branch and letting
+    // the change flow into the other branches via the usual template merges. Keeping the list
+    // identical across the "abstract-" / "template-" branches makes switching between them simpler -
+    // otherwise a git-ignored artifact left behind by one branch (e.g. its build output) gets linted
+    // on another.
     globalIgnores([
         'node_modules/',
         'coverage/',
-        '.cache/'
+        '.cache/',
+        'public-*/', // Frontend build output (config-driven publicDirectory - see config/); ESLint does not read .gitignore
+        'config/*.local.js' // Local configuration files (git-ignored, machine-specific)
     ]),
 
     // Shared base config (core + Node.js + TypeScript rules; the TypeScript parser comes bundled,

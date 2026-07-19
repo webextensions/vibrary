@@ -144,13 +144,13 @@ const packageJson = {
         "eslint-plugin-import-x": "^4.17.1", // ironplate peer: import-x/* rules (no-unresolved, extensions, exports-last, no-default-export, ...)
         "eslint-plugin-n": "^18.2.2", // ironplate peer: Node.js rules (n/*)
         "eslint-plugin-promise": "^7.3.0", // ironplate peer: Promise rules (promise/*)
-        "eslint-plugin-simple-import-sort": "^13.0.0", // simple-import-sort/imports + /exports: deterministic import/export sorting
-        "eslint-plugin-unicorn": "^71.1.0", // ironplate peer: unicorn/* rules
+        "eslint-plugin-simple-import-sort": "^14.0.0", // simple-import-sort/imports + /exports: deterministic import/export sorting
+        "eslint-plugin-unicorn": "^72.0.0", // ironplate peer: unicorn/* rules
         "execa": "^9.6.1", // Spawns child processes for the sequential health-check run
         "extend": "^3.0.2", // Deep merge used by all-is-well.config.local.ts to layer overrides on the base health-check config
         "globals": "^17.7.0",
         "husky": "^9.1.7", // Git hooks (see .husky/); wired via the "prepare" script
-        "knip": "^6.26.0", // Finds unused files / exports / dependencies (see knip.config.ts)
+        "knip": "^6.27.0", // Finds unused files / exports / dependencies (see knip.config.ts)
         "lockfile-lint": "^5.0.0", // Validates package-lock.json (registry hosts + HTTPS)
         "node-notifier": "^10.0.1", // Desktop notification when a health check fails
         "package-cjson": "^3.0.0", // Generates package.json from package.json.ts (see scripts "housekeeping:*")
@@ -158,7 +158,7 @@ const packageJson = {
         "semver": "^7.8.5", // Semantic-version comparison used by the node-version and npm-install health checks
         "shell-quote": "^1.10.0", // Shell-safe quoting of some commands
         "typescript": "~6.0.3", // Powers the tsc type check (test:types); optional ironplate peer for its TypeScript configs
-        "typescript-eslint": "^8.61.0", // Optional ironplate peer: bundles the TypeScript parser + plugin used by eslint-config-ironplate/node-typescript.js
+        "typescript-eslint": "^8.64.0", // Optional ironplate peer: bundles the TypeScript parser + plugin used by eslint-config-ironplate/node-typescript.js
         "vitest": "^4.1.10"
     },
 

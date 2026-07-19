@@ -1,3 +1,8 @@
+# NOTE: Prefer editing this file in the "abstract-javascript-project" branch and letting the change
+# flow into the other branches via the usual template merges. Keeping this file identical across the
+# "abstract-" / "template-" branches makes switching between them simpler - otherwise a directory
+# ignored on one branch shows up as untracked noise in "git status" on another.
+
 # Temporary folders
 tmp/
 temp/
@@ -147,3 +152,12 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Frontend build output (config-driven publicDirectory - see config/)
+/public-*/
+
+# Local configuration files
+/config/*.local.js
+
+# Playwright files
+/.playwright-mcp/

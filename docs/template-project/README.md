@@ -80,23 +80,27 @@ abstract-javascript-project
     │       * If for some reason, it is not possible to combine all these mentioned features, then we will split it into
     │         two or more branches providing those separate templates.
     │
-    ├── template-webextension
-    │   Notes:
-    │       * `template-webextension` has support for the following features which can be turned on/off with flags
-    │         (and/or some manual customizations like adding/removing npm package dependencies):
-    │           * WebExtension - React
-    │           * WebExtension - React with Shadow DOM
-    │       * We may need to create multiple templates for WebExtension if and when we get more use cases.
-    │
-    └── template-web-app
+    └── abstract-ui-foundation
         Notes:
-            * `template-web-app` has support for the following features which can be turned on/off with flags (and/or
-              some manual customizations like adding/removing npm package dependencies):
-                * Frontend build - React - app pages
-                * Frontend build - React - admin dashboard
-                * Backend
-                    * Database
-                        * User accounts
+            * Carries the common frontend functionality shared by the templates below (UI elements, i18n, etc.)
+        │
+        ├── template-webextension
+        │   Notes:
+        │       * `template-webextension` has support for the following features which can be turned on/off with flags
+        │         (and/or some manual customizations like adding/removing npm package dependencies):
+        │           * WebExtension - React
+        │           * WebExtension - React with Shadow DOM
+        │       * We may need to create multiple templates for WebExtension if and when we get more use cases.
+        │
+        └── template-web-app
+            Notes:
+                * `template-web-app` has support for the following features which can be turned on/off with flags
+                  (and/or some manual customizations like adding/removing npm package dependencies):
+                    * Frontend build - React - app pages
+                    * Frontend build - React - admin dashboard
+                    * Backend
+                        * Database
+                            * User accounts
 
 There are some more branches (which could not be easily represented in the above tree) which are:
     * template-npm-package-with-backend-and-frontend (template-npm-package-for-exports-cli + abstract-frontend-build +
