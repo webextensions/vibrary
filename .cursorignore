@@ -1,6 +1,7 @@
 # ======= Custom ignored directories and files =======
 
 # Auto-generated directories
+dist
 public-*
 
 # Database directories

@@ -1,10 +1,11 @@
-# NOTE: Family-wide entries (artifacts any branch can produce: caches, logs, node_modules, ...) are
-# edited in the "abstract-javascript-project" branch and flow into the other branches via the usual
-# template merges. Entries for a branch's OWN structure live in that branch's (or its family base's)
-# .gitignore. Leftovers from OTHER branches after a branch switch are deliberately NOT listed here -
-# hide those per clone via .git/info/exclude, seeded from
-# docs/template-project/git-info-exclude.example ("node --run setup:git-exclude"; policy:
-# .claude/skills/updating-ignore-rules/SKILL.md).
+# NOTE: This file is edited in the "abstract-javascript-project" branch and flows into the other
+# branches via the usual template merges. It is the PRIMARY home for ALL ignore patterns of the
+# whole template-branch family - family-wide artifacts (caches, logs, node_modules, ...) AND the
+# structure/build output of every branch (public-*, app-data, ...) - so any branch's leftovers stay
+# git-invisible after a branch switch, with zero per-clone setup. The SECONDARY escape hatch for
+# machine-local personal patterns is .git/info/exclude ("node --run setup:git-exclude"; see
+# docs/template-project/git-info-exclude.example). Policy:
+# .claude/skills/updating-ignore-rules/SKILL.md.
 
 # Temporary folders
 tmp/
@@ -153,6 +154,22 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Frontend build output (config-driven publicDirectory - see config/)
+/public-*/
+
+# Local configuration files
+/config/*.local.js
+/config/*.local.secrets.js
+
+# Encryption keys (config/encryption/ on the web-app family; that family guards them via its
+# tracked config/encryption/keys/.gitignore - these lines keep leftovers invisible everywhere)
+/config/encryption/keys/*.pem
+!/config/encryption/keys/*.documented.runtime.*.pem
+
+# Application data (databases etc.) - web-app family; that family keeps the directory structure
+# present via tracked per-directory .gitignore files
+/app-data/
 
 # Playwright files
 /.playwright-mcp/

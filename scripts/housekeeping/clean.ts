@@ -64,6 +64,7 @@ const patternsToDelete = [
     // /^public-production-local\/(.*)/,
 
     '.playwright-mcp/',
+    'dist/', // Library build output of the npm-package template branches (regenerate: node --run build:lib)
     /^public-(.*)\/(.*)/
 ];
 

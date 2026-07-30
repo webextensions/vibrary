@@ -27,7 +27,10 @@ dependencies/scripts its layer introduces).
   project's own floor - but note that changing it does not change the dev/tooling floor: you still
   develop and run the checks on the pinned Node in [.nvmrc](../../../.nvmrc) (CI matrix per
   [.github/workflows/ci.yml](../../../.github/workflows/ci.yml)).
-- `dependencies` - add your project's runtime dependencies inside the marked block.
+- `dependencies` - add your project's runtime dependencies to the `dependenciesForPackage`
+  category's Project originated block (dependencies are declared in `dependenciesFor*` category
+  objects; `dependencyCategoriesMapping` decides which npm field each category lands in - see the
+  comments in `package.json.ts`).
 
 Then regenerate the manifest:
 

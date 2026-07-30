@@ -75,9 +75,12 @@
     // files are deliberately NOT listed here: they should stay type-checked so that errors in them
     // surface locally.)
     "exclude": [
-        "node_modules",
-        "coverage",
         ".cache",
-        "public-*" // Frontend build output (config-driven publicDirectory - see config/)
+        "coverage",
+        "dist", // Library build output of the npm-package template branches
+        "node_modules",
+        "public-*", // Frontend build output (config-driven publicDirectory - see config/)
+        "temp", // Scratch/temporary files (git-ignored family-wide)
+        "tmp" // Scratch/temporary files (git-ignored family-wide)
     ]
 }

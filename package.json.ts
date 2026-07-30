@@ -15,6 +15,16 @@
 // in the first place, so a malformed package.json makes package.json.ts itself fail to load
 // (ERR_INVALID_PACKAGE_CONFIG) before the try/catch can run.
 //
+// Dependency declaration format: npm's three fields ("dependencies" / "devDependencies" /
+// "peerDependencies") are too coarse for the template-branch family - the same package lands in
+// different npm fields on different branches (e.g. react: "dependencies" on a web app,
+// "peerDependencies" on a React component package, "devDependencies" where it only powers a demo).
+// So dependencies are declared in semantic category objects (dependenciesFor*), named by the
+// SUBSYSTEM that imports them - never by the npm field they land in, which is branch-relative -
+// so a package's category is identical on every branch and template merges stay conflict-free;
+// the branch-owned dependencyCategoriesMapping decides which npm field each category lands in.
+// Each category also has a {category}_overrides object; they merge into the final "overrides".
+//
 // "package-cjson" detects this file and treats the default export below as the contents of "package.json".
 // Loading requires Node.js >= 24.2.0 (for package-cjson@^3.0.0).
 //
@@ -28,6 +38,8 @@
 /* eslint-disable @stylistic/quotes -- double-quoted strings below, to stay visually aligned with the generated package.json */
 /* eslint-disable import-x/no-default-export */
 
+import { createDependencyCollectors } from './utils/package-json-utils/package-json-utils.ts';
+
 // Prefer the version from package.json; fall back to package-version.json if package.json cannot be
 // imported (absent / not yet generated - see header). Top-level await resolves "version" before the
 // default export object is built; package-cjson awaits this module, then reads its default export.
@@ -38,7 +50,7 @@ try {
     version = (await import('./package-version.json', { with: { type: 'json' } })).default.version;
 }
 
-const packageJson = {
+const core = {
     "name": "@webextensions/template-javascript-project",
     version, // Owned by npm (see header); derived from package.json / package-version.json, never hard-coded
     "description": "A template for creating npm packages (ESM exports + CLI) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
@@ -113,56 +125,315 @@ const packageJson = {
         "lib/",
         "!**/*.test.*",
         "CHANGELOG.md"
-    ],
+    ]
+};
 
-    "dependencies": {
-        "commander": "^15.0.0" // CLI argument parsing (see cli.js); remove if your package has no CLI
+// Runtime dependencies of the project/package itself - what its own shipped/runnable code
+// imports.
+const dependenciesForPackage = {
+    /* Begin: Project originated "dependenciesForPackage" */
 
-        /* Begin: package specific "dependencies" */
+    // No project originated "dependenciesForPackage" yet
 
-        // TODO: Add package specific "dependencies" here
+    /* End: Project originated "dependenciesForPackage" */
 
-        /* End: package specific "dependencies" */
-    },
+    /* Begin: Template originated "dependenciesForPackage" */
 
-    "devDependencies": {
-        "@eslint/js": "^10.0.1",
-        "@eslint/markdown": "^8.0.3", // Markdown language support for ESLint; used by eslint.markdown.config.js (the "eslint:markdown" script)
-        "@stylistic/eslint-plugin": "^5.10.0", // TypeScript-aware formatting rules (indent/semi/quote-props/...) for eslint.config.js
-        "@types/extend": "^3.0.4", // Types for extend (ships none)
-        "@types/node": "~24.13.3", // Node ambient types for the tsc type check (import.meta.dirname, process, node:*, NodeJS.*); pinned to 24.x to match the dev Node floor
-        "@types/node-notifier": "^8.0.5", // Types for node-notifier (ships none)
-        "@types/semver": "^7.7.1", // Types for semver (ships none)
-        "@webextensions/revisit": "^0.2.0", // Recurring-reminders tool run by the post-commit hook (see revisit.json)
-        "auto-changelog": "^2.6.0", // Generates CHANGELOG.md from git history (see .auto-changelog); wired into "npm version"
-        "boxen": "^8.0.1", // Boxes terminal output
-        "chalk": "^6.0.0", // Terminal string styling (used by the health-check orchestrator)
-        "concurrently": "^10.0.4", // Runs tasks in parallel
-        "del": "^8.0.1", // Deletes files/folders (used by scripts/housekeeping/clean.ts)
-        "eslint": "^10.8.0",
-        "eslint-config-ironplate": "^3.0.0", // Shared ESLint base config (see eslint.config.js); the eslint-plugin-* entries below marked "ironplate peer" are its required peerDependencies
-        "eslint-plugin-import-newlines": "^2.0.0",
-        "eslint-plugin-import-x": "^4.17.1", // ironplate peer: import-x/* rules (no-unresolved, extensions, exports-last, no-default-export, ...)
-        "eslint-plugin-n": "^18.2.2", // ironplate peer: Node.js rules (n/*)
-        "eslint-plugin-promise": "^7.3.0", // ironplate peer: Promise rules (promise/*)
-        "eslint-plugin-simple-import-sort": "^14.0.0", // simple-import-sort/imports + /exports: deterministic import/export sorting
-        "eslint-plugin-unicorn": "^72.0.0", // ironplate peer: unicorn/* rules
-        "execa": "^10.0.0", // Spawns child processes for the sequential health-check run
-        "extend": "^3.0.2", // Deep merge used by all-is-well.config.local.ts to layer overrides on the base health-check config
-        "globals": "^17.8.0",
-        "husky": "^9.1.7", // Git hooks (see .husky/); wired via the "prepare" script
-        "knip": "^6.29.0", // Finds unused files / exports / dependencies (see knip.config.ts)
-        "lockfile-lint": "^5.0.0", // Validates package-lock.json (registry hosts + HTTPS)
-        "lodash-es": "^4.18.1", // Utility functions (used by scripts/housekeeping/clean.ts, which deep-imports only the functions it needs)
-        "node-notifier": "^10.0.1", // Desktop notification when a health check fails
-        "package-cjson": "^3.0.0", // Generates package.json from package.json.ts (see scripts "housekeeping:*")
-        "publint": "^0.3.22", // Lints the package for publish-time correctness (main/exports/files resolution); wired as the "publint" health check
-        "semver": "^7.8.5", // Semantic-version comparison used by the node-version and npm-install health checks
-        "shell-quote": "^1.10.0", // Shell-safe quoting of some commands
-        "typescript": "~6.0.3", // Powers the tsc type check (test:types); optional ironplate peer for its TypeScript configs
-        "typescript-eslint": "^8.65.0", // Optional ironplate peer: bundles the TypeScript parser + plugin used by eslint-config-ironplate/node-typescript.js
-        "vitest": "^4.1.10"
-    },
+    "commander": "^15.0.0" // CLI argument parsing (see cli.js); remove if your package has no CLI
+
+    /* End: Template originated "dependenciesForPackage" */
+};
+
+const dependenciesForPackage_overrides = {
+    /* Begin: Project originated "dependenciesForPackage_overrides" */
+
+    // No project originated "dependenciesForPackage_overrides" yet
+
+    /* End: Project originated "dependenciesForPackage_overrides" */
+
+    /* Begin: Template originated "dependenciesForPackage_overrides" */
+
+    // No template originated "dependenciesForPackage_overrides" yet
+
+    /* End: Template originated "dependenciesForPackage_overrides" */
+};
+
+// Dependencies imported by the frontend app (empty on this base branch - the branches carrying a
+// frontend populate it). dependencyCategoriesMapping below decides the npm field: "dependencies"
+// on branches that DEPLOY the app, "devDependencies" where the app is only a development/demo
+// harness - the membership stays identical either way.
+const dependenciesForApp = {
+    /* Begin: Project originated "dependenciesForApp" */
+
+    // No project originated "dependenciesForApp" yet
+
+    /* End: Project originated "dependenciesForApp" */
+
+    /* Begin: Template originated "dependenciesForApp" */
+
+    // No template originated "dependenciesForApp" yet
+
+    /* End: Template originated "dependenciesForApp" */
+};
+
+const dependenciesForApp_overrides = {
+    /* Begin: Project originated "dependenciesForApp_overrides" */
+
+    // No project originated "dependenciesForApp_overrides" yet
+
+    /* End: Project originated "dependenciesForApp_overrides" */
+
+    /* Begin: Template originated "dependenciesForApp_overrides" */
+
+    // No template originated "dependenciesForApp_overrides" yet
+
+    /* End: Template originated "dependenciesForApp_overrides" */
+};
+
+// Dependencies imported by the build toolchain, run locally and in CI (empty on this base branch
+// - the branches carrying a build populate it).
+const dependenciesForBuild = {
+    /* Begin: Project originated "dependenciesForBuild" */
+
+    // No project originated "dependenciesForBuild" yet
+
+    /* End: Project originated "dependenciesForBuild" */
+
+    /* Begin: Template originated "dependenciesForBuild" */
+
+    // No template originated "dependenciesForBuild" yet
+
+    /* End: Template originated "dependenciesForBuild" */
+};
+
+const dependenciesForBuild_overrides = {
+    /* Begin: Project originated "dependenciesForBuild_overrides" */
+
+    // No project originated "dependenciesForBuild_overrides" yet
+
+    /* End: Project originated "dependenciesForBuild_overrides" */
+
+    /* Begin: Template originated "dependenciesForBuild_overrides" */
+
+    // No template originated "dependenciesForBuild_overrides" yet
+
+    /* End: Template originated "dependenciesForBuild_overrides" */
+};
+
+// Dependencies imported by the backend server (empty on this base branch - the branches carrying
+// a server populate it). dependencyCategoriesMapping below decides the npm field: "dependencies"
+// on branches that DEPLOY the server, "devDependencies" where it only serves development - the
+// membership stays identical either way.
+const dependenciesForServer = {
+    /* Begin: Project originated "dependenciesForServer" */
+
+    // No project originated "dependenciesForServer" yet
+
+    /* End: Project originated "dependenciesForServer" */
+
+    /* Begin: Template originated "dependenciesForServer" */
+
+    // No template originated "dependenciesForServer" yet
+
+    /* End: Template originated "dependenciesForServer" */
+};
+
+const dependenciesForServer_overrides = {
+    /* Begin: Project originated "dependenciesForServer_overrides" */
+
+    // No project originated "dependenciesForServer_overrides" yet
+
+    /* End: Project originated "dependenciesForServer_overrides" */
+
+    /* Begin: Template originated "dependenciesForServer_overrides" */
+
+    // No template originated "dependenciesForServer_overrides" yet
+
+    /* End: Template originated "dependenciesForServer_overrides" */
+};
+
+// Dependencies useful only in the local dev / CI setup: the lint, type-check, test, health-check,
+// and release toolchain.
+const dependenciesForDev = {
+    /* Begin: Project originated "dependenciesForDev" */
+
+    // No project originated "dependenciesForDev" yet
+
+    /* End: Project originated "dependenciesForDev" */
+
+    /* Begin: Template originated "dependenciesForDev" */
+
+    "@eslint/js": "^10.0.1",
+    "@eslint/markdown": "^8.0.3",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/extend": "^3.0.4",
+    "@types/node": "~24.13.3", // Pinned to 24.x to match the dev Node floor
+    "@types/node-notifier": "^8.0.5",
+    "@types/semver": "^7.7.1",
+    "@webextensions/revisit": "^0.2.0", // Recurring-reminders tool run by the post-commit hook (see revisit.json)
+    "auto-changelog": "^2.6.0",
+    "boxen": "^8.0.1",
+    "chalk": "^6.0.0",
+    "concurrently": "^10.0.4",
+    "del": "^8.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-ironplate": "^3.0.0", // The entries below marked "ironplate peer" are its required peerDependencies
+    "eslint-plugin-import-newlines": "^2.0.0",
+    "eslint-plugin-import-x": "^4.17.1", // ironplate peer
+    "eslint-plugin-n": "^18.2.2", // ironplate peer
+    "eslint-plugin-promise": "^7.3.0", // ironplate peer
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "eslint-plugin-unicorn": "^72.0.0", // ironplate peer
+    "execa": "^10.0.0",
+    "extend": "^3.0.2",
+    "globals": "^17.8.0",
+    "husky": "^9.1.7",
+    "knip": "^6.29.0",
+    "lockfile-lint": "^5.0.0",
+    "lodash-es": "^4.18.1",
+    "node-notifier": "^10.0.1",
+    "package-cjson": "^3.0.0",
+    "publint": "^0.3.22",
+    "semver": "^7.8.5",
+    "shell-quote": "^1.10.0",
+    "typescript": "~6.0.3", // Optional ironplate peer for its TypeScript configs
+    "typescript-eslint": "^8.65.0", // Optional ironplate peer
+    "vitest": "^4.1.10"
+
+    /* End: Template originated "dependenciesForDev" */
+};
+
+const dependenciesForDev_overrides = {
+    /* Begin: Project originated "dependenciesForDev_overrides" */
+
+    // No project originated "dependenciesForDev_overrides" yet
+
+    /* End: Project originated "dependenciesForDev_overrides" */
+
+    /* Begin: Template originated "dependenciesForDev_overrides" */
+
+    // No template originated "dependenciesForDev_overrides" yet
+
+    /* End: Template originated "dependenciesForDev_overrides" */
+};
+
+// Peer dependencies - supplied by the consuming project, not installed for it (empty on this base
+// branch, which publishes nothing - publishing branches declare their peer contracts here).
+const dependenciesForPeer = {
+    /* Begin: Project originated "dependenciesForPeer" */
+
+    // No project originated "dependenciesForPeer" yet
+
+    /* End: Project originated "dependenciesForPeer" */
+
+    /* Begin: Template originated "dependenciesForPeer" */
+
+    // No template originated "dependenciesForPeer" yet
+
+    /* End: Template originated "dependenciesForPeer" */
+};
+
+const dependenciesForPeer_overrides = {
+    /* Begin: Project originated "dependenciesForPeer_overrides" */
+
+    // No project originated "dependenciesForPeer_overrides" yet
+
+    /* End: Project originated "dependenciesForPeer_overrides" */
+
+    /* Begin: Template originated "dependenciesForPeer_overrides" */
+
+    // No template originated "dependenciesForPeer_overrides" yet
+
+    /* End: Template originated "dependenciesForPeer_overrides" */
+};
+
+// Per-peer metadata ("peerDependenciesMeta") - only meaningful for packages listed in
+// dependenciesForPeer. Emitted into the manifest only when non-empty. The main use case is
+// marking a peer as optional so npm does not warn/install when the consumer omits it, e.g. on a
+// widget branch whose script-tag/IIFE consumers do not need react:
+//     "react": { "optional": true }
+const dependenciesForPeer_meta = {
+    /* Begin: Project originated "dependenciesForPeer_meta" */
+
+    // No project originated "dependenciesForPeer_meta" yet
+
+    /* End: Project originated "dependenciesForPeer_meta" */
+
+    /* Begin: Template originated "dependenciesForPeer_meta" */
+
+    // No template originated "dependenciesForPeer_meta" yet
+
+    /* End: Template originated "dependenciesForPeer_meta" */
+};
+
+// The category order (here and throughout this file) is deliberate, not alphabetical:
+// package -> app -> build -> server -> dev -> peer.
+const dependencyCategories = {
+    dependenciesForPackage,
+    dependenciesForApp,
+    dependenciesForBuild,
+    dependenciesForServer,
+    dependenciesForDev,
+    dependenciesForPeer
+};
+
+// Category -> npm field mapping for THIS branch. This is the branch-owned knob: the categories are
+// named by the subsystem that imports them, so other template branches keep the exact same
+// category membership and change only this object (e.g. a web-app branch maps dependenciesForApp /
+// dependenciesForServer to "dependencies" because it deploys the app).
+const dependencyCategoriesMapping = {
+    dependenciesForPackage: "dependencies",
+    dependenciesForApp:     "devDependencies",
+    dependenciesForBuild:   "devDependencies",
+    dependenciesForServer:  "devDependencies",
+    dependenciesForDev:     "devDependencies",
+    dependenciesForPeer:    "peerDependencies"
+} as const;
+
+// The per-category override objects, in the same deliberate order as dependencyCategories.
+const dependencyCategoriesOverrides = {
+    dependenciesForPackage: dependenciesForPackage_overrides,
+    dependenciesForApp: dependenciesForApp_overrides,
+    dependenciesForBuild: dependenciesForBuild_overrides,
+    dependenciesForServer: dependenciesForServer_overrides,
+    dependenciesForDev: dependenciesForDev_overrides,
+    dependenciesForPeer: dependenciesForPeer_overrides
+};
+
+// Validates the category declarations above (same category names across the three objects; every
+// mapping value a real npm field; no conflicting duplicate package specs across categories; a
+// package in only one {category}_overrides object) and returns the merge helpers - a violation
+// throws here and fails the module load. See utils/package-json-utils/package-json-utils.ts for the
+// exact rules.
+const { collectDependenciesFor, collectOverrides } = createDependencyCollectors({
+    dependencyCategories,
+    dependencyCategoriesMapping,
+    dependencyCategoriesOverrides
+});
+
+// Merged once each, so the "omitted while empty" spreads below can test them before emitting.
+const mergedPeerDependencies = collectDependenciesFor('peerDependencies');
+const mergedOverrides = collectOverrides();
+
+const packageJson = {
+    ...core,
+
+    // The three npm fields are computed from the dependenciesFor* categories via
+    // dependencyCategoriesMapping (see the declarations above). "dependencies" /
+    // "devDependencies" are emitted even while empty (they are the slots a fork fills - see
+    // docs/init/CUSTOMIZE/CUSTOMIZE-package-json.md); the peer / overrides fields below are
+    // omitted instead, so a branch that declares none keeps them out of its manifest entirely.
+    "dependencies": collectDependenciesFor('dependencies'),
+    "devDependencies": collectDependenciesFor('devDependencies'),
+    ...(Object.keys(mergedPeerDependencies).length > 0 && { "peerDependencies": mergedPeerDependencies }),
+    // Peer metadata (see dependenciesForPeer_meta above)
+    ...(Object.keys(dependenciesForPeer_meta).length > 0 && { "peerDependenciesMeta": dependenciesForPeer_meta }),
+
+    // npm dependency overrides (applied to the whole install tree; root-only - they never affect
+    // consumers of the published package). Merged from the per-category {category}_overrides
+    // objects above; a package may appear in only one of them (enforced by
+    // assertDependencyDeclarationsConsistent).
+    ...(Object.keys(mergedOverrides).length > 0 && { "overrides": mergedOverrides }),
 
     "scripts": {
         // Fails any "npm install" early when the active Node does not satisfy .nvmrc.
@@ -176,8 +447,9 @@ const packageJson = {
         // their own steps to it (database, certificates, ...). "setup:editor" (re)creates the
         // .vscode/soft-links/node symlink that .vscode/settings.json points "eslint.runtime" and the
         // integrated-terminal PATH at; re-run it after switching Node versions ("nvm use").
-        // "setup:git-exclude" seeds this clone's .git/info/exclude from
-        // docs/template-project/git-info-exclude.example (idempotent, append-only).
+        // "setup:git-exclude" seeds this clone's .git/info/exclude (the secondary home, for
+        // machine-local personal ignore patterns only - shared patterns live in the committed
+        // .gitignore) from docs/template-project/git-info-exclude.example (idempotent, append-only).
         "setup": [
             "node --run setup:editor",
             "node --run setup:git-exclude"
@@ -273,7 +545,7 @@ const packageJson = {
         "block-non-keyboard-characters:detect-all": "./scripts/health-checks/checks/block-non-keyboard-characters/detect-all-characters.ts",
 
         // Verifies file status expectations (e.g. read-only paths) declared in
-        // scripts/health-checks/checks/status-of-files.config.ts (empty fill-in slot on this base branch);
+        // scripts/health-checks/checks/status-of-files.config.ts (a fill-in slot, empty by default);
         // ":ensure" applies the remediations (chmod a-w).
         "status-of-files":        "./scripts/health-checks/checks/check-status-of-files.ts --return-exit-code",
         "status-of-files:ensure": "./scripts/health-checks/checks/ensure-status-of-files.ts",

@@ -2,8 +2,9 @@
 
 # Seed this clone's .git/info/exclude from docs/template-project/git-info-exclude.example.
 #
-# .git/info/exclude is git's per-clone ignore file; this repository uses it to hide artifacts left
-# behind by OTHER branches of the template family (see the example file's header and
+# .git/info/exclude is git's per-clone ignore file; this repository uses it as the SECONDARY home
+# for machine-local personal ignore patterns (the PRIMARY home for every shared pattern is the
+# committed config of the abstract-javascript-project branch - see the example file's header and
 # .claude/skills/updating-ignore-rules/SKILL.md). Because the file lives inside .git/ it can never
 # be committed, so this script copies the committed example's patterns into it.
 #

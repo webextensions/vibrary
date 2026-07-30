@@ -21,10 +21,13 @@ export default defineConfig([
     // otherwise a git-ignored artifact left behind by one branch (e.g. its build output) gets linted
     // on another.
     globalIgnores([
-        'node_modules/',
-        'coverage/',
         '.cache/',
-        'public-*/' // Frontend build output (config-driven publicDirectory - see config/); ESLint does not read .gitignore
+        'coverage/',
+        'dist/', // Library build output of the npm-package template branches
+        'node_modules/',
+        'public-*/', // Frontend build output (config-driven publicDirectory - see config/); ESLint does not read .gitignore
+        'temp/', // Scratch/temporary files (git-ignored family-wide)
+        'tmp/' // Scratch/temporary files (git-ignored family-wide)
     ]),
 
     {
