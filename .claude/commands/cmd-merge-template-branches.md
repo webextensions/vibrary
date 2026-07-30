@@ -80,6 +80,24 @@ repo and the tree. Commit merge results locally; pushing is always the human's j
 - Still failing after 10 attempts: stop the cascade. Leave the merge commit (or the in-progress merge) intact and the
   fix attempts uncommitted, stay on that branch, and report the exact state left behind.
 
+## Post-Merge Follow-Ups
+
+A merge brings the base's content over verbatim, but some of the child's own content describes the child and must be
+adapted by hand after the merge commit - the merge itself cannot do it.
+
+- After each edge's merge commit (and any fix commit), check whether the merged-in changes require branch-specific
+  adaptation on the child. Typical places to inspect:
+    - Branch-owned skills (for example `.claude/skills/running-the-project/` - what "running the project" means
+      differs per branch).
+    - Fork-owned docs and checklists (per
+      [docs/template-project/file-conventions.md](../../docs/template-project/file-conventions.md)): `README.md` /
+      `AGENTS.md` wording, `docs/init/CUSTOMIZE/` style checklists, branch-specific docs.
+    - Code and config that reference what the merge changed (renamed scripts, moved files, new conventions).
+- Perform the needed follow-up edits in the working tree, then PAUSE the cascade and ask the developer (via the
+  AskUserQuestion tool) to review, stage, and commit them before continuing to the next edge - these follow-ups are
+  the child's own content, so the human owns their staging and commit (never stage or commit them yourself).
+- If nothing needs adapting for an edge, say so in the report and continue.
+
 ## Rules
 
 - Never push or force-push, never amend, never skip hooks with `--no-verify`, never `git reset`,
@@ -93,6 +111,7 @@ repo and the tree. Commit merge results locally; pushing is always the human's j
 - Per edge: merged / already up to date / skipped - with the reason (aspirational branch, diverged, excluded).
 - Conflicts per file and how each was resolved (kept child side / regenerated / merged both intents). Flag `AGENTS.md`
   keep-side resolutions so the human can port shared wording into the child by hand if wanted.
+- Post-merge follow-up edits made per edge (or "none needed") and whether the developer committed them.
 - Test outcomes, fix commits created, local tracking branches created, diverged branches needing attention.
 - Close with the reminder that nothing was pushed: review each branch (`git log origin/<branch>..<branch>`) and push
   manually.

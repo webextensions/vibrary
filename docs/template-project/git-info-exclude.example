@@ -1,0 +1,36 @@
+# Seed for this clone's .git/info/exclude - artifacts left behind by OTHER branches.
+#
+# What: .git/info/exclude is git's per-clone ignore file (gitignore syntax, never committed, applies
+# on every branch, honored by "git status" and "git clean -X", shared by all worktrees of a clone).
+# This repository uses it for one job: hiding artifacts that ANOTHER branch of the template family
+# leaves in the working tree after a branch switch. That keeps every committed .gitignore describing
+# only what its OWN branch produces - a base branch never needs to know descendant structure.
+#
+# Apply (idempotent; appends only what is missing, never removes):
+#     $ node --run setup:git-exclude
+# Or by hand: append the patterns below to .git/info/exclude.
+#
+# Updating: each branch family appends the artifact patterns its layer introduces, next to a short
+# comment, so the list stays additive and merges cleanly. This is a convenience seed, not a
+# strict-sync file - if a sibling family's pattern is missing here, the cost is one line added
+# locally, nothing breaks.
+#
+# Precedence note: tracked .gitignore files override .git/info/exclude, and within one file the last
+# matching line wins - so a pattern + "!" negation pair (like the encryption-keys pair below) works
+# here exactly as it would in a .gitignore.
+
+# Frontend build output (config-driven publicDirectory) - frontend-build family
+/public-*/
+
+# Local configuration files - web-app family
+/config/*.local.js
+/config/*.local.secrets.js
+
+# Encryption keys (config/encryption/ on the web-app family; that family guards them via its tracked
+# config/encryption/keys/.gitignore - these lines keep leftovers invisible on the other branches)
+/config/encryption/keys/*.pem
+!/config/encryption/keys/*.documented.runtime.*.pem
+
+# Application data (databases etc.) - web-app family; that family keeps the directory structure
+# present via tracked per-directory .gitignore files
+/app-data/

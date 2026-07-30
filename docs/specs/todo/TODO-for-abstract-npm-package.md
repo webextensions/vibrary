@@ -8,8 +8,8 @@
 * Add `types` / `sideEffects` guidance (and possibly fields) when a child branch first ships
   TypeScript types or needs tree-shaking hints - deliberately absent here (see the comment above
   `main` in [package.json.ts](../../../package.json.ts)).
-* Consider a CI publish workflow (e.g. `npm publish --provenance`) once the
-  `template-npm-package-*` child branches exist and a real package publishes from this family.
+* Consider a CI publish workflow (e.g. `npm publish --provenance`) once a real package publishes
+  from this family (the `template-npm-package-*` child branches exist now).
 * Decide whether the `abstract-npm-package` note in the git branching tree should mention the
   publishing baseline - [docs/template-project/README.md](../../template-project/README.md) is
   maintained from the root base branch (`abstract-javascript-project`), so make that edit there and

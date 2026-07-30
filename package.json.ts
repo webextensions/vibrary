@@ -130,15 +130,16 @@ const packageJson = {
         "@eslint/markdown": "^8.0.3", // Markdown language support for ESLint; used by eslint.markdown.config.js (the "eslint:markdown" script)
         "@stylistic/eslint-plugin": "^5.10.0", // TypeScript-aware formatting rules (indent/semi/quote-props/...) for eslint.config.js
         "@types/extend": "^3.0.4", // Types for extend (ships none)
-        "@types/node": "~24.12.4", // Node ambient types for the tsc type check (import.meta.dirname, process, node:*, NodeJS.*); pinned to 24.x to match the dev Node floor
+        "@types/node": "~24.13.3", // Node ambient types for the tsc type check (import.meta.dirname, process, node:*, NodeJS.*); pinned to 24.x to match the dev Node floor
         "@types/node-notifier": "^8.0.5", // Types for node-notifier (ships none)
         "@types/semver": "^7.7.1", // Types for semver (ships none)
         "@webextensions/revisit": "^0.2.0", // Recurring-reminders tool run by the post-commit hook (see revisit.json)
         "auto-changelog": "^2.6.0", // Generates CHANGELOG.md from git history (see .auto-changelog); wired into "npm version"
         "boxen": "^8.0.1", // Boxes terminal output
-        "chalk": "^5.6.2", // Terminal string styling (used by the health-check orchestrator)
-        "concurrently": "^10.0.3", // Runs tasks in parallel
-        "eslint": "^10.7.0",
+        "chalk": "^6.0.0", // Terminal string styling (used by the health-check orchestrator)
+        "concurrently": "^10.0.4", // Runs tasks in parallel
+        "del": "^8.0.1", // Deletes files/folders (used by scripts/housekeeping/clean.ts)
+        "eslint": "^10.8.0",
         "eslint-config-ironplate": "^3.0.0", // Shared ESLint base config (see eslint.config.js); the eslint-plugin-* entries below marked "ironplate peer" are its required peerDependencies
         "eslint-plugin-import-newlines": "^2.0.0",
         "eslint-plugin-import-x": "^4.17.1", // ironplate peer: import-x/* rules (no-unresolved, extensions, exports-last, no-default-export, ...)
@@ -146,19 +147,20 @@ const packageJson = {
         "eslint-plugin-promise": "^7.3.0", // ironplate peer: Promise rules (promise/*)
         "eslint-plugin-simple-import-sort": "^14.0.0", // simple-import-sort/imports + /exports: deterministic import/export sorting
         "eslint-plugin-unicorn": "^72.0.0", // ironplate peer: unicorn/* rules
-        "execa": "^9.6.1", // Spawns child processes for the sequential health-check run
+        "execa": "^10.0.0", // Spawns child processes for the sequential health-check run
         "extend": "^3.0.2", // Deep merge used by all-is-well.config.local.ts to layer overrides on the base health-check config
-        "globals": "^17.7.0",
+        "globals": "^17.8.0",
         "husky": "^9.1.7", // Git hooks (see .husky/); wired via the "prepare" script
-        "knip": "^6.27.0", // Finds unused files / exports / dependencies (see knip.config.ts)
+        "knip": "^6.29.0", // Finds unused files / exports / dependencies (see knip.config.ts)
         "lockfile-lint": "^5.0.0", // Validates package-lock.json (registry hosts + HTTPS)
+        "lodash-es": "^4.18.1", // Utility functions (used by scripts/housekeeping/clean.ts, which deep-imports only the functions it needs)
         "node-notifier": "^10.0.1", // Desktop notification when a health check fails
         "package-cjson": "^3.0.0", // Generates package.json from package.json.ts (see scripts "housekeeping:*")
-        "publint": "^0.3.21", // Lints the package for publish-time correctness (main/exports/files resolution); wired as the "publint" health check
+        "publint": "^0.3.22", // Lints the package for publish-time correctness (main/exports/files resolution); wired as the "publint" health check
         "semver": "^7.8.5", // Semantic-version comparison used by the node-version and npm-install health checks
         "shell-quote": "^1.10.0", // Shell-safe quoting of some commands
         "typescript": "~6.0.3", // Powers the tsc type check (test:types); optional ironplate peer for its TypeScript configs
-        "typescript-eslint": "^8.64.0", // Optional ironplate peer: bundles the TypeScript parser + plugin used by eslint-config-ironplate/node-typescript.js
+        "typescript-eslint": "^8.65.0", // Optional ironplate peer: bundles the TypeScript parser + plugin used by eslint-config-ironplate/node-typescript.js
         "vitest": "^4.1.10"
     },
 
@@ -169,6 +171,19 @@ const packageJson = {
         // Installs the Git hooks in .husky/ on "npm install". "|| true" keeps installs working in
         // environments where husky is unavailable (e.g. CI with --omit=dev).
         "prepare": "husky || true",
+
+        // One-shot workstation setup. "setup" is the umbrella - template branches / forks append
+        // their own steps to it (database, certificates, ...). "setup:editor" (re)creates the
+        // .vscode/soft-links/node symlink that .vscode/settings.json points "eslint.runtime" and the
+        // integrated-terminal PATH at; re-run it after switching Node versions ("nvm use").
+        // "setup:git-exclude" seeds this clone's .git/info/exclude from
+        // docs/template-project/git-info-exclude.example (idempotent, append-only).
+        "setup": [
+            "node --run setup:editor",
+            "node --run setup:git-exclude"
+        ].join(" && "),
+        "setup:editor":      "./.vscode/soft-links/setup.sh",
+        "setup:git-exclude": "./scripts/housekeeping/setup-git-info-exclude.sh",
 
         // Runs the CLI (cli.js)
         "start": "node cli.js",
@@ -291,6 +306,11 @@ const packageJson = {
         "changelog":         "auto-changelog",
         "changelog:preview": "auto-changelog --unreleased --stdout",
 
+        // Deletes git-ignored build/tooling artifacts (dry-lists them first, then a 5 second
+        // countdown). Exits 1 without deleting anything when it meets a git-ignored path that is
+        // neither marked for keeping nor for deleting - see the file's header.
+        "housekeeping:clean":                            "./scripts/housekeeping/clean.ts",
+
         // (Re)generates package.json (and package-version.json) from package.json.ts
         "housekeeping:generate-package-json":            "./scripts/housekeeping/generate-package-json.sh",
 
@@ -299,6 +319,15 @@ const packageJson = {
 
         // (Re)creates node_modules + package-lock.json from scratch
         "housekeeping:update-package-lock-json":         "./scripts/housekeeping/update-package-lock-json.sh",
+
+        // Read-only verify that every local "<branch>-flat" mirror branch still matches its source
+        // branch (same tree, trailer at the source tip). See docs/template-project/flat-branches.md
+        "branching:check-flat-branches": "./scripts/branching/check-flat-branches.ts",
+
+        // Appends the source branch's new first-parent commits onto its append-only, tree-identical
+        // "<source>-flat" mirror branch (local refs only - never fetches or pushes).
+        // See docs/template-project/flat-branches.md
+        "branching:flatten": "./scripts/branching/flatten-branch.sh",
 
         // Template-sync workflow (see docs/template-project/template-sync.md)
 

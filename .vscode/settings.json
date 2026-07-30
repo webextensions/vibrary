@@ -3,6 +3,17 @@
     // two never drift. Each block targets a different "run on save" extension; install whichever
     // matches your VSCode / VSCode-based IDE (see .vscode/extensions.json).
 
+    // Run the editor's ESLint on the same Node the shell uses, via the workspace-relative symlink
+    // created by "node --run setup:editor" (.vscode/soft-links/setup.sh). Without this, VS Code /
+    // Cursor may pick a bundled or system Node and fail to load the flat config.
+    // If it still does not work, replace the value with the absolute path of your Node binary:
+    //     "eslint.runtime": "/home/<user-goes-here>/.nvm/versions/node/v24.15.0/bin/node",
+    // Refs:
+    //     * https://github.com/eslint-stylistic/eslint-stylistic/issues/661
+    //     * https://github.com/eslint-stylistic/eslint-stylistic/issues/714
+    //     * https://github.com/eslint-stylistic/eslint-stylistic/issues/765
+    "eslint.runtime": "./.vscode/soft-links/node",
+
     // File Nesting
     // Ref: https://github.com/antfu/vscode-file-nesting-config#update-manually
     "explorer.fileNesting.enabled": true,
@@ -24,6 +35,19 @@
     // an explicit rule).
     "search.exclude": {
         "package-lock.json": true
+    },
+
+    // Put the .vscode/soft-links/node symlink first on the integrated terminals' PATH, so commands
+    // run there use the same Node as "eslint.runtime" above. Re-run "node --run setup:editor" after
+    // switching Node versions ("nvm use") to refresh the link.
+    "terminal.integrated.automationProfile.linux": {
+        "env": {
+            "PATH": "${workspaceFolder}/.vscode/soft-links:${env:PATH}"
+        },
+        "path": "/bin/bash"
+    },
+    "terminal.integrated.env.linux": {
+        "PATH": "${workspaceFolder}/.vscode/soft-links:${env:PATH}"
     },
 
     // VS Code: extension "wk-j.save-and-run" (https://github.com/wk-j/vscode-save-and-run)

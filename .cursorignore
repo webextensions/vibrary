@@ -1,0 +1,44 @@
+# ======= Custom ignored directories and files =======
+
+# Auto-generated directories
+public-*
+
+# Database directories
+app-data/database/postgresql
+app-data/database/postgresql-backups
+app-data/database/sqlite
+app-data/database/sqlite-backups
+
+# Secrets files
+**/*.secrets.*
+!**/*.secrets.example.js
+
+# ======= Generic ignored directories and files =======
+
+# Environment variables files
+**/.env
+**/.env.*
+**/*.env
+
+# Certificate and key files
+**/*.crt
+**/*.key
+**/*.pem
+
+# Archive files
+*.tar
+*.tar.gz
+*.zip
+
+# Backup directories and files
+backup
+*.backup
+*.bak
+
+# Log directories and files
+logs
+*.log
+
+# Temporary directories and files
+temp
+*.tmp

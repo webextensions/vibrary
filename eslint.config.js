@@ -14,15 +14,16 @@ import globals from 'globals';
 export default defineConfig([
     // NOTE: Prefer editing this ignores list in the "abstract-javascript-project" branch and letting
     // the change flow into the other branches via the usual template merges. Keeping the list
-    // identical across the "abstract-" / "template-" branches makes switching between them simpler -
+    // in sync across the "abstract-" / "template-" branches makes switching between them simpler -
     // otherwise a git-ignored artifact left behind by one branch (e.g. its build output) gets linted
-    // on another.
+    // on another. (The git-ignored config/*.local*.js files are deliberately NOT listed here: they
+    // should stay linted so that errors in them surface locally - see the import-x/no-unresolved
+    // override at the end of this file.)
     globalIgnores([
         'node_modules/',
         'coverage/',
         '.cache/',
-        'public-*/', // Frontend build output (config-driven publicDirectory - see config/); ESLint does not read .gitignore
-        'config/*.local.js' // Local configuration files (git-ignored, machine-specific)
+        'public-*/' // Frontend build output (config-driven publicDirectory - see config/); ESLint does not read .gitignore
     ]),
 
     // Shared base config (core + Node.js + TypeScript rules; the TypeScript parser comes bundled,
@@ -163,6 +164,21 @@ export default defineConfig([
         rules: {
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': ['error', { caughtErrors: 'none' }]
+        }
+    },
+
+    // Local config files (git-ignored, machine-specific - see the NOTE above the ignores list):
+    // their sibling imports (./app-customizations.js, ./config.*._.js, ./constants.js) exist only on
+    // the web-app-family branches, so the rule is turned off for them here instead of via per-line
+    // disables (which would be flagged as unused disable directives on the branches where the
+    // imports resolve).
+    {
+        files: [
+            'config/*.local.js',
+            'config/*.local.secrets.js'
+        ],
+        rules: {
+            'import-x/no-unresolved': 'off'
         }
     }
 ]);

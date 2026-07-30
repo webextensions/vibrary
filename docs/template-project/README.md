@@ -17,6 +17,9 @@ The recommended workflow for setting up a new project/package using a template f
 
 For pulling later template updates into an already-forked project, see [template-sync.md](./template-sync.md).
 
+A fork that would rather start from a clean linear history can fork from a `-flat` mirror of a `template-` branch
+instead, and keep merging updates as usual - see [flat-branches.md](./flat-branches.md).
+
 ## Vision
 
 To maintain a family of ready-to-use JavaScript project templates as git branches, so that a new project can fork from
@@ -51,34 +54,25 @@ abstract-javascript-project
 │       * Shared base for the npm-package templates below; fork projects from a
 │         `template-npm-package-*` branch, not from this abstract branch.
 │   │
-│   ├── template-npm-package-for-exports
-│   │   Notes:
-│   │       * ESM exports
-│   │   │
-│   │   └── template-npm-package-for-exports-cli
-│   │       Notes:
-│   │           * CLI ("bin" entry)
-│   │       │
-│   │       └── template-npm-package-for-exports-cli-tui
-│   │           Notes:
-│   │               * TUI
-│   │
-│   └── template-npm-package-for-react
+│   └── template-npm-package-for-exports
 │       Notes:
-│           * React component(s)
-│           * React hook(s)
+│           * ESM exports
+│       │
+│       └── template-npm-package-for-exports-cli
+│           Notes:
+│               * CLI ("bin" entry)
+│           │
+│           └── template-npm-package-for-exports-cli-tui
+│               Notes:
+│                   * TUI
 │
 └── abstract-frontend-build
-    |
-    ├── template-widget
-    │   Notes:
-    │       * `template-widget` has support for the following features which can be turned on/off with flags (and/or
-    │         some manual customizations like adding/removing npm package dependencies):
-    │           * Widget - Simple
-    │           * Widget - React
-    │           * Widget - React - with Shadow DOM
-    │       * If for some reason, it is not possible to combine all these mentioned features, then we will split it into
-    │         two or more branches providing those separate templates.
+    Notes:
+        * Shared base for the frontend-build templates below; fork projects from a `template-`
+          branch, not from this abstract branch.
+        * Carries the config-driven Vite build (multi-bundle capable) with React + TypeScript
+          under `frontend/`, stylelint, and a minimal Express server (opt-in HMR) under
+          `backend/`.
     │
     └── abstract-ui-foundation
         Notes:
@@ -103,8 +97,21 @@ abstract-javascript-project
                             * User accounts
 
 There are some more branches (which could not be easily represented in the above tree) which are:
+    * template-npm-package-for-react (abstract-frontend-build + abstract-npm-package + "Code for the react package")
+      Notes:
+          * React component(s)
+          * React hook(s)
     * template-npm-package-with-backend-and-frontend (template-npm-package-for-exports-cli + abstract-frontend-build +
       "Code for backend server")
+    * template-widget (template-npm-package-for-react + "Code for widget")
+      Notes:
+          * `template-widget` has support for the following features which can be turned on/off with flags (and/or
+            some manual customizations like adding/removing npm package dependencies):
+              * Widget - Simple
+              * Widget - React
+              * Widget - React - with Shadow DOM
+          * If for some reason, it is not possible to combine all these mentioned features, then we will split it into
+            two or more branches providing those separate templates.
 ```
 
 ## File Conventions

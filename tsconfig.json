@@ -69,14 +69,15 @@
     //
     // NOTE: Prefer editing this excludes list in the "abstract-javascript-project" branch and letting
     // the change flow into the other branches via the usual template merges. Keeping the list
-    // identical across the "abstract-" / "template-" branches makes switching between them simpler -
+    // in sync across the "abstract-" / "template-" branches makes switching between them simpler -
     // otherwise a git-ignored artifact left behind by one branch (e.g. its build output) gets
-    // type-checked on another (tsc does not read .gitignore).
+    // type-checked on another (tsc does not read .gitignore). (The git-ignored config/*.local*.js
+    // files are deliberately NOT listed here: they should stay type-checked so that errors in them
+    // surface locally.)
     "exclude": [
         "node_modules",
         "coverage",
         ".cache",
-        "public-*", // Frontend build output (config-driven publicDirectory - see config/)
-        "config/*.local.js" // Local configuration files (git-ignored, machine-specific)
+        "public-*" // Frontend build output (config-driven publicDirectory - see config/)
     ]
 }

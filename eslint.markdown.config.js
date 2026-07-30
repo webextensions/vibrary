@@ -15,10 +15,16 @@ import { markdownRelativeLinks } from './scripts/health-checks/helpers/eslint-ru
 
 // eslint-disable-next-line import-x/no-default-export
 export default defineConfig([
+    // NOTE: Prefer editing this ignores list in the "abstract-javascript-project" branch and letting
+    // the change flow into the other branches via the usual template merges. Keeping the list
+    // in sync across the "abstract-" / "template-" branches makes switching between them simpler -
+    // otherwise a git-ignored artifact left behind by one branch (e.g. its build output) gets linted
+    // on another.
     globalIgnores([
         'node_modules/',
         'coverage/',
-        '.cache/'
+        '.cache/',
+        'public-*/' // Frontend build output (config-driven publicDirectory - see config/); ESLint does not read .gitignore
     ]),
 
     {

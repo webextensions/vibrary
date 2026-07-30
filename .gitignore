@@ -1,7 +1,10 @@
-# NOTE: Prefer editing this file in the "abstract-javascript-project" branch and letting the change
-# flow into the other branches via the usual template merges. Keeping this file identical across the
-# "abstract-" / "template-" branches makes switching between them simpler - otherwise a directory
-# ignored on one branch shows up as untracked noise in "git status" on another.
+# NOTE: Family-wide entries (artifacts any branch can produce: caches, logs, node_modules, ...) are
+# edited in the "abstract-javascript-project" branch and flow into the other branches via the usual
+# template merges. Entries for a branch's OWN structure live in that branch's (or its family base's)
+# .gitignore. Leftovers from OTHER branches after a branch switch are deliberately NOT listed here -
+# hide those per clone via .git/info/exclude, seeded from
+# docs/template-project/git-info-exclude.example ("node --run setup:git-exclude"; policy:
+# .claude/skills/updating-ignore-rules/SKILL.md).
 
 # Temporary folders
 tmp/
@@ -82,7 +85,6 @@ web_modules/
 !.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
-.cache
 .parcel-cache
 
 # Next.js build output
@@ -95,7 +97,6 @@ dist
 .output
 
 # Gatsby files
-.cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js
 # https://nextjs.org/blog/next-9-1#public-directory-support
 # public
@@ -152,12 +153,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
-
-# Frontend build output (config-driven publicDirectory - see config/)
-/public-*/
-
-# Local configuration files
-/config/*.local.js
 
 # Playwright files
 /.playwright-mcp/
