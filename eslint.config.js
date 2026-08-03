@@ -133,6 +133,22 @@ export default defineConfig([
 
             'import-newlines/enforce': ['error', { items: 1 }], // `items: 1` effectively means each on its own line
 
+            // No namespace imports (import * as ns) - always destructure the named members
+            'import-x/no-namespace': 'error',
+
+            // Callback-style calls must be `return`ed. Generic callee names only; the web-app
+            // family extends this list with its Express callees (next, res.*, send*Response).
+            'n/callback-return': [
+                'error',
+                [
+                    'callback',
+                    'done',
+                    'exitWithError',
+                    'reject',
+                    'resolve'
+                ]
+            ],
+
             // eslint-config-ironplate assumes Node.js >= 20; this repo's floor is higher (see
             // "engines" in package.json), and some code relies on newer built-ins listed in
             // "ignores" because the rule flags them as experimental on the configured floor:

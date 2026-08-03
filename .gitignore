@@ -162,6 +162,13 @@ vite.config.ts.timestamp-*
 /config/*.local.js
 /config/*.local.secrets.js
 
+# Secrets files
+*.secrets.*
+!*.secrets.example.*
+
+# Temporary backup files
+*.backup.temp
+
 # Encryption keys (config/encryption/ on the web-app family; that family guards them via its
 # tracked config/encryption/keys/.gitignore - these lines keep leftovers invisible everywhere)
 /config/encryption/keys/*.pem

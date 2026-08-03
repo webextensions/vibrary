@@ -15,6 +15,8 @@ The recommended workflow for setting up a new project/package using a template f
     * Checkout the corresponding `template-` prefixed branch from this repository
     * Merge the `template-` prefixed branch (from this repository) into the corresponding branch of the new project/package
 
+The step-by-step commands for that workflow are in [SETUP-NEW-PROJECT.md](./SETUP-NEW-PROJECT.md).
+
 For pulling later template updates into an already-forked project, see [template-sync.md](./template-sync.md).
 
 A fork that would rather start from a clean linear history can fork from a `-flat` mirror of a `template-` branch
@@ -113,6 +115,23 @@ There are some more branches (which could not be easily represented in the above
           * If for some reason, it is not possible to combine all these mentioned features, then we will split it into
             two or more branches providing those separate templates.
 ```
+
+Every branch named in the tree above, alphabetically (some are still aspirational - see the notes in the tree):
+
+* abstract-frontend-build
+* abstract-javascript-project
+* abstract-npm-package
+* abstract-ui-foundation
+* template-npm-package-for-exports
+* template-npm-package-for-exports-cli
+* template-npm-package-for-exports-cli-tui
+* template-npm-package-for-react
+* template-npm-package-with-backend-and-frontend
+* template-web-app
+* template-webextension
+* template-widget
+
+Keep this list in sync when the tree gains or loses a branch.
 
 ## File Conventions
 

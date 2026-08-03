@@ -26,12 +26,20 @@
         "tsconfig.json": "tsconfig.tsbuildinfo"
     },
 
-    // Keep noisy generated files out of search results (.gitignore'd paths are already excluded
-    // because "search.useIgnoreFiles" defaults to true; package-lock.json is tracked, so it needs
-    // an explicit rule).
+    // Let search see git-ignored files (local config, generated artifacts worth grepping), while
+    // "search.exclude" keeps the genuinely noisy directories out (mirror the globalIgnores list in
+    // eslint.config.js; package-lock.json is tracked, so it needs an explicit rule).
     "search.exclude": {
+        "**/.cache": true,
+        "**/coverage": true,
+        "**/dist": true,
+        "**/node_modules": true,
+        "**/public-*": true,
+        "**/temp": true,
+        "**/tmp": true,
         "package-lock.json": true
     },
+    "search.useIgnoreFiles": false,
 
     // Put the .vscode/soft-links/node symlink first on the integrated terminals' PATH, so commands
     // run there use the same Node as "eslint.runtime" above. Re-run "node --run setup:editor" after

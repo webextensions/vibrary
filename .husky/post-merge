@@ -7,12 +7,47 @@ cd ../               # Change directory to project's root folder
 # can never abort or roll back the merge - it only surfaces breakage early. It fires ONLY after a
 # conflict-free "git merge" / "git pull" that updates the working tree; it does NOT fire when a merge
 # stops on conflicts and is concluded with "git commit" (e.g. the auto-resolve path in
-# scripts/branching/merge-template-to-main.sh - that commit is covered by the pre-commit hook instead).
-# "git pull --rebase" rewinds via rebase and fires post-rewrite, not this hook.
+# scripts/branching/merge-source-to-target.sh - that commit is covered by the pre-commit hook instead).
+# "git pull --rebase" rewinds via rebase and fires post-rewrite, not this hook. A fast-forward pull
+# ("git pull --ff-only", e.g. the sync steps in scripts/branching/merge-source-to-target.sh) DOES
+# fire this hook whenever it actually moves the branch. Those sync pulls set
+# MERGE_SOURCE_TO_TARGET_SYNCING=1, which makes this hook skip only the suite run below (the
+# npm-install lockfile sync still happens) - otherwise one merge run would pay the full suite up to
+# three times before the actual merge; the script's own merge runs without the var.
 #
 # Runs the full suite (same as pre-commit / pre-push) because a merge stages nothing, so the
 # change-aware "test:optimize-for-change" would skip almost everything. The real gate is pre-push:
 # this hook only gives faster feedback. On failure husky prints "post-merge script failed (code N)";
-# fix the breakage in a SEPARATE commit before pushing.
+# fix the breakage in a SEPARATE commit before pushing. When the update changed package-lock.json,
+# a fast cache-first "npm install" runs first so the suite is not failed spuriously by a stale
+# node_modules; if that install fails or rewrites package-lock.json (lock/manifest mismatch after
+# the merge), the committed lockfile is restored and "npm ci" materializes it instead - the tree
+# ends clean either way, and a genuine lock/manifest mismatch still fails the suite's npm-ci-dry check.
+# ORIG_HEAD is set by every merge/pull that fires this hook. Right after a committed merge the
+# index matches HEAD, so any worktree drift in package-lock.json means "npm install" rewrote it.
+lockfile_changed_by_merge=false
+git diff --quiet ORIG_HEAD HEAD -- package-lock.json || lockfile_changed_by_merge=true
+
+if [ "$lockfile_changed_by_merge" = true ]; then
+    echo "post-merge: package-lock.json changed - running npm install to sync node_modules"
+
+    install_failed=false
+    npm install --prefer-offline || install_failed=true
+
+    lockfile_rewritten_by_install=false
+    git diff --quiet -- package-lock.json || lockfile_rewritten_by_install=true
+
+    if [ "$install_failed" = true ] || [ "$lockfile_rewritten_by_install" = true ]; then
+        echo "post-merge: npm install failed or rewrote package-lock.json - restoring it and falling back to npm ci"
+        git checkout -- package-lock.json
+        npm ci
+    fi
+fi
+
+if [ -n "${MERGE_SOURCE_TO_TARGET_SYNCING:-}" ]; then
+    echo "post-merge: merge-source-to-target.sh sync pull - skipping the informational suite run"
+    exit 0
+fi
+
 echo "post-merge: running the full suite for info (the merge is already committed; pre-push is the gate)"
 node --run test

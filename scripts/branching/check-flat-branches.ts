@@ -106,7 +106,9 @@ if (problems.length > 0) {
         console.error('    * ' + problem);
     }
     logger.error('\nBring a mirror up to date with:');
-    logger.error('    $ node --run branching:flatten -- --source <branch>');
+    logger.error('    $ node --run branching:flatten -- --source <branch> --target <branch>-flat');
+    logger.error('\nOr refresh every existing template-* mirror at once:');
+    logger.error('    $ node --run template:flatten-branches');
     logger.error('\nSee docs/template-project/flat-branches.md\n');
     process.exit(1);
 }

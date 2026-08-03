@@ -2,11 +2,7 @@
 
 # Append the source branch's new first-parent commits onto its flat mirror branch.
 #
-# Default use:
-#
-#     ./scripts/branching/flatten-branch.sh
-#
-# Equivalent explicit use:
+# Use:
 #
 #     ./scripts/branching/flatten-branch.sh --source template-web-app --target template-web-app-flat
 #
@@ -44,7 +40,7 @@
 
 set -Eeuo pipefail
 
-SOURCE_REF="template-web-app"
+SOURCE_REF=""
 TARGET_REF=""
 FLAG_ALLOW_DIRTY=false
 
@@ -53,15 +49,9 @@ TRAILER_KEY="Template-Source-Commit"
 print_usage() {
     cat <<'USAGE'
 Usage:
-    ./scripts/branching/flatten-branch.sh [--source <ref>] [--target <ref>] [--allow-dirty]
+    ./scripts/branching/flatten-branch.sh --source <ref> --target <ref> [--allow-dirty]
 
-Defaults:
-    --source template-web-app
-    --target <source>-flat
-
-Examples:
-    ./scripts/branching/flatten-branch.sh
-    ./scripts/branching/flatten-branch.sh --source template-npm-package-for-exports
+Example:
     ./scripts/branching/flatten-branch.sh --source template-web-app --target template-web-app-flat
 
 The script does not pull or push. It uses local refs only, and only ever appends to the target branch.
@@ -70,6 +60,13 @@ USAGE
 
 die() {
     echo "Error: $*" >&2
+    exit 1
+}
+
+die_with_usage() {
+    echo "Error: $*" >&2
+    echo "" >&2
+    print_usage >&2
     exit 1
 }
 
@@ -148,9 +145,8 @@ main() {
 
     parse_args "$@"
 
-    if [ -z "$TARGET_REF" ]; then
-        TARGET_REF="${SOURCE_REF}-flat"
-    fi
+    [ -n "$SOURCE_REF" ] || die_with_usage "Missing required --source"
+    [ -n "$TARGET_REF" ] || die_with_usage "Missing required --target"
 
     [ "$SOURCE_REF" != "$TARGET_REF" ] || die "--source and --target must differ (both are: $SOURCE_REF)"
 

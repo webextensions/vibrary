@@ -74,5 +74,5 @@ Details: [.claude/rules/git-workflow.md](.claude/rules/git-workflow.md).
   fork-owned files (e.g. `package.json.ts` identity) are expected to conflict - keep your side.
   Full workflow: [docs/template-project/template-sync.md](docs/template-project/template-sync.md).
 - Inside this repo, base branches merge down into the higher-level template branches: the
-  `/cmd-merge-template-branches` command runs the cascade (commits locally, never pushes).
+  `/cmd-merge-base-branches` command runs the cascade (commits locally, never pushes).
   Details: [docs/template-project/template-sync.md](docs/template-project/template-sync.md).

@@ -15,8 +15,11 @@ sources of truth rather than copies of them - follow a pointer to the file that 
 - [development/releasing.md](./development/releasing.md) - the `npm version` release flow,
   changelog generation, and publishing to npm.
 - [recipes/](./recipes/) - step-by-step how-tos for occasional multi-step tasks.
-- [setup/](./setup/) - one-time setup guides.
+- [setup/](./setup/) - one-time setup guides, starting with
+  [setup/set-up-development-environment.md](./setup/set-up-development-environment.md).
 - [specs/](./specs/) - pre-implementation design docs for non-trivial changes.
+- [to-review/aspects-to-review.md](./to-review/aspects-to-review.md) - backlog of focused review
+  subjects for the tooling and conventions.
 
 ## Template family
 
@@ -26,6 +29,8 @@ sources of truth rather than copies of them - follow a pointer to the file that 
   fork-owned and which are shared content.
 - [template-project/template-sync.md](./template-project/template-sync.md) - pulling template
   updates into a forked project.
+- [template-project/flat-branches.md](./template-project/flat-branches.md) - the append-only,
+  tree-identical `<branch>-flat` mirrors with linear history, for forks that prefer a clean start.
 - [init/README.md](./init/README.md) - one-time steps after forking a new branch or project
   (the customization checklist under [init/CUSTOMIZE/](./init/CUSTOMIZE/)).
 

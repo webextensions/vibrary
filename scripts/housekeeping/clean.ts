@@ -34,12 +34,14 @@ const projectRoot = path.join(__dirname, '..', '..');
 // TODO: Use globs for these patterns
 
 const patternsMarkedToKeep = [
+    /\.backup\.temp$/, // *.backup.temp anywhere - human-owned backup files, never auto-delete
     '.cache/',
     '.cache/.eslintcache',
     '.claude/settings.local.json',
     '.codegraph/',
     '.env',
     '.husky/_/',
+    /\.secrets\./, // *.secrets.* anywhere - secrets files, never auto-delete
     '.vscode/soft-links/node',
     'app-data/',
     'backend/tsconfig.tsbuildinfo',

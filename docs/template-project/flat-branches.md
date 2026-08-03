@@ -82,9 +82,16 @@ Landing point: the mirrors are built from plumbing - `git rev-list --first-paren
 
 - **[scripts/branching/flatten-branch.sh](../../scripts/branching/flatten-branch.sh)**
   (`node --run branching:flatten`) - the generalized `<source> -> <target>` flattener implementing the mechanism
-  above. Flags: `--source <ref>` (default `template-web-app`), `--target <ref>` (default `<source>-flat`), and
+  above. Flags: `--source <ref>` and `--target <ref>` (both required, no defaults), and the optional
   `--allow-dirty`. It uses local refs only, never fetches or pushes, and never reads or writes the working tree
   or index - it moves exactly one ref, once, at the end.
+
+- **[scripts/branching/flatten-template-prefixed-branches.sh](../../scripts/branching/flatten-template-prefixed-branches.sh)**
+  (`node --run template:flatten-branches`) - the all-branches wrapper. Discovers every local `template-*`
+  branch (excluding the `*-flat` mirrors themselves), runs the flattener for each with `--target <branch>-flat`,
+  aborts on the first failure, and finishes with the check-flat-branches verifier. By default it refreshes only
+  EXISTING mirrors (branches without one are skipped); `--create-branches` also creates the missing mirrors -
+  creating one is an explicit opt-in because the first run flattens the branch's entire first-parent history.
 
 - **[scripts/branching/check-flat-branches.ts](../../scripts/branching/check-flat-branches.ts)**
   (`node --run branching:check-flat-branches`) - read-only, on-demand verifier. For every local `*-flat` branch
@@ -93,13 +100,16 @@ Landing point: the mirrors are built from plumbing - `git rev-list --first-paren
   none present, the check passes.
 
 - **[.claude/commands/cmd-generate-flat-branches.md](../../.claude/commands/cmd-generate-flat-branches.md)** -
-  the `/cmd-generate-flat-branches` orchestration command: runs the flattener for each branch that has a mirror,
-  verifies, and reports. Local only, never pushes - matching the
-  [`/cmd-merge-template-branches`](../../.claude/commands/cmd-merge-template-branches.md) cascade's discipline.
+  the `/cmd-generate-flat-branches` orchestration command: runs the all-branches wrapper (refreshing every
+  existing `template-*` mirror; creating a mirror stays an explicit human ask), verifies, and reports. Local
+  only, never pushes - matching the
+  [`/cmd-merge-base-branches`](../../.claude/commands/cmd-merge-base-branches.md) cascade's discipline (which
+  itself closes by running the wrapper, keeping the mirrors fresh after every cascade).
 
 ## Fork-side usage
 
-A fork sets this repo as a remote and forks from `template-web-app-flat` instead of `template-web-app`, then
+A fork sets this repo as a remote and forks from `template-web-app-flat` instead of `template-web-app`
+(the concrete setup commands: [SETUP-NEW-PROJECT.md](./SETUP-NEW-PROJECT.md)), then
 pulls updates by merging `template-web-app-flat` - exactly the flow in [template-sync.md](./template-sync.md),
 just pointed at the `-flat` branch. Because the flat branch is append-only and tree-identical, those merges
 behave like normal template merges (fork-owned files such as `package.json.ts` identity still conflict as

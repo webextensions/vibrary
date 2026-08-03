@@ -16,6 +16,7 @@ description: Use when about to add, remove, or change entries in .gitignore, .gi
     - `eslint.config.js` and `eslint.markdown.config.js` - the `globalIgnores` lists (keep the two byte-identical)
     - `tsconfig.json` - the `exclude` list
     - `.block-non-keyboard-characters.suppressions.json` - the `exemptions` array
+    - `.vscode/settings.json` - the `search.exclude` list (mirrors the `globalIgnores` directories)
     - `scripts/housekeeping/clean.ts` - every git-ignored artifact needs a keep-or-delete entry there
     - Any other ignore/exclude list carrying the same cross-branch NOTE comment
 - **Secondary: `.git/info/exclude`** - git's per-clone ignore file, for MACHINE-LOCAL personal patterns only
@@ -66,7 +67,7 @@ Do not edit the file. Print this (adapted to the concrete file and entry) and le
 > branch would make the branches diverge and cause merge conflicts across the whole branch family.
 >
 > To apply the change: checkout `abstract-javascript-project`, add the entry there (next to the NOTE comment in the
-> file), commit, then merge it down (see `/cmd-merge-template-branches`).
+> file), commit, then merge it down (see `/cmd-merge-base-branches`).
 >
 > If the entry is a machine-local personal pattern, it does not belong in a committed file at all - append it to this
 > clone's `.git/info/exclude` instead.

@@ -101,8 +101,12 @@ Conventions:
   ```
 - **Exit `0` for the no-op path.** Exit `2` blocks the action (its stderr is fed back to Claude); any
   other non-zero exit is treated as an error
+- **Set `FORCE_COLOR=0` on child commands whose output the hook parses** - ANSI color codes in the
+  child's output silently break string matching
 - **Match the project shell style** - 4-space indentation in `case` arms, single quotes for literal
-  strings, double quotes around variable expansions (`"$f"`)
+  strings, double quotes around variable expansions (`"$f"`). Hook scripts are ordinary tracked
+  sources - the health-check suite scans them like any other file (non-keyboard characters, the
+  temporary-code markers of [comment-tags.md](./comment-tags.md), ...)
 
 ## Wiring Into `settings.json`
 
