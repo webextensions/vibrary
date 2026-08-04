@@ -8,21 +8,21 @@ guide. It is plain markdown so every tool can read it directly. Claude Code read
 repo root.
 
 This file is fork-owned (template merges keep your side), so it stays thin: the "Project overview"
-section below is this branch's own content, and everything after it is one-line guardrails linking
+section below is this project's own content, and everything after it is one-line guardrails linking
 to the shared homes that keep receiving template updates.
 
 ## Project overview
 
-`template-npm-package-for-exports-cli` - the directly-forkable template branch for npm packages
-with ESM exports and a CLI (no TUI - the `-cli-tui` child adds that; no React - see
-`template-npm-package-for-react`). On top of the `template-npm-package-for-exports` library
-layout (core logic in `lib/` - stub: `lib/template.js`, exporting `templateJavascriptProject`, named
-exports only - re-exported by the thin `index.js` entry, `./lib/*` deep imports in the `exports`
-map, a colocated `lib/template.test.js` kept out of the tarball by the `"!**/*.test.*"` negation
-in `files`, and `test/index.test.js` for the public entry) it adds the CLI layer: `cli.js` (a
-thin `commander` wrapper that only parses arguments and delegates to `index.js`), the `bin` entry
-mapping the command to it, and `test/cli.test.js` exercising the spawned CLI. Forks replace the
-stub + tests with their real API. Vision, branching tree, and the fork/merge model:
+`vibrary` - a vibe-coding assistant, published as an npm package with ESM exports and a CLI.
+Work in progress: the API is still the hello-world stub inherited from the
+`template-npm-package-for-exports-cli` template branch this project is forked from. The layout:
+core logic in `lib/` (stub: `lib/template.js`, exporting `vibrary`, named exports only)
+re-exported by the thin `index.js` entry, `./lib/*` deep imports in the `exports` map, a
+colocated `lib/template.test.js` kept out of the tarball by the `"!**/*.test.*"` negation in
+`files`, `test/index.test.js` for the public entry, plus the CLI layer: `cli.js` (a thin
+`commander` wrapper that only parses arguments and delegates to `index.js`), the `bin` entry
+mapping the `vibrary` command to it, and `test/cli.test.js` exercising the spawned CLI. The stub
++ tests get replaced with the real API. Template vision, branching tree, and the fork/merge model:
 [docs/template-project/README.md](docs/template-project/README.md).
 
 ## Commands

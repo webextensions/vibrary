@@ -51,9 +51,9 @@ try {
 }
 
 const core = {
-    "name": "@webextensions/template-javascript-project",
+    "name": "vibrary",
     version, // Owned by npm (see header); derived from package.json / package-version.json, never hard-coded
-    "description": "A template for creating npm packages (ESM exports + CLI) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
+    "description": "Vibe-coding assistant",
     "author": "webextensions.org",
     "license": "MIT",
 
@@ -69,23 +69,21 @@ const core = {
         "access": "public"
     },
 
-    "homepage": "https://github.com/webextensions/template-javascript-project#readme",
+    "homepage": "https://github.com/webextensions/vibrary#readme",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/webextensions/template-javascript-project.git"
+        "url": "git+https://github.com/webextensions/vibrary.git"
     },
     "bugs": {
-        "url": "https://github.com/webextensions/template-javascript-project/issues"
+        "url": "https://github.com/webextensions/vibrary/issues"
     },
 
     "keywords": [
-        "boilerplate",
+        "ai",
+        "assistant",
         "cli",
-        "javascript",
-        "npm",
-        "package",
-        "starter",
-        "template"
+        "vibe-coding",
+        "vibrary"
     ],
 
     // Node floor advertised via "engines.node" (what npm shows/enforces for consumers when the
@@ -110,7 +108,7 @@ const core = {
         "./package.json": "./package.json"
     },
     "bin": {
-        "template-javascript-project": "./cli.js" // CLI entry point (rename the key to your command name)
+        "vibrary": "./cli.js" // CLI entry point
     },
 
     // Allowlist of files to publish (default-deny). "lib/" ships the core logic ("index.js" /

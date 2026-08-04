@@ -7,7 +7,7 @@ description: Use when asked to run, start, launch, serve, or demo this project, 
 
 ## The runnable thing here is the CLI
 
-`template-npm-package-for-exports-cli` adds a CLI (`cli.js`, wired as the `bin` entry) on top of the ESM-exports
+`vibrary` ships a CLI (`cli.js`, wired as the `bin` entry) on top of the ESM-exports
 library baseline: `cli.js` parses arguments with commander and delegates to the library functions re-exported by
 `index.js` (core logic lives in `lib/`). There is no server, UI, or extension - the CLI is a one-shot command that
 prints and exits, so there is no port, URL, or process to keep alive.

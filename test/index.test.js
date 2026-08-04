@@ -8,14 +8,14 @@ import {
     it
 } from 'vitest';
 
-import { templateJavascriptProject } from '../index.js';
+import { vibrary } from '../index.js';
 
-describe('templateJavascriptProject', function () {
+describe('vibrary', function () {
     it('should default to greeting the world', function () {
-        expect(templateJavascriptProject()).toBe('Hello, world!');
+        expect(vibrary()).toBe('Hello, world!');
     });
 
     it('should greet the provided name', function () {
-        expect(templateJavascriptProject('Ada')).toBe('Hello, Ada!');
+        expect(vibrary('Ada')).toBe('Hello, Ada!');
     });
 });

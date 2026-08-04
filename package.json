@@ -1,15 +1,15 @@
 {
     "author": "webextensions.org",
     "bin": {
-        "template-javascript-project": "./cli.js"
+        "vibrary": "./cli.js"
     },
     "bugs": {
-        "url": "https://github.com/webextensions/template-javascript-project/issues"
+        "url": "https://github.com/webextensions/vibrary/issues"
     },
     "dependencies": {
         "commander": "^15.0.0"
     },
-    "description": "A template for creating npm packages (ESM exports + CLI) - ESLint, Vitest, health checks, publint, and a template-sync git branching workflow built in",
+    "description": "Vibe-coding assistant",
     "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@eslint/markdown": "^8.0.3",
@@ -63,25 +63,23 @@
         "!**/*.test.*",
         "CHANGELOG.md"
     ],
-    "homepage": "https://github.com/webextensions/template-javascript-project#readme",
+    "homepage": "https://github.com/webextensions/vibrary#readme",
     "keywords": [
-        "boilerplate",
+        "ai",
+        "assistant",
         "cli",
-        "javascript",
-        "npm",
-        "package",
-        "starter",
-        "template"
+        "vibe-coding",
+        "vibrary"
     ],
     "license": "MIT",
     "main": "index.js",
-    "name": "@webextensions/template-javascript-project",
+    "name": "vibrary",
     "publishConfig": {
         "access": "public"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/webextensions/template-javascript-project.git"
+        "url": "git+https://github.com/webextensions/vibrary.git"
     },
     "scripts": {
         "all-is-well": "./scripts/health-checks/all-is-well.ts",
