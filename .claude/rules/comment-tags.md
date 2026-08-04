@@ -9,7 +9,7 @@ variants - so annotations stay greppable:
 
 - `FIXME` - known defect; fix it when touching this area
 - `HACK` - inelegant workaround that works; if the reason is non-obvious, document it in
-  [because/](../../because/README.md)
+  [docs/because/](../../docs/because/README.md)
 - `HARD-CODE` - deliberately hardcoded value that may need to become configurable
 - `NOT-THOROUGH-BUT-GOOD-ENOUGH` - deliberately incomplete handling, acceptable for the current
   use case

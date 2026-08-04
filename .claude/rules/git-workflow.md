@@ -51,7 +51,7 @@ description: Git workflow, scripts, and project management conventions
   denied.)
 
 ## Non-Obvious Decisions
-- Document hacks, workarounds, and non-obvious decisions in the `/because` directory
+- Document hacks, workarounds, and non-obvious decisions in the `docs/because/` directory
 - Each file explains why a particular approach was taken
 
 ## Health Checks

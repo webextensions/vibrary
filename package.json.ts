@@ -557,6 +557,17 @@ const packageJson = {
         "claude-settings-sort":     "./scripts/health-checks/checks/claude-settings-sort.ts",
         "claude-settings-sort:fix": "./scripts/health-checks/checks/claude-settings-sort.ts --fix",
 
+        // Runs on "npm pack" AND "npm publish" (and git-dependency installs): regenerates
+        // package.json from this file, then strips dev-only install-family scripts (preinstall) so
+        // the published manifest ships no install scripts - npm runs a dependency's
+        // preinstall/install/postinstall on consumers' machines (and flags the package with
+        // "hasInstallScript"), while the scripts they point at live under scripts/, which "files"
+        // excludes from the tarball. "preinstall" itself stays for dev installs (fail-fast Node
+        // gate). "postpack" restores the generated files afterwards. The "prepack-strip" health
+        // check guards the strip list in prepack.sh.
+        "prepack": "./scripts/npm-run-scripts/prepack.sh",
+        "postpack": "./scripts/npm-run-scripts/postpack.sh",
+
         // Runs only on "npm publish" (not on "npm pack" or "npm install"). Catches publishes that
         // skip "npm version" and its preversion hook.
         "prepublishOnly": "node --run test",

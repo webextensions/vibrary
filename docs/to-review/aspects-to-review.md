@@ -101,7 +101,7 @@ Notes on scope:
 - `ai-instruction-docs-sync.md` - Keep AI-instruction docs in sync (`.claude/`, `.codex/`,
   `.cursor/`)
 - `human-entry-point-docs.md` - Provide a human entry point beyond CLAUDE.md/AGENTS.md
-- `because-directory-docs.md` - Document non-obvious decisions in [because/](../../because/README.md)
+- `because-directory-docs.md` - Document non-obvious decisions in [because/](../because/README.md)
 - `documentation-coverage-gaps.md` - Fill documentation coverage gaps
 - `specs-todo-currency.md` - Confirm the [docs/specs/](../specs/README.md) and TODO backlogs are
   current

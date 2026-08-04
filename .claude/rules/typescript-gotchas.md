@@ -42,4 +42,4 @@ do not impose strict-mode fixes the checker does not require.
 - After a typecheck fix, run `node --run eslint` too - `tsc` does not enforce ESLint-only rules
   (see [eslint-gotchas.md](./eslint-gotchas.md)).
 - Do not paper over failures with `as any`, `// @ts-expect-error`, or `// @ts-ignore`. If one is
-  truly unavoidable, document why in [because/](../../because/README.md).
+  truly unavoidable, document why in [docs/because/](../../docs/because/README.md).

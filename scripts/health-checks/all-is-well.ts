@@ -246,6 +246,23 @@ const CHECK_PKG_VERSION_SYNC: HealthCheck = {
     errorMsg: 'package-version.json is out of sync with package.json.ts (run "node --run housekeeping:generate-package-json")'
 };
 
+// Guards the pack-time manifest strip: every npm install-family script (preinstall / install /
+// postinstall) in the generated package.json must be stripped by scripts/npm-run-scripts/prepack.sh,
+// and prepack/postpack must stay wired - so published tarballs ship no install scripts. Deliberately
+// a static file check, never a real "npm pack": the suite runs concurrently and a pack would mutate
+// package.json (prepack strip) while sibling checks (pkg-json-sync, npm-ci-dry, publint, ...) read it.
+const CHECK_PREPACK_STRIP: HealthCheck = {
+    name: 'prepack-strip',
+    // "--optimize-for-change" runs this only when the manifest or the pack/install lifecycle
+    // scripts change.
+    changeDependencies: [
+        'package.json',
+        'scripts/npm-run-scripts/'
+    ],
+    cmd: './checks/check-prepack-strips-install-scripts.ts',
+    errorMsg: 'An npm install-family script is not stripped by prepack.sh (or prepack/postpack are unwired). Update scripts/npm-run-scripts/prepack.sh / package.json.ts.'
+};
+
 // Lints the generated package.json and the files it points at for publish-time correctness
 // (main/exports/files resolution) - publint. This branch ships a publishable manifest, so the
 // check applies unconditionally (no private-flag guard). Reuses the "publint" npm script.
@@ -323,6 +340,7 @@ const healthChecks: HealthCheck[] = [
     CHECK_PKG_JSON_SYNC,
     CHECK_LOCKFILE_LINT,
     CHECK_GIT_CONFLICT_MARKERS,
+    CHECK_PREPACK_STRIP,
     CHECK_PUBLINT,
     CHECK_ESLINT_STAGED,
     CHECK_ESLINT_MARKDOWN,

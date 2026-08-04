@@ -93,7 +93,7 @@ When the principles themselves conflict:
 - **Short beats complete** - a short file the model follows beats a complete one it skims; record constraints and
   exceptions, not tutorials, and omit anything a capable agent does unprompted.
 - **Non-obvious decisions get a why-entry** - hacks, workarounds, and surprising choices are documented in
-  [because/](../../because/) so future readers do not "fix" them back.
+  [docs/because/](../../docs/because/) so future readers do not "fix" them back.
 
 ## When choosing or updating dependencies
 
