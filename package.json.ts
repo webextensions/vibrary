@@ -434,15 +434,12 @@ const packageJson = {
     ...(Object.keys(mergedOverrides).length > 0 && { "overrides": mergedOverrides }),
 
     "scripts": {
-        // Runs on local "npm install" (and git-dependency installs), never for consumers
-        // installing the published package from the registry. Fails the install when the active
-        // Node does not satisfy .nvmrc, then installs the Git hooks in .husky/. The
-        // "(husky || true)" grouping keeps installs working where husky is unavailable (e.g. CI
-        // with --omit=dev) without swallowing a Node-version failure.
-        "prepare": [
-            "./scripts/npm-run-scripts/prepare.sh",
-            "(husky || true)"
-        ].join(" && "),
+        // Fails any "npm install" early when the active Node does not satisfy .nvmrc.
+        "preinstall": "./scripts/npm-run-scripts/preinstall.sh",
+
+        // Installs the Git hooks in .husky/ on "npm install". "|| true" keeps installs working in
+        // environments where husky is unavailable (e.g. CI with --omit=dev).
+        "prepare": "husky || true",
 
         // One-shot workstation setup. "setup" is the umbrella - template branches / forks append
         // their own steps to it (database, certificates, ...). "setup:editor" (re)creates the
@@ -557,6 +554,17 @@ const packageJson = {
         // .claude/hooks/Stop/claude-settings-sort.sh.
         "claude-settings-sort":     "./scripts/health-checks/checks/claude-settings-sort.ts",
         "claude-settings-sort:fix": "./scripts/health-checks/checks/claude-settings-sort.ts --fix",
+
+        // Runs on "npm pack" AND "npm publish" (and git-dependency installs): regenerates
+        // package.json from this file, then strips dev-only install-family scripts (preinstall) so
+        // the published manifest ships no install scripts - npm runs a dependency's
+        // preinstall/install/postinstall on consumers' machines (and flags the package with
+        // "hasInstallScript"), while the scripts they point at live under scripts/, which "files"
+        // excludes from the tarball. "preinstall" itself stays for dev installs (fail-fast Node
+        // gate). "postpack" restores the generated files afterwards. The "prepack-strip" health
+        // check guards the strip list in prepack.sh.
+        "prepack": "./scripts/npm-run-scripts/prepack.sh",
+        "postpack": "./scripts/npm-run-scripts/postpack.sh",
 
         // Runs only on "npm publish" (not on "npm pack" or "npm install"). Catches publishes that
         // skip "npm version" and its preversion hook.

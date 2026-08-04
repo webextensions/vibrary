@@ -15,8 +15,7 @@ instead of copying values from them.
 
 - The pinned version lives in [.nvmrc](../../.nvmrc) (mirrored by `engines` in
   [package.json.ts](../../package.json.ts)); activate it with `nvm install && nvm use`.
-- The `prepare` script gates `npm install` on that version, so a wrong active Node fails the
-  install (dev installs only - it never runs for consumers installing the published package).
+- The `preinstall` script gates `npm install` on that version, so a wrong active Node fails fast.
 
 ## First run
 

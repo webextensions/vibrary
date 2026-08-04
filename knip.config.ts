@@ -15,7 +15,10 @@ const config: KnipConfig = {
         // (otherwise reached only via a dynamic variable import knip cannot trace, in
         // scripts/health-checks/allIsWellConfig/loadConfig.ts), and the `extend` / `@types/extend`
         // dependencies as unused.
-        'scripts/health-checks/all-is-well.config.local.example.ts'
+        'scripts/health-checks/all-is-well.config.local.example.ts',
+        // Invoked only via its all-is-well cmd string (the "prepack-strip" check), which knip
+        // cannot trace (unlike sibling checks that .husky/post-checkout also invokes directly).
+        'scripts/health-checks/checks/check-prepack-strips-install-scripts.ts'
     ],
 
     ignore: [
