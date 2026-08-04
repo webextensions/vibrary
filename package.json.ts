@@ -434,12 +434,15 @@ const packageJson = {
     ...(Object.keys(mergedOverrides).length > 0 && { "overrides": mergedOverrides }),
 
     "scripts": {
-        // Fails any "npm install" early when the active Node does not satisfy .nvmrc.
-        "preinstall": "./scripts/npm-run-scripts/preinstall.sh",
-
-        // Installs the Git hooks in .husky/ on "npm install". "|| true" keeps installs working in
-        // environments where husky is unavailable (e.g. CI with --omit=dev).
-        "prepare": "husky || true",
+        // Runs on local "npm install" (and git-dependency installs), never for consumers
+        // installing the published package from the registry. Fails the install when the active
+        // Node does not satisfy .nvmrc, then installs the Git hooks in .husky/. The
+        // "(husky || true)" grouping keeps installs working where husky is unavailable (e.g. CI
+        // with --omit=dev) without swallowing a Node-version failure.
+        "prepare": [
+            "./scripts/npm-run-scripts/prepare.sh",
+            "(husky || true)"
+        ].join(" && "),
 
         // One-shot workstation setup. "setup" is the umbrella - template branches / forks append
         // their own steps to it (database, certificates, ...). "setup:editor" (re)creates the
