@@ -1,3 +1,16 @@
+# NOTE: This file is edited in the "abstract-javascript-project" branch and flows into the other
+# branches via the usual template merges. It is the PRIMARY home for ALL ignore patterns of the
+# whole template-branch family - family-wide artifacts (caches, logs, node_modules, ...) AND the
+# structure/build output of every branch (public-*, app-data, ...) - so any branch's leftovers stay
+# git-invisible after a branch switch, with zero per-clone setup. The SECONDARY escape hatch for
+# machine-local personal patterns is .git/info/exclude ("node --run setup:git-exclude"; see
+# docs/template-project/git-info-exclude.example). Policy:
+# .claude/skills/updating-ignore-rules/SKILL.md.
+
+# Temporary folders
+tmp/
+temp/
+
 # Logs
 logs
 *.log
@@ -56,6 +69,8 @@ web_modules/
 # Optional stylelint cache
 .stylelintcache
 
+.cache/
+
 # Optional REPL history
 .node_repl_history
 
@@ -71,7 +86,6 @@ web_modules/
 !.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
-.cache
 .parcel-cache
 
 # Next.js build output
@@ -84,7 +98,6 @@ dist
 .output
 
 # Gatsby files
-.cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js
 # https://nextjs.org/blog/next-9-1#public-directory-support
 # public
@@ -141,3 +154,29 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Frontend build output (config-driven publicDirectory - see config/)
+/public-*/
+
+# Local configuration files
+/config/*.local.js
+/config/*.local.secrets.js
+
+# Secrets files
+*.secrets.*
+!*.secrets.example.*
+
+# Temporary backup files
+*.backup.temp
+
+# Encryption keys (config/encryption/ on the web-app family; that family guards them via its
+# tracked config/encryption/keys/.gitignore - these lines keep leftovers invisible everywhere)
+/config/encryption/keys/*.pem
+!/config/encryption/keys/*.documented.runtime.*.pem
+
+# Application data (databases etc.) - web-app family; that family keeps the directory structure
+# present via tracked per-directory .gitignore files
+/app-data/
+
+# Playwright files
+/.playwright-mcp/

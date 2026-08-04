@@ -1,0 +1,17 @@
+# Seed for this clone's .git/info/exclude - SECONDARY, machine-local ignore patterns only.
+#
+# The PRIMARY home for every shared ignore pattern of the template-branch family (git, ESLint,
+# TypeScript, Cursor, ...) is the committed config of the "abstract-javascript-project" branch
+# (.gitignore, eslint.config.js, eslint.markdown.config.js, tsconfig.json, .cursorignore), flowing
+# into every other branch via the usual template merges - see
+# .claude/skills/updating-ignore-rules/SKILL.md.
+#
+# .git/info/exclude is git's per-clone ignore file (gitignore syntax, never committed, applies on
+# every branch, shared by all worktrees of a clone). Use it only for patterns not worth committing:
+# personal scratch files, editor leftovers, machine-specific artifacts.
+#
+# Apply (idempotent; appends only what is missing, never removes):
+#     $ node --run setup:git-exclude
+# Or by hand: append your patterns to .git/info/exclude directly.
+
+# (no shared patterns - add machine-local ones below)

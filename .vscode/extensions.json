@@ -1,0 +1,11 @@
+{
+    // Install only ONE of the two save-on-save extensions below, whichever matches your editor:
+    // "wk-j.save-and-run" for VS Code, "achilleshr.runonsave" for Cursor (see .vscode/settings.json).
+    // Installing both runs generate-package-json.sh twice on every package.json.ts save.
+    "recommendations": [
+        "dbaeumer.vscode-eslint",
+        "editorconfig.editorconfig",
+        "wk-j.save-and-run",
+        "achilleshr.runonsave"
+    ]
+}

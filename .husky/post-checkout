@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+cd "$(dirname "$0")" # Change directory to the folder containing this file
+cd ../               # Change directory to project's root folder
+
+# Warn-only orientation checks after a checkout (no "set -e", so every line runs even if an earlier
+# one reports drift; git ignores the post-checkout exit code anyway). Useful here because merging the
+# "template" branch into "main" routinely changes package.json / package-lock.json and may need an
+# "npm install" or "nvm use".
+
+./scripts/utils/print-current-hash.sh
+
+# Warn-only ("--exit-with-code-0"): nudge "nvm use" if Node does not satisfy .nvmrc
+./scripts/health-checks/checks/check-node-version.ts --exit-with-code-0
+
+# Warn if the generated files drifted from package.json.ts on this branch
+node --run test:compare-package-json-with-source
+
+node --run test:compare-package-version-with-source
+
+# Warn-only ("--exit-with-code-0"): nudge "npm install" if installed top-level versions no longer satisfy package.json
+./scripts/health-checks/checks/check-npm-install-status.ts --exit-with-code-0

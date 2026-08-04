@@ -1,0 +1,48 @@
+# Redundant denylist - second line of defense only: the "files" allowlist in package.json
+# (generated from package.json.ts) is the primary control over the tarball contents. Kept so an
+# accidental removal of "files" still keeps the repo tooling out of the published package. npm
+# always includes package.json, README and LICENSE, and always excludes .git, node_modules,
+# package-lock.json and this file itself. Keep entries alphabetized within each group.
+
+# AI assistant / editor tooling (not needed in the published package)
+.claude/
+.codegraph/
+.codex/
+.cursor/
+.mcp.json
+.vscode/
+AGENTS.md
+CLAUDE.md
+
+# Project / repo tooling that consumers do not need
+# (*.test.* backs up the "!**/*.test.*" negation in the "files" allowlist - colocated tests
+# live inside the shipped lib/ directory)
+*.test.*
+.auto-changelog
+.block-non-keyboard-characters.suppressions.json
+.editorconfig
+.gitattributes
+.github/
+.gitignore
+.husky/
+.npmrc
+.nvmrc
+because/
+CONTRIBUTING.md
+docs/
+eslint.config.js
+eslint.markdown.config.js
+knip.config.ts
+revisit.json
+scripts/
+SECURITY.md
+test/
+tsconfig.json
+types/
+utils/
+vitest.config.js
+
+# package.json is generated from package.json.ts; ship only the generated package.json
+package.json.ts
+# Version fallback used only to generate package.json (see package.json.ts); not needed by consumers
+package-version.json

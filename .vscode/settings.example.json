@@ -1,0 +1,8 @@
+{
+    // Optional, per-developer settings worth considering - copy the entries you want into
+    // .vscode/settings.json (shared) or your user settings (personal). This example file itself is
+    // not read by the editor.
+
+    // Start Claude Code sessions with edits pre-approved (Claude still asks for commands).
+    "claudeCode.initialPermissionMode": "acceptEdits"
+}

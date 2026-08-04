@@ -1,0 +1,23 @@
+{
+    "revisit": {
+        "settings": {
+        },
+        "reminders": [
+            {
+                "description": "Run `npm outdated` to review dependencies with newer versions available.",
+                "frequencyInDays": 14,
+                "lastReminderActedUpon": "2026-05-25"
+            },
+            {
+                "description": "Run `npm audit --audit-level=high` to check dependencies for known security vulnerabilities.",
+                "frequencyInDays": 7,
+                "lastReminderActedUpon": "2026-05-25"
+            },
+            {
+                "description": "Run `node --run block-non-keyboard-characters:detect-all` to scan the repo for stray non-keyboard characters.",
+                "frequencyInDays": 14,
+                "lastReminderActedUpon": "2026-05-25"
+            }
+        ]
+    }
+}

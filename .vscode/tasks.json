@@ -1,0 +1,15 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation of tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Generate package.json (from package.json.ts)",
+            "command": "node --run housekeeping:generate-package-json",
+            "presentation": {
+                "reveal": "always"
+            }
+        }
+    ]
+}

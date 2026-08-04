@@ -1,0 +1,86 @@
+{
+    // Minimal config for the "test:types" script (tsc --noEmit). It type-checks the .ts tooling
+    // scripts and the repo .js files. It is NOT a build config - nothing is emitted (noEmit), and
+    // the repo runs .ts directly via Node's native type-stripping. See CLAUDE.md.
+    "compilerOptions": {
+        // Match Node's native ESM + import attributes (the `with { type: "json" }` imports in
+        // package.json.ts).
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "target": "es2024",
+        // esnext (not es2024) so ES2025+ APIs that Node 24 already ships (e.g. Set.prototype.difference)
+        // type-check without tweaks.
+        "lib": ["esnext"],
+
+        // Ambient Node types (import.meta.dirname, process, node:*, NodeJS.*). Listing "node" here also
+        // tells knip that @types/node is in use.
+        "types": ["node"],
+
+        // The .ts scripts import their siblings with an explicit ".ts" extension (e.g. "./characters.ts"),
+        // which Node's type-stripping requires. allowImportingTsExtensions in turn requires noEmit.
+        "allowImportingTsExtensions": true,
+
+        // Keep the code runnable as-is under Node's type-stripping: forbid non-erasable TS syntax
+        // (enum / namespace / parameter properties / decorators), keep every import (no elision), and
+        // type-check each file as an independent module - mirroring how Node strips each file.
+        "erasableSyntaxOnly": true,
+        "verbatimModuleSyntax": true,
+        "isolatedModules": true,
+
+        // package.json.ts imports package.json as JSON.
+        "resolveJsonModule": true,
+
+        // Also type-check the repo JavaScript (no JSDoc today, so this is inference-only).
+        "allowJs": true,
+        "checkJs": true,
+
+        // Type-check only; never emit output.
+        "noEmit": true,
+
+        // Relaxed checking, mirroring the web-app template's tsconfigs: no strict-mode checks and
+        // implicit anys are fine. noImplicitAny is redundant under strict:false but kept explicit
+        // for parity with that template.
+        "strict": false,
+        "noImplicitAny": false,
+
+        // Cache type-check state in ./tsconfig.tsbuildinfo (git-ignored via *.tsbuildinfo) so
+        // repeat test:types runs only re-check what changed.
+        "incremental": true,
+
+        "skipLibCheck": true
+    },
+
+    // Type-check every matching JS/TS file in the working tree - the globs below cover all module
+    // extensions: the .ts tooling, the tests, and the root JS config files (eslint.config.js /
+    // vitest.config.js).
+    "include": [
+        "**/*.cjs",
+        "**/*.cts",
+        "**/*.js",
+        "**/*.mjs",
+        "**/*.mts",
+        "**/*.ts"
+    ],
+
+    // Keep generated output out of the type check too. Specifying "exclude" replaces tsc's built-in
+    // default (which is just node_modules), so node_modules is re-listed here. Without "coverage", a
+    // prior "vitest run --coverage" leaves istanbul helper .js (sorter.js, block-navigation.js,
+    // prettify.js) that checkJs would then pick up.
+    //
+    // NOTE: Prefer editing this excludes list in the "abstract-javascript-project" branch and letting
+    // the change flow into the other branches via the usual template merges. Keeping the list
+    // in sync across the "abstract-" / "template-" branches makes switching between them simpler -
+    // otherwise a git-ignored artifact left behind by one branch (e.g. its build output) gets
+    // type-checked on another (tsc does not read .gitignore). (The git-ignored config/*.local*.js
+    // files are deliberately NOT listed here: they should stay type-checked so that errors in them
+    // surface locally.)
+    "exclude": [
+        ".cache",
+        "coverage",
+        "dist", // Library build output of the npm-package template branches
+        "node_modules",
+        "public-*", // Frontend build output (config-driven publicDirectory - see config/)
+        "temp", // Scratch/temporary files (git-ignored family-wide)
+        "tmp" // Scratch/temporary files (git-ignored family-wide)
+    ]
+}

@@ -1,0 +1,85 @@
+{
+    // Run the editor's ESLint on the same Node the shell uses, via the workspace-relative symlink
+    // created by "node --run setup:editor" (.vscode/soft-links/setup.sh). Without this, VS Code /
+    // Cursor may pick a bundled or system Node and fail to load the flat config.
+    // If it still does not work, replace the value with the absolute path of your Node binary:
+    //     "eslint.runtime": "/home/<user-goes-here>/.nvm/versions/node/v24.15.0/bin/node",
+    // Refs:
+    //     * https://github.com/eslint-stylistic/eslint-stylistic/issues/661
+    //     * https://github.com/eslint-stylistic/eslint-stylistic/issues/714
+    //     * https://github.com/eslint-stylistic/eslint-stylistic/issues/765
+    "eslint.runtime": "./.vscode/soft-links/node",
+
+    // File Nesting
+    // Ref: https://github.com/antfu/vscode-file-nesting-config#update-manually
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.expand": false,
+    "explorer.fileNesting.patterns": {
+        "*.css": "${capture}.css.map",
+        "*.js": "${capture}.js.map",
+        ".env": ".env.*",
+        ".gitignore": ".cursorignore, .stylelintignore",
+        ".nvmrc": ".auto-changelog, .block-non-keyboard-characters.suppressions.json, .live-css.config.cjs, .npmrc, babel.config.cjs, copy-files-from-to.cjson, eslint.config.cjs, eslint.config.js, eslint.markdown.config.js, knip.config.ts, revisit.json, stylelint.config.js, vitest.config.ts",
+        "package.json.ts": "package-lock.json, package-version.json, package.json",
+        "README.md": "LICENSE",
+        "settings.json": "settings.example.json, settings.local.example.json, settings.local.json",
+        "tsconfig.json": "tsconfig.tsbuildinfo"
+    },
+
+    // Let search see git-ignored files (local config, generated artifacts worth grepping), while
+    // "search.exclude" keeps the genuinely noisy directories out (mirror the globalIgnores list in
+    // eslint.config.js; package-lock.json is tracked, so it needs an explicit rule).
+    "search.exclude": {
+        "**/.cache": true,
+        "**/coverage": true,
+        "**/dist": true,
+        "**/node_modules": true,
+        "**/public-*": true,
+        "**/temp": true,
+        "**/tmp": true,
+        "package-lock.json": true
+    },
+    "search.useIgnoreFiles": false,
+
+    // Put the .vscode/soft-links/node symlink first on the integrated terminals' PATH, so commands
+    // run there use the same Node as "eslint.runtime" above. Re-run "node --run setup:editor" after
+    // switching Node versions ("nvm use") to refresh the link.
+    "terminal.integrated.automationProfile.linux": {
+        "env": {
+            "PATH": "${workspaceFolder}/.vscode/soft-links:${env:PATH}"
+        },
+        "path": "/bin/bash"
+    },
+    "terminal.integrated.env.linux": {
+        "PATH": "${workspaceFolder}/.vscode/soft-links:${env:PATH}"
+    },
+
+    // Auto-regenerate package.json whenever package.json.ts (the source of truth) or the
+    // utils/package-json-utils/ helper module it computes its dependency fields with is saved, so
+    // the generated manifest never drifts from its sources. The two blocks below target a different
+    // "run on save" extension each; install whichever matches your VSCode / VSCode-based IDE (see
+    // .vscode/extensions.json). The Claude Code equivalent is
+    // .claude/hooks/PostToolUse/regenerate-package-json-after-source-edit.sh - keep the two in sync.
+
+    // VS Code: extension "wk-j.save-and-run" (https://github.com/wk-j/vscode-save-and-run)
+    "saveAndRun": {
+        "commands": [
+            {
+                "match": "(package\\.json\\.ts|utils/package-json-utils/.+\\.ts)$",
+                "cmd": "./scripts/housekeeping/generate-package-json.sh",
+                "useShortcut": false,
+                "silent": true
+            }
+        ]
+    },
+
+    // Cursor: extension "achilleshr.runonsave" (https://open-vsx.org/extension/achilleshr/RunOnSave)
+    "achilleshr.runonsave": {
+        "commands": [
+            {
+                "match": "(package\\.json\\.ts|utils/package-json-utils/.+\\.ts)$",
+                "cmd": "./scripts/housekeeping/generate-package-json.sh"
+            }
+        ]
+    }
+}
