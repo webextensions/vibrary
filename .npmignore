@@ -27,7 +27,6 @@ CLAUDE.md
 .husky/
 .npmrc
 .nvmrc
-because/
 CONTRIBUTING.md
 docs/
 eslint.config.js

@@ -3,7 +3,7 @@
 The published manifest must not carry install-family scripts (`preinstall` / `install` /
 `postinstall`): npm runs them from an installed dependency on every consumer's machine and flags
 the package with `hasInstallScript` - while the file `preinstall` points at
-([scripts/npm-run-scripts/preinstall.sh](../scripts/npm-run-scripts/preinstall.sh)) lives under
+([scripts/npm-run-scripts/preinstall.sh](../../scripts/npm-run-scripts/preinstall.sh)) lives under
 `scripts/`, which the `files` allowlist excludes from the tarball. Shipping the script entry would
 therefore break consumer installs outright, and even a shipped script would wrongly impose this
 repo's `.nvmrc` on consumers.

@@ -85,7 +85,7 @@ checklist below; deep-dive details live in [`.claude/rules/`](../../rules/).
 - [ ] `node --run test:types` passes
 - [ ] No `// eslint-disable-*`, `// @ts-expect-error`, `// @ts-ignore`, or `as any` papering over
       real issues
-- [ ] Hacks/workarounds (if any) documented in [because/](../../../because/README.md)
+- [ ] Hacks/workarounds (if any) documented in [docs/because/](../../../docs/because/README.md)
 
 ## Output
 

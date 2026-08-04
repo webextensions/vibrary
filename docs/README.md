@@ -47,5 +47,5 @@ sources of truth rather than copies of them - follow a pointer to the file that 
 
 - [.claude/rules/](../.claude/rules/) - topical convention deep-dives (error handling, testing,
   git workflow, first principles, ...).
-- [because/](../because/) - why-entries for hacks, workarounds, and non-obvious decisions, so
+- [because/](./because/) - why-entries for hacks, workarounds, and non-obvious decisions, so
   future readers do not "fix" them back.
