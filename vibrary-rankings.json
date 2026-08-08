@@ -1,0 +1,49 @@
+{
+    "matches": [
+        {
+            "id": "7bc58be8-7e23-4be6-9ae6-4a4f1e48b404",
+            "playedAt": "2026-07-19T00:00:00.000Z",
+            "firstTitle": "apply-this-spec-feature-with-custom-one-time-instructions",
+            "secondTitle": "husky-for-git-hooks",
+            "winnerTitle": "apply-this-spec-feature-with-custom-one-time-instructions",
+            "judge": "AI",
+            "rationale": "The custom one-time instructions checkbox directly improves the app's core user-facing workflow - steering an agent run at the moment it matters - while husky is internal dev tooling with modest payoff, especially since the repo already gates commits via prepack-style checks (lint, typecheck, test, build). Entry A has higher user impact and unlocks more day-to-day value; Entry B saves contributors an occasional forgotten check at best. Neither blocks other work, so impact decides it."
+        },
+        {
+            "id": "9f2e173a-1d97-459c-abcf-72941eba56b7",
+            "playedAt": "2026-07-19T00:00:00.000Z",
+            "firstTitle": "globally-installable-npm-package",
+            "secondTitle": "approval-tracks-content-staleness",
+            "winnerTitle": "globally-installable-npm-package",
+            "judge": "AI",
+            "rationale": "The global npm package is the distribution foundation everything else rides on: without an installable package with its bin entry points and prebuilt frontend, no user reaches the editor, board, or approval features at all, so every other backlog item's user impact depends on it. Approval staleness tracking is a valuable correctness feature, but it is self-contained (a pure derivation consumed by the editor and filters) and only matters once users are running the app, making it the natural follow-on rather than the first priority."
+        },
+        {
+            "id": "2190a7f9-7e00-4903-9f42-1488e5d36370",
+            "playedAt": "2026-07-19T00:00:00.000Z",
+            "firstTitle": "backend-imports-the-frontend-xml-core",
+            "secondTitle": "content-hash-uses-cyrb53",
+            "winnerTitle": "backend-imports-the-frontend-xml-core",
+            "judge": "AI",
+            "rationale": "Entry A describes the backend importing shared constants from frontend/src, which per the packaging rules is a latent break: the tarball ships only backend, bin, dist, and allowlisted shared/ modules, so a runtime import reaching into frontend/src works from the repo but fails in the installed package - exactly the failure mode the project calls out as having happened before. Fixing it (moving ENTRY_TYPES into the shared core allowlist) is small effort, high urgency, and unblocks any future backend validation that depends on the entry-type list. Entry B documents a stable, already-working design decision (cyrb53 for content hashes) with no pending action or dependents, so it carries no urgency by comparison."
+        },
+        {
+            "id": "52c10f96-b519-4313-905d-d7b8232049dd",
+            "playedAt": "2026-07-19T00:00:00.000Z",
+            "firstTitle": "potentially-truncated-text-should-have-title-attribute",
+            "secondTitle": "add-files-from-explorer-view-in-left-panel",
+            "winnerTitle": "add-files-from-explorer-view-in-left-panel",
+            "judge": "AI",
+            "rationale": "Adding file creation from the explorer fills a genuine workflow gap - without it users must leave the app to create a new vibrary file before they can work on it, which blocks the core browse-and-edit loop and is a prerequisite surface other explorer features build on. Tooltip title attributes for truncated text are a worthwhile polish item, but they only aid discoverability of values already accessible by opening the file, so their user impact and unblocking value are lower even though the effort is small."
+        },
+        {
+            "id": "40303c69-f5c3-43ce-9b2d-decfb9dd8371",
+            "playedAt": "2026-07-19T00:00:00.000Z",
+            "firstTitle": "backend-imports-the-frontend-xml-core",
+            "secondTitle": "pure-esm-and-node-version-requirements",
+            "winnerTitle": "backend-imports-the-frontend-xml-core",
+            "judge": "AI",
+            "rationale": "Entry A captures a load-bearing architectural decision - a single source of truth for entry types shared across the browser and Node tiers - that other work (route validation, new entry kinds, any refactor of the XML core's location) directly depends on; getting it wrong or letting it drift breaks both tiers at once, so it deserves attention first. Entry B documents stable toolchain facts (pure ESM, engines floor, .nvmrc) that rarely change, block little downstream work, and carry no urgency."
+        }
+    ]
+}
