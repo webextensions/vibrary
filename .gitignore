@@ -156,3 +156,8 @@ vite.config.ts.timestamp-*
 # Claude Code: machine-local overrides and the ralph-loop plugin's transient per-session state
 .claude/settings.local.json
 .claude/ralph-loop.local.md
+
+# VS Code helper symlink to the node binary of whichever version manager this machine uses - generated per clone, so
+# its target is machine-specific. The template branches keep this pattern in a tracked .vscode/soft-links/.gitignore
+# next to their setup.sh; this repo tracks nothing under .vscode/, so the entry lives here instead.
+.vscode/soft-links/node
